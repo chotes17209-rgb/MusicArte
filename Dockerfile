@@ -1,9 +1,9 @@
 FROM php:8.2-apache
 
-# Extensiones PHP necesarias para Laravel + SQLite + PDF (dompdf)
+# Extensiones PHP necesarias para Laravel + MySQL + PDF (dompdf)
 RUN apt-get update && apt-get install -y \
-    git unzip libzip-dev libpng-dev libonig-dev libxml2-dev sqlite3 libsqlite3-dev \
-    && docker-php-ext-install pdo pdo_sqlite pdo_mysql mbstring zip exif pcntl gd \
+    git unzip libzip-dev libpng-dev libonig-dev libxml2-dev \
+    && docker-php-ext-install pdo pdo_mysql mbstring zip exif pcntl gd \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Apache: servir desde /public y habilitar mod_rewrite (rutas de Laravel)
@@ -14,6 +14,7 @@ RUN rm -f /etc/apache2/mods-enabled/mpm_event.load /etc/apache2/mods-enabled/mpm
            /etc/apache2/mods-enabled/mpm_worker.load /etc/apache2/mods-enabled/mpm_worker.conf \
     && a2enmod mpm_prefork \
     && apache2ctl -M | grep mpm
+
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
     && sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
@@ -29,10 +30,9 @@ COPY . .
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 # Permisos de storage y bootstrap/cache (Laravel escribe ahi)
-RUN mkdir -p storage/framework/{cache,sessions,views} storage/logs database \
-    && touch database/database.sqlite \
-    && chown -R www-data:www-data storage bootstrap/cache database \
-    && chmod -R 775 storage bootstrap/cache database
+RUN mkdir -p storage/framework/{cache,sessions,views} storage/logs \
+    && chown -R www-data:www-data storage bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
 
 COPY start.sh /start.sh
 RUN chmod +x /start.sh
