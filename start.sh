@@ -1,21 +1,16 @@
 #!/bin/bash
 set -e
 
-# Railway asigna el puerto por la variable $PORT; Apache por defecto usa 80
-PORT="${PORT:-80}"
-sed -i "s/80/${PORT}/g" /etc/apache2/ports.conf /etc/apache2/sites-available/000-default.conf
+PORT="${PORT:-8080}"
 
-# Genera APP_KEY si no existe ninguna (primera vez)
 if [ -z "$APP_KEY" ]; then
     php artisan key:generate --force
 fi
 
-# Cache de configuracion/rutas para arranque mas rapido
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
-# Crea las tablas y datos de demo en cada arranque
 php artisan migrate:fresh --seed --force
 
-apache2-foreground
+php artisan serve --host=0.0.0.0 --port="$PORT"
