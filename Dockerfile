@@ -8,8 +8,12 @@ RUN apt-get update && apt-get install -y \
 
 # Apache: servir desde /public y habilitar mod_rewrite (rutas de Laravel)
 RUN a2enmod rewrite
-# mod_php requiere el MPM prefork; 
-RUN a2dismod mpm_event 2>/dev/null; a2dismod mpm_worker 2>/dev/null; a2enmod mpm_prefork
+
+# mod_php requiere el MPM prefork; eliminamos cualquier otro MPM enlazado
+RUN rm -f /etc/apache2/mods-enabled/mpm_event.load /etc/apache2/mods-enabled/mpm_event.conf \
+           /etc/apache2/mods-enabled/mpm_worker.load /etc/apache2/mods-enabled/mpm_worker.conf \
+    && a2enmod mpm_prefork \
+    && apache2ctl -M | grep mpm
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
     && sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
