@@ -85,7 +85,9 @@ Route::middleware('auth')->group(function () {
     // Ambos roles pueden ver el listado (index).
     // ---------------------------------------------------------------
     Route::get('/pagos', [PagoController::class, 'index'])->name('pagos.index');
+    Route::get('/pagos/anual', [PagoController::class, 'anual'])->name('pagos.anual');
     Route::get('/pagos/{pago}/recibo', [ReciboController::class, 'pdf'])->name('pagos.recibo');
+    Route::get('/pagos/{pago}/abonos/{abono}/recibo', [ReciboController::class, 'pdfAbono'])->name('pagos.abono-recibo');
     Route::get('/planilla', [PlanillaController::class, 'index'])->name('planilla.index');
 
     Route::middleware('role:admin')->group(function () {
@@ -93,6 +95,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/pagos/{pago}/edit', [PagoController::class, 'edit'])->name('pagos.edit');
         Route::put('/pagos/{pago}', [PagoController::class, 'update'])->name('pagos.update');
         Route::delete('/pagos/{pago}', [PagoController::class, 'destroy'])->name('pagos.destroy');
+        Route::post('/pagos/{pago}/abonos', [PagoController::class, 'storeAbono'])->name('pagos.abonos.store');
+        Route::delete('/pagos/{pago}/abonos/{abono}', [PagoController::class, 'destroyAbono'])->name('pagos.abonos.destroy');
 
         Route::post('/planilla/generar', [PlanillaController::class, 'generarDesdeAsistencia'])->name('planilla.generar');
         Route::post('/planilla', [PlanillaController::class, 'store'])->name('planilla.store');

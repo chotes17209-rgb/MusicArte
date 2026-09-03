@@ -94,7 +94,9 @@ class PagoSeeder extends Seeder
                 continue;
             }
 
-            Pago::updateOrCreate(
+            $periodo = \App\Models\Periodo::where('mes', 8)->where('anio', 2026)->first();
+
+            $pago = Pago::updateOrCreate(
                 [
                     'alumno_id' => $alumno->id,
                     'mes' => 8,
@@ -102,6 +104,9 @@ class PagoSeeder extends Seeder
                     'concepto' => $p['concepto'],
                 ],
                 [
+                    'periodo_id' => $periodo->id ?? null,
+                    'especialidad_id' => $alumno->especialidad_id,
+                    'maestro_id' => $alumno->maestro_id,
                     'monto_total' => $p['monto_total'],
                     'yape_transferencia' => $p['yape'],
                     'efectivo' => $p['efectivo'],
@@ -111,6 +116,21 @@ class PagoSeeder extends Seeder
                     'fecha_pago' => $p['saldo'] <= 0 ? now()->subDays(rand(1, 15))->format('Y-m-d') : null,
                 ]
             );
+
+            // Cada monto por metodo se convierte en su propio abono, como
+            // quedaria si se hubiera registrado desde el modulo nuevo.
+            $pago->abonos()->delete();
+            foreach (['transferencia' => $p['yape'], 'efectivo' => $p['efectivo']] as $metodo => $monto) {
+                if ($monto > 0) {
+                    $pago->abonos()->create([
+                        'monto' => $monto,
+                        'fecha' => $pago->fecha_pago ?? now(),
+                        'metodo_pago' => $metodo,
+                        'recibo_nro' => $p['recibo'],
+                    ]);
+                }
+            }
+            $pago->recalcular();
         }
     }
 }

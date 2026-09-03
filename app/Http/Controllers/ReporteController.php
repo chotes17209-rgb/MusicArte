@@ -74,16 +74,32 @@ class ReporteController extends Controller
         return view('reportes.ingresos-egresos', compact('data', 'anio'));
     }
 
-    /** Reporte: alumnos con pagos pendientes (saldo > 0). */
+    /** Reporte: alumnos con pago completo, parcial o sin pago (req. 14). */
     public function pagosPendientes(Request $request)
     {
         $mes = $request->get('mes', now()->month);
         $anio = $request->get('anio', now()->year);
 
-        $data = Pago::with('alumno')->where('mes', $mes)->where('anio', $anio)
-            ->where('saldo', '>', 0)->orderByDesc('saldo')->get();
+        $query = Pago::with(['alumno', 'especialidad', 'maestro'])
+            ->where('mes', $mes)->where('anio', $anio);
 
-        return view('reportes.pagos-pendientes', compact('data', 'mes', 'anio'));
+        if ($request->filled('maestro_id')) {
+            $query->where('maestro_id', $request->maestro_id);
+        }
+        if ($request->filled('especialidad_id')) {
+            $query->where('especialidad_id', $request->especialidad_id);
+        }
+        if ($request->filled('estado')) {
+            $query->where('estado', $request->estado);
+        } else {
+            $query->where('estado', '!=', 'pagado');
+        }
+
+        $data = $query->orderByDesc('saldo')->get();
+        $maestros = \App\Models\Maestro::where('activo', true)->orderBy('nombre')->get();
+        $especialidades = Especialidad::where('activo', true)->orderBy('nombre')->get();
+
+        return view('reportes.pagos-pendientes', compact('data', 'mes', 'anio', 'maestros', 'especialidades'));
     }
 
     /** Reporte: planilla de pago a maestros. */

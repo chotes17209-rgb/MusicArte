@@ -32,6 +32,15 @@
         </a>
     </div>
     <div class="col-md-4">
+        <a href="{{ route('pagos.anual') }}" class="text-decoration-none">
+            <div class="card p-3 h-100">
+                <i class="bi bi-calendar-range fs-2" style="color:#3d2c8d"></i>
+                <h6 class="fw-semibold mt-2 mb-1">Historial de Pagos Anual</h6>
+                <small class="text-muted">Facturado, recaudado y pendiente mes a mes de todo el año</small>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-4">
         <a href="{{ route('reportes.pagos-pendientes') }}" class="text-decoration-none">
             <div class="card p-3 h-100">
                 <i class="bi bi-exclamation-triangle fs-2" style="color:#3d2c8d"></i>
