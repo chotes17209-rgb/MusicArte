@@ -13,7 +13,13 @@ class Horario extends Model
 
     protected $fillable = [
         'alumno_id', 'maestro_id', 'especialidad_id', 'periodo_id',
-        'dia_semana', 'hora_inicio', 'hora_fin', 'salon', 'activo',
+        'dia_semana', 'hora_inicio', 'hora_fin', 'salon', 'activo', 'estado',
+    ];
+
+    const ESTADOS = [
+        'activo' => 'Activo',
+        'pausado' => 'Pausado',
+        'finalizado' => 'Finalizado',
     ];
 
     protected function casts(): array

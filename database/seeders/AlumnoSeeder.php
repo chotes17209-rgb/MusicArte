@@ -87,7 +87,6 @@ class AlumnoSeeder extends Seeder
             Alumno::updateOrCreate(
                 ['nombre' => $a['nombre']],
                 [
-                    'edad' => $a['edad'],
                     'fecha_nacimiento' => $a['fecha_nacimiento'],
                     'especialidad_id' => $especialidad?->id,
                     'maestro_id' => $maestro?->id,
