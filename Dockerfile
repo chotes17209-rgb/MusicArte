@@ -5,12 +5,9 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-install pdo pdo_mysql mbstring zip exif pcntl gd \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Fuerza un solo MPM activo (elimina archivos en conflicto directamente)
-RUN rm -f /etc/apache2/mods-enabled/mpm_event.load \
-    /etc/apache2/mods-enabled/mpm_event.conf \
-    /etc/apache2/mods-enabled/mpm_worker.load \
-    /etc/apache2/mods-enabled/mpm_worker.conf \
-    && a2enmod mpm_prefork
+# Disable all conflicting MPMs and keep only prefork
+RUN a2dismod mpm_event mpm_worker 2>/dev/null || true && \
+    a2enmod mpm_prefork
 
 RUN a2enmod rewrite
 RUN sed -i 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/000-default.conf
@@ -32,3 +29,4 @@ RUN chmod +x /start.sh
 
 EXPOSE 8080
 CMD ["/start.sh"]
+
