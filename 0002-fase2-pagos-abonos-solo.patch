@@ -1,0 +1,1405 @@
+From e8b90c0464bd65e492fdf5e9f3799c6565e44ce6 Mon Sep 17 00:00:00 2001
+From: MusicArte Dev <dev@musicarte.local>
+Date: Thu, 3 Sep 2026 19:40:33 +0000
+Subject: [PATCH] Fase 2: pagos con abonos multiples, taller/periodo, historial
+ anual y estado de pagos
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+- Pago pasa a ser la deuda (alumno + taller + periodo + monto total);
+  el detalle de como se pago vive en la nueva tabla pago_abonos
+  (un abono = un movimiento real: monto, fecha, metodo, N de recibo).
+- saldo/monto_pagado/estado (pendiente|a_cuenta|pagado) se recalculan
+  solos con cada abono creado/editado/borrado (PagoAbono::booted()).
+- Se puede registrar un primer abono al crear el pago, y agregar
+  abonos posteriores desde 'Ver abonos' -> soporta N abonos por deuda.
+- Recibo PDF individual por abono ademas del resumen general.
+- Filtros por periodo, maestro y taller en el listado de pagos.
+- Nuevo historial de pagos anual (mes a mes, todo el año).
+- Reporte 'Pagos pendientes' ahora filtra por maestro/taller/estado.
+- No se pierde historial: los montos ya guardados (yape/efectivo/
+  tarjeta) se migran automaticamente a abonos reales.
+---
+ app/Http/Controllers/PagoController.php       | 152 +++++++--
+ app/Http/Controllers/ReciboController.php     |  17 +-
+ app/Http/Controllers/ReporteController.php    |  26 +-
+ app/Models/Pago.php                           |  86 ++++-
+ app/Models/PagoAbono.php                      |  55 +++
+ .../2026_09_03_193523_fase2_pagos_abonos.php  | 105 ++++++
+ database/seeders/PagoSeeder.php               |  22 +-
+ resources/views/pagos/anual.blade.php         |  46 +++
+ resources/views/pagos/index.blade.php         | 317 ++++++++++++++----
+ .../views/pagos/recibo-abono-pdf.blade.php    |  41 +++
+ resources/views/pagos/recibo-pdf.blade.php    |  33 +-
+ resources/views/reportes/index.blade.php      |   9 +
+ .../views/reportes/pagos-pendientes.blade.php |  59 +++-
+ routes/web.php                                |   4 +
+ 14 files changed, 847 insertions(+), 125 deletions(-)
+ create mode 100644 app/Models/PagoAbono.php
+ create mode 100644 database/migrations/2026_09_03_193523_fase2_pagos_abonos.php
+ create mode 100644 resources/views/pagos/anual.blade.php
+ create mode 100644 resources/views/pagos/recibo-abono-pdf.blade.php
+
+diff --git a/app/Http/Controllers/PagoController.php b/app/Http/Controllers/PagoController.php
+index efdf71a..a22d9ba 100644
+--- a/app/Http/Controllers/PagoController.php
++++ b/app/Http/Controllers/PagoController.php
+@@ -3,86 +3,192 @@
+ namespace App\Http\Controllers;
+ 
+ use App\Models\Alumno;
++use App\Models\Especialidad;
++use App\Models\Maestro;
+ use App\Models\Pago;
++use App\Models\PagoAbono;
++use App\Models\Periodo;
+ use Illuminate\Http\Request;
++use Illuminate\Support\Facades\DB;
+ 
+ class PagoController extends Controller
+ {
+     public function index(Request $request)
+     {
+-        $mes = $request->get('mes', now()->month);
+-        $anio = $request->get('anio', now()->year);
++        $periodoActual = Periodo::orderByDesc('anio')->orderByDesc('mes')->first();
++        $periodoId = $request->filled('periodo_id') ? (int) $request->periodo_id : ($periodoActual->id ?? null);
+ 
+-        $query = Pago::with('alumno')->where('mes', $mes)->where('anio', $anio);
++        $query = Pago::with(['alumno', 'especialidad', 'maestro', 'periodo', 'abonos']);
+ 
+-        if ($request->filled('buscar')) {
+-            $query->whereHas('alumno', fn ($q) => $q->where('nombre', 'like', '%'.$request->buscar.'%'));
++        if ($periodoId) {
++            $query->where('periodo_id', $periodoId);
++        }
++        if ($request->filled('maestro_id')) {
++            $query->delMaestro((int) $request->maestro_id);
++        }
++        if ($request->filled('especialidad_id')) {
++            $query->delTaller((int) $request->especialidad_id);
+         }
+-        if ($request->boolean('solo_pendientes')) {
+-            $query->where('saldo', '>', 0);
++        if ($request->filled('estado')) {
++            $query->where('estado', $request->estado);
++        }
++        if ($request->filled('buscar')) {
++            $texto = $request->buscar;
++            $query->whereHas('alumno', fn ($q) => $q->where('nombre', 'like', "%{$texto}%"));
+         }
+ 
+-        $pagos = $query->orderBy('fecha_pago', 'desc')->paginate(20)->withQueryString();
++        $pagos = $query->orderByDesc('created_at')->paginate(20)->withQueryString();
++
+         $alumnos = Alumno::activos()->orderBy('nombre')->get();
++        $especialidades = Especialidad::where('activo', true)->orderBy('nombre')->get();
++        $maestros = Maestro::where('activo', true)->orderBy('nombre')->get();
++        $periodos = Periodo::orderByDesc('anio')->orderByDesc('mes')->get();
+ 
+         $totales = [
+-            'recaudado' => (clone $query)->sum('monto_total'),
++            'facturado' => (clone $query)->sum('monto_total'),
++            'recaudado' => (clone $query)->sum('monto_pagado'),
+             'pendiente' => (clone $query)->sum('saldo'),
+         ];
+ 
+-        return view('pagos.index', compact('pagos', 'alumnos', 'mes', 'anio', 'totales'));
++        return view('pagos.index', compact('pagos', 'alumnos', 'especialidades', 'maestros', 'periodos', 'periodoId', 'totales'));
++    }
++
++    /** Req. 13: historial de pagos de todo un año, mes a mes. */
++    public function anual(Request $request)
++    {
++        $anio = (int) $request->get('anio', now()->year);
++
++        $resumen = collect(range(1, 12))->map(function ($mes) use ($anio) {
++            $periodo = Periodo::where('mes', $mes)->where('anio', $anio)->first();
++            $q = Pago::query();
++            if ($periodo) {
++                $q->where('periodo_id', $periodo->id);
++            } else {
++                $q->where('mes', $mes)->where('anio', $anio);
++            }
++
++            return [
++                'mes' => Pago::MESES[$mes],
++                'facturado' => (clone $q)->sum('monto_total'),
++                'recaudado' => (clone $q)->sum('monto_pagado'),
++                'pendiente' => (clone $q)->sum('saldo'),
++                'cantidad' => (clone $q)->count(),
++            ];
++        });
++
++        return view('pagos.anual', compact('resumen', 'anio'));
+     }
+ 
+-    // El middleware 'role:admin' protege store/update/destroy a nivel de ruta.
++    // El middleware 'role:admin' protege store/update/destroy/abonos a nivel de ruta (req. 15).
+ 
+     public function store(Request $request)
+     {
+         $data = $this->validarDatos($request);
+-        $data['saldo'] = max(0, $data['monto_total'] - ($data['yape_transferencia'] + $data['efectivo'] + $data['tarjeta']));
++        $data['usuario_id'] = auth()->id();
++        $data['monto_pagado'] = 0;
++        $data['saldo'] = $data['monto_total'];
++        $data['estado'] = 'pendiente';
++
++        if ($periodo = Periodo::find($data['periodo_id'] ?? null)) {
++            $data['mes'] = $periodo->mes;
++            $data['anio'] = $periodo->anio;
++        }
+ 
+         $pago = Pago::create($data);
+ 
+-        return response()->json(['ok' => true, 'message' => 'Pago registrado correctamente.', 'data' => $pago]);
++        // Req. 10: se puede dejar registrado el primer abono al crear la deuda.
++        if ($request->filled('primer_abono.monto')) {
++            $this->crearAbono($pago, $request->input('primer_abono'));
++        }
++
++        return response()->json(['ok' => true, 'message' => 'Pago registrado correctamente.', 'data' => $pago->fresh('abonos')]);
+     }
+ 
+     public function edit(Pago $pago)
+     {
++        $pago->load(['abonos.usuario', 'alumno', 'especialidad', 'maestro', 'periodo']);
++
+         return response()->json(['ok' => true, 'data' => $pago]);
+     }
+ 
+     public function update(Request $request, Pago $pago)
+     {
+         $data = $this->validarDatos($request);
+-        $data['saldo'] = max(0, $data['monto_total'] - ($data['yape_transferencia'] + $data['efectivo'] + $data['tarjeta']));
++
++        if ($periodo = Periodo::find($data['periodo_id'] ?? null)) {
++            $data['mes'] = $periodo->mes;
++            $data['anio'] = $periodo->anio;
++        }
+ 
+         $pago->update($data);
++        $pago->recalcular(); // el monto_total pudo cambiar: recalcula saldo/estado
+ 
+-        return response()->json(['ok' => true, 'message' => 'Pago actualizado correctamente.', 'data' => $pago]);
++        return response()->json(['ok' => true, 'message' => 'Pago actualizado correctamente.', 'data' => $pago->fresh('abonos')]);
+     }
+ 
+     public function destroy(Pago $pago)
+     {
+-        $pago->delete();
++        $pago->delete(); // cascade elimina tambien sus abonos
+ 
+         return response()->json(['ok' => true, 'message' => 'Registro de pago eliminado.']);
+     }
+ 
++    /**
++     * Req. 10: registrar un nuevo abono (pago a cuenta) sobre una deuda ya
++     * existente. El saldo se recalcula solo (evento en PagoAbono::booted()).
++     */
++    public function storeAbono(Request $request, Pago $pago)
++    {
++        $abono = $this->crearAbono($pago, $request->all());
++
++        return response()->json([
++            'ok' => true,
++            'message' => 'Abono registrado. Saldo actualizado.',
++            'data' => $pago->fresh('abonos'),
++            'abono' => $abono,
++        ]);
++    }
++
++    public function destroyAbono(Pago $pago, PagoAbono $abono)
++    {
++        abort_if($abono->pago_id !== $pago->id, 404);
++
++        $abono->delete();
++
++        return response()->json(['ok' => true, 'message' => 'Abono eliminado. Saldo actualizado.', 'data' => $pago->fresh('abonos')]);
++    }
++
++    private function crearAbono(Pago $pago, array $input): PagoAbono
++    {
++        $data = validator($input, [
++            'monto' => 'required|numeric|min:0.01',
++            'fecha' => 'required|date',
++            'metodo_pago' => 'required|in:'.implode(',', array_keys(PagoAbono::METODOS)),
++            'recibo_nro' => 'nullable|string|max:50',
++        ], [
++            'monto.required' => 'El monto del abono es obligatorio.',
++            'metodo_pago.required' => 'Selecciona el metodo de pago.',
++        ])->validate();
++
++        $data['pago_id'] = $pago->id;
++        $data['usuario_id'] = auth()->id();
++
++        return DB::transaction(fn () => PagoAbono::create($data));
++    }
++
+     private function validarDatos(Request $request): array
+     {
+         return $request->validate([
+             'alumno_id' => 'required|exists:alumnos,id',
+-            'mes' => 'required|integer|between:1,12',
+-            'anio' => 'required|integer|min:2020|max:2100',
++            'periodo_id' => 'required|exists:periodos,id',
++            'especialidad_id' => 'nullable|exists:especialidades,id',
++            'maestro_id' => 'nullable|exists:maestros,id',
+             'concepto' => 'nullable|string|max:150',
+             'monto_total' => 'required|numeric|min:0',
+-            'yape_transferencia' => 'nullable|numeric|min:0',
+-            'efectivo' => 'nullable|numeric|min:0',
+-            'tarjeta' => 'nullable|numeric|min:0',
+-            'recibo_nro' => 'nullable|string|max:50',
+-            'fecha_pago' => 'nullable|date',
+             'observacion' => 'nullable|string',
+         ], [
+             'alumno_id.required' => 'Selecciona un alumno.',
++            'periodo_id.required' => 'Selecciona el periodo de este pago.',
+             'monto_total.required' => 'El monto total es obligatorio.',
+         ]);
+     }
+diff --git a/app/Http/Controllers/ReciboController.php b/app/Http/Controllers/ReciboController.php
+index cf74ce8..30ca83a 100644
+--- a/app/Http/Controllers/ReciboController.php
++++ b/app/Http/Controllers/ReciboController.php
+@@ -3,16 +3,31 @@
+ namespace App\Http\Controllers;
+ 
+ use App\Models\Pago;
++use App\Models\PagoAbono;
+ use Barryvdh\DomPDF\Facade\Pdf;
+ 
+ class ReciboController extends Controller
+ {
++    /** Recibo "resumen" del pago completo (deuda + todos sus abonos). */
+     public function pdf(Pago $pago)
+     {
+-        $pago->load('alumno.especialidad');
++        $pago->load(['alumno.especialidad', 'especialidad', 'maestro', 'periodo', 'abonos']);
+ 
+         $pdf = Pdf::loadView('pagos.recibo-pdf', compact('pago'))->setPaper('a5');
+ 
+         return $pdf->stream("recibo-{$pago->id}.pdf");
+     }
++
++    /** Req. 10: recibo individual de un abono especifico. */
++    public function pdfAbono(Pago $pago, PagoAbono $abono)
++    {
++        abort_if($abono->pago_id !== $pago->id, 404);
++
++        $pago->load(['alumno', 'especialidad', 'maestro', 'periodo']);
++        $abono->load('usuario');
++
++        $pdf = Pdf::loadView('pagos.recibo-abono-pdf', compact('pago', 'abono'))->setPaper('a5');
++
++        return $pdf->stream("recibo-abono-{$abono->id}.pdf");
++    }
+ }
+diff --git a/app/Http/Controllers/ReporteController.php b/app/Http/Controllers/ReporteController.php
+index 17500d8..67fbb87 100644
+--- a/app/Http/Controllers/ReporteController.php
++++ b/app/Http/Controllers/ReporteController.php
+@@ -74,16 +74,32 @@ class ReporteController extends Controller
+         return view('reportes.ingresos-egresos', compact('data', 'anio'));
+     }
+ 
+-    /** Reporte: alumnos con pagos pendientes (saldo > 0). */
++    /** Reporte: alumnos con pago completo, parcial o sin pago (req. 14). */
+     public function pagosPendientes(Request $request)
+     {
+         $mes = $request->get('mes', now()->month);
+         $anio = $request->get('anio', now()->year);
+ 
+-        $data = Pago::with('alumno')->where('mes', $mes)->where('anio', $anio)
+-            ->where('saldo', '>', 0)->orderByDesc('saldo')->get();
+-
+-        return view('reportes.pagos-pendientes', compact('data', 'mes', 'anio'));
++        $query = Pago::with(['alumno', 'especialidad', 'maestro'])
++            ->where('mes', $mes)->where('anio', $anio);
++
++        if ($request->filled('maestro_id')) {
++            $query->where('maestro_id', $request->maestro_id);
++        }
++        if ($request->filled('especialidad_id')) {
++            $query->where('especialidad_id', $request->especialidad_id);
++        }
++        if ($request->filled('estado')) {
++            $query->where('estado', $request->estado);
++        } else {
++            $query->where('estado', '!=', 'pagado');
++        }
++
++        $data = $query->orderByDesc('saldo')->get();
++        $maestros = \App\Models\Maestro::where('activo', true)->orderBy('nombre')->get();
++        $especialidades = Especialidad::where('activo', true)->orderBy('nombre')->get();
++
++        return view('reportes.pagos-pendientes', compact('data', 'mes', 'anio', 'maestros', 'especialidades'));
+     }
+ 
+     /** Reporte: planilla de pago a maestros. */
+diff --git a/app/Models/Pago.php b/app/Models/Pago.php
+index cab8313..06ac7a6 100644
+--- a/app/Models/Pago.php
++++ b/app/Models/Pago.php
+@@ -12,9 +12,11 @@ class Pago extends Model
+     protected $table = 'pagos';
+ 
+     protected $fillable = [
+-        'alumno_id', 'mes', 'anio', 'concepto', 'monto_total',
+-        'yape_transferencia', 'efectivo', 'tarjeta', 'saldo',
+-        'recibo_nro', 'fecha_pago', 'observacion',
++        'alumno_id', 'periodo_id', 'especialidad_id', 'maestro_id',
++        'mes', 'anio', 'concepto', 'monto_total', 'monto_pagado', 'saldo',
++        'estado', 'usuario_id', 'recibo_nro', 'fecha_pago', 'observacion',
++        // Campos legados (se mantienen solo por compatibilidad con datos historicos):
++        'yape_transferencia', 'efectivo', 'tarjeta',
+     ];
+ 
+     protected function casts(): array
+@@ -28,18 +30,94 @@ class Pago extends Model
+         9 => 'Septiembre', 10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre',
+     ];
+ 
++    const ESTADOS = [
++        'pendiente' => 'Pendiente',
++        'a_cuenta' => 'A cuenta',
++        'pagado' => 'Pagado',
++    ];
++
+     public function alumno()
+     {
+         return $this->belongsTo(Alumno::class);
+     }
+ 
++    public function periodo()
++    {
++        return $this->belongsTo(Periodo::class);
++    }
++
++    public function especialidad()
++    {
++        return $this->belongsTo(Especialidad::class);
++    }
++
++    public function maestro()
++    {
++        return $this->belongsTo(Maestro::class);
++    }
++
++    public function usuario()
++    {
++        return $this->belongsTo(\App\Models\User::class, 'usuario_id');
++    }
++
++    public function abonos()
++    {
++        return $this->hasMany(PagoAbono::class)->orderBy('fecha');
++    }
++
+     public function mesLabel(): string
+     {
+-        return self::MESES[$this->mes] ?? '';
++        return self::MESES[$this->mes] ?? ($this->periodo->nombre ?? '');
++    }
++
++    public function estadoLabel(): string
++    {
++        return self::ESTADOS[$this->estado] ?? $this->estado;
++    }
++
++    /**
++     * Req. 10 y 11: recalcula monto_pagado, saldo y estado a partir de la
++     * suma real de abonos. Se llama automaticamente cada vez que se
++     * crea/edita/borra un abono (ver PagoAbono::booted()), y tambien cuando
++     * se corrige el monto_total de la deuda.
++     */
++    public function recalcular(): void
++    {
++        $pagado = (float) $this->abonos()->sum('monto');
++        $saldo = max(0, (float) $this->monto_total - $pagado);
++
++        $estado = 'pendiente';
++        if ($pagado > 0 && $saldo > 0) {
++            $estado = 'a_cuenta';
++        } elseif ($pagado > 0 && $saldo <= 0) {
++            $estado = 'pagado';
++        }
++
++        $this->forceFill([
++            'monto_pagado' => $pagado,
++            'saldo' => $saldo,
++            'estado' => $estado,
++        ])->saveQuietly();
+     }
+ 
+     public function scopePendientes($query)
+     {
+         return $query->where('saldo', '>', 0);
+     }
++
++    public function scopeDelPeriodo($query, int $periodoId)
++    {
++        return $query->where('periodo_id', $periodoId);
++    }
++
++    public function scopeDelMaestro($query, int $maestroId)
++    {
++        return $query->where('maestro_id', $maestroId);
++    }
++
++    public function scopeDelTaller($query, int $especialidadId)
++    {
++        return $query->where('especialidad_id', $especialidadId);
++    }
+ }
+diff --git a/app/Models/PagoAbono.php b/app/Models/PagoAbono.php
+new file mode 100644
+index 0000000..a913beb
+--- /dev/null
++++ b/app/Models/PagoAbono.php
+@@ -0,0 +1,55 @@
++<?php
++
++namespace App\Models;
++
++use Illuminate\Database\Eloquent\Factories\HasFactory;
++use Illuminate\Database\Eloquent\Model;
++
++class PagoAbono extends Model
++{
++    use HasFactory;
++
++    protected $table = 'pago_abonos';
++
++    protected $fillable = [
++        'pago_id', 'monto', 'fecha', 'metodo_pago', 'recibo_nro', 'usuario_id',
++    ];
++
++    protected function casts(): array
++    {
++        return ['fecha' => 'date'];
++    }
++
++    const METODOS = [
++        'transferencia' => 'Transferencia',
++        'yape' => 'Yape',
++        'efectivo' => 'Efectivo',
++    ];
++
++    public function pago()
++    {
++        return $this->belongsTo(Pago::class);
++    }
++
++    public function usuario()
++    {
++        return $this->belongsTo(\App\Models\User::class, 'usuario_id');
++    }
++
++    public function metodoLabel(): string
++    {
++        return self::METODOS[$this->metodo_pago] ?? ucfirst($this->metodo_pago);
++    }
++
++    /**
++     * Req. 10 y 11: el saldo del Pago se recalcula solo, automaticamente,
++     * cada vez que se crea, edita o borra un abono. Asi nunca queda
++     * desincronizado sin importar desde donde se registre el pago.
++     */
++    protected static function booted(): void
++    {
++        static::created(fn (PagoAbono $abono) => $abono->pago?->recalcular());
++        static::updated(fn (PagoAbono $abono) => $abono->pago?->recalcular());
++        static::deleted(fn (PagoAbono $abono) => $abono->pago?->recalcular());
++    }
++}
+diff --git a/database/migrations/2026_09_03_193523_fase2_pagos_abonos.php b/database/migrations/2026_09_03_193523_fase2_pagos_abonos.php
+new file mode 100644
+index 0000000..fff0c7a
+--- /dev/null
++++ b/database/migrations/2026_09_03_193523_fase2_pagos_abonos.php
+@@ -0,0 +1,105 @@
++<?php
++
++use Illuminate\Database\Migrations\Migration;
++use Illuminate\Database\Schema\Blueprint;
++use Illuminate\Support\Facades\Schema;
++use Illuminate\Support\Facades\DB;
++
++return new class extends Migration
++{
++    /**
++     * FASE 2 - Requerimientos 9, 10, 11, 12, 13, 14:
++     *  - Cada Pago pasa a ser el "concepto/deuda" (alumno + taller + periodo +
++     *    monto total). El detalle de como se fue pagando vive en la nueva
++     *    tabla pago_abonos: un abono = un movimiento real de dinero, con su
++     *    propio monto, fecha, metodo de pago y numero de recibo.
++     *  - El saldo y el estado del Pago se recalculan automaticamente cada vez
++     *    que se agrega/edita/borra un abono (ver App\Models\PagoAbono).
++     *  - No se pierde el historial: las columnas viejas (yape_transferencia,
++     *    efectivo, tarjeta) NO se borran, y se migran a abonos automaticos
++     *    para que el historial anterior tambien aparezca en el detalle.
++     */
++    public function up(): void
++    {
++        Schema::table('pagos', function (Blueprint $table) {
++            $table->foreignId('periodo_id')->nullable()->after('alumno_id')->constrained('periodos')->nullOnDelete();
++            $table->foreignId('especialidad_id')->nullable()->after('periodo_id')->constrained('especialidades')->nullOnDelete();
++            $table->foreignId('maestro_id')->nullable()->after('especialidad_id')->constrained('maestros')->nullOnDelete();
++            $table->decimal('monto_pagado', 8, 2)->default(0)->after('monto_total');
++            $table->string('estado', 20)->default('pendiente')->after('saldo');
++            $table->foreignId('usuario_id')->nullable()->after('estado')->constrained('users')->nullOnDelete();
++        });
++
++        Schema::create('pago_abonos', function (Blueprint $table) {
++            $table->id();
++            $table->foreignId('pago_id')->constrained('pagos')->cascadeOnDelete();
++            $table->decimal('monto', 8, 2);
++            $table->date('fecha');
++            $table->string('metodo_pago', 30);
++            $table->string('recibo_nro')->nullable();
++            $table->foreignId('usuario_id')->nullable()->constrained('users')->nullOnDelete();
++            $table->timestamps();
++
++            $table->index('fecha');
++        });
++
++        // --- Backfill: no perder historial existente ---
++
++        // 1) Asociar cada pago viejo a su Periodo, especialidad y maestro
++        //    (via el alumno), usando mes/anio como referencia.
++        $pagos = DB::table('pagos')->get();
++        foreach ($pagos as $pago) {
++            $periodo = DB::table('periodos')->where('mes', $pago->mes)->where('anio', $pago->anio)->first();
++            $alumno = DB::table('alumnos')->where('id', $pago->alumno_id)->first();
++
++            DB::table('pagos')->where('id', $pago->id)->update([
++                'periodo_id' => $periodo->id ?? null,
++                'especialidad_id' => $alumno->especialidad_id ?? null,
++                'maestro_id' => $alumno->maestro_id ?? null,
++            ]);
++
++            // 2) Convertir los montos por metodo ya guardados en abonos reales,
++            //    para que el modulo de abonos ya tenga el historial completo.
++            $fecha = $pago->fecha_pago ?? now()->toDateString();
++            $montos = [
++                'transferencia' => (float) $pago->yape_transferencia,
++                'efectivo' => (float) $pago->efectivo,
++                'tarjeta' => (float) $pago->tarjeta,
++            ];
++            foreach ($montos as $metodo => $monto) {
++                if ($monto > 0) {
++                    DB::table('pago_abonos')->insert([
++                        'pago_id' => $pago->id,
++                        'monto' => $monto,
++                        'fecha' => $fecha,
++                        'metodo_pago' => $metodo,
++                        'recibo_nro' => $pago->recibo_nro,
++                        'created_at' => now(),
++                        'updated_at' => now(),
++                    ]);
++                }
++            }
++
++            $pagado = $montos['transferencia'] + $montos['efectivo'] + $montos['tarjeta'];
++            $estado = $pagado <= 0 ? 'pendiente' : ($pagado >= $pago->monto_total ? 'pagado' : 'a_cuenta');
++
++            DB::table('pagos')->where('id', $pago->id)->update([
++                'monto_pagado' => $pagado,
++                'estado' => $estado,
++            ]);
++        }
++    }
++
++    public function down(): void
++    {
++        Schema::dropIfExists('pago_abonos');
++
++        Schema::table('pagos', function (Blueprint $table) {
++            $table->dropConstrainedForeignId('periodo_id');
++            $table->dropConstrainedForeignId('especialidad_id');
++            $table->dropConstrainedForeignId('maestro_id');
++            $table->dropConstrainedForeignId('usuario_id');
++            $table->dropColumn(['monto_pagado', 'estado']);
++        });
++    }
++};
+diff --git a/database/seeders/PagoSeeder.php b/database/seeders/PagoSeeder.php
+index d96b657..aebd669 100644
+--- a/database/seeders/PagoSeeder.php
++++ b/database/seeders/PagoSeeder.php
+@@ -94,7 +94,9 @@ class PagoSeeder extends Seeder
+                 continue;
+             }
+ 
+-            Pago::updateOrCreate(
++            $periodo = \App\Models\Periodo::where('mes', 8)->where('anio', 2026)->first();
++
++            $pago = Pago::updateOrCreate(
+                 [
+                     'alumno_id' => $alumno->id,
+                     'mes' => 8,
+@@ -102,6 +104,9 @@ class PagoSeeder extends Seeder
+                     'concepto' => $p['concepto'],
+                 ],
+                 [
++                    'periodo_id' => $periodo->id ?? null,
++                    'especialidad_id' => $alumno->especialidad_id,
++                    'maestro_id' => $alumno->maestro_id,
+                     'monto_total' => $p['monto_total'],
+                     'yape_transferencia' => $p['yape'],
+                     'efectivo' => $p['efectivo'],
+@@ -111,6 +116,21 @@ class PagoSeeder extends Seeder
+                     'fecha_pago' => $p['saldo'] <= 0 ? now()->subDays(rand(1, 15))->format('Y-m-d') : null,
+                 ]
+             );
++
++            // Cada monto por metodo se convierte en su propio abono, como
++            // quedaria si se hubiera registrado desde el modulo nuevo.
++            $pago->abonos()->delete();
++            foreach (['transferencia' => $p['yape'], 'efectivo' => $p['efectivo']] as $metodo => $monto) {
++                if ($monto > 0) {
++                    $pago->abonos()->create([
++                        'monto' => $monto,
++                        'fecha' => $pago->fecha_pago ?? now(),
++                        'metodo_pago' => $metodo,
++                        'recibo_nro' => $p['recibo'],
++                    ]);
++                }
++            }
++            $pago->recalcular();
+         }
+     }
+ }
+diff --git a/resources/views/pagos/anual.blade.php b/resources/views/pagos/anual.blade.php
+new file mode 100644
+index 0000000..4f5c801
+--- /dev/null
++++ b/resources/views/pagos/anual.blade.php
+@@ -0,0 +1,46 @@
++@extends('layouts.app')
++@section('titulo', 'Historial de Pagos Anual')
++
++@section('contenido')
++<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
++    <div>
++        <a href="{{ route('pagos.index') }}" class="text-muted small"><i class="bi bi-arrow-left"></i> Volver a Pagos</a>
++        <h5 class="fw-semibold mb-0 mt-1">Historial de Pagos — {{ $anio }}</h5>
++    </div>
++    <div class="d-flex gap-2">
++        <form class="d-flex gap-2" method="GET">
++            <input type="number" name="anio" value="{{ $anio }}" class="form-control form-control-sm" style="width:100px">
++            <button class="btn btn-sm btn-light">Ver año</button>
++        </form>
++        <button class="btn btn-outline-secondary btn-sm" onclick="window.print()"><i class="bi bi-printer me-1"></i> Imprimir</button>
++    </div>
++</div>
++
++<div class="card p-3">
++    <div class="table-responsive">
++        <table class="table align-middle">
++            <thead><tr><th>Mes</th><th>Pagos registrados</th><th>Facturado</th><th>Recaudado</th><th>Pendiente</th></tr></thead>
++            <tbody>
++            @foreach($resumen as $fila)
++                <tr>
++                    <td class="fw-semibold">{{ $fila['mes'] }}</td>
++                    <td>{{ $fila['cantidad'] }}</td>
++                    <td>S/ {{ number_format($fila['facturado'], 2) }}</td>
++                    <td class="text-success">S/ {{ number_format($fila['recaudado'], 2) }}</td>
++                    <td class="{{ $fila['pendiente'] > 0 ? 'text-danger fw-semibold' : '' }}">S/ {{ number_format($fila['pendiente'], 2) }}</td>
++                </tr>
++            @endforeach
++            </tbody>
++            <tfoot>
++                <tr class="fw-bold">
++                    <td>Total {{ $anio }}</td>
++                    <td>{{ $resumen->sum('cantidad') }}</td>
++                    <td>S/ {{ number_format($resumen->sum('facturado'), 2) }}</td>
++                    <td class="text-success">S/ {{ number_format($resumen->sum('recaudado'), 2) }}</td>
++                    <td class="text-danger">S/ {{ number_format($resumen->sum('pendiente'), 2) }}</td>
++                </tr>
++            </tfoot>
++        </table>
++    </div>
++</div>
++@endsection
+diff --git a/resources/views/pagos/index.blade.php b/resources/views/pagos/index.blade.php
+index 1380a5e..065baf0 100644
+--- a/resources/views/pagos/index.blade.php
++++ b/resources/views/pagos/index.blade.php
+@@ -5,65 +5,92 @@
+ <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+     <div>
+         <h5 class="fw-semibold mb-0">Pagos / Mensualidades</h5>
+-        <small class="text-muted">{{ \App\Models\Pago::MESES[$mes] }} {{ $anio }}</small>
++        <small class="text-muted">
++            @if($periodos->firstWhere('id', $periodoId))
++                {{ $periodos->firstWhere('id', $periodoId)->nombre }}
++            @else
++                Todos los periodos
++            @endif
++        </small>
++    </div>
++    <div class="d-flex gap-2">
++        <a href="{{ route('pagos.anual') }}" class="btn btn-outline-secondary"><i class="bi bi-calendar-range me-1"></i>Historial anual</a>
++        @auth @if(auth()->user()->esAdmin())
++        <button class="btn btn-morado" data-bs-toggle="modal" data-bs-target="#modalPago" onclick="nuevoPago()"><i class="bi bi-plus-lg me-1"></i> Registrar Pago</button>
++        @else
++        <span class="badge bg-secondary align-self-center"><i class="bi bi-lock-fill me-1"></i>Modo solo lectura (precios reservados al administrador)</span>
++        @endif @endauth
+     </div>
+-    @auth @if(auth()->user()->esAdmin())
+-    <button class="btn btn-morado" data-bs-toggle="modal" data-bs-target="#modalPago" onclick="nuevoPago()"><i class="bi bi-plus-lg me-1"></i> Registrar Pago</button>
+-    @else
+-    <span class="badge bg-secondary"><i class="bi bi-lock-fill me-1"></i>Modo solo lectura (precios reservados al administrador)</span>
+-    @endif @endauth
+ </div>
+ 
+ <div class="row g-3 mb-3">
+-    <div class="col-md-4"><div class="card p-3 card-kpi"><div class="text-muted small">Recaudado del mes</div><div class="fs-4 fw-bold text-success">S/ {{ number_format($totales['recaudado'], 2) }}</div></div></div>
+-    <div class="col-md-4"><div class="card p-3 card-kpi"><div class="text-muted small">Pendiente de cobro</div><div class="fs-4 fw-bold text-danger">S/ {{ number_format($totales['pendiente'], 2) }}</div></div></div>
++    <div class="col-md-4"><div class="card p-3 card-kpi"><div class="text-muted small">Facturado</div><div class="fs-5 fw-bold">S/ {{ number_format($totales['facturado'], 2) }}</div></div></div>
++    <div class="col-md-4"><div class="card p-3 card-kpi"><div class="text-muted small">Recaudado</div><div class="fs-5 fw-bold text-success">S/ {{ number_format($totales['recaudado'], 2) }}</div></div></div>
++    <div class="col-md-4"><div class="card p-3 card-kpi"><div class="text-muted small">Pendiente de cobro</div><div class="fs-5 fw-bold text-danger">S/ {{ number_format($totales['pendiente'], 2) }}</div></div></div>
+ </div>
+ 
+ <div class="card p-3 mb-3">
+     <form class="row g-2" method="GET">
+         <div class="col-md-3">
+-            <select name="mes" class="form-select">
+-                @foreach(\App\Models\Pago::MESES as $num => $nombre)
+-                    <option value="{{ $num }}" @selected($mes==$num)>{{ $nombre }}</option>
++            <select name="periodo_id" class="form-select">
++                <option value="">Todos los periodos</option>
++                @foreach($periodos as $p)
++                    <option value="{{ $p->id }}" @selected($periodoId == $p->id)>{{ $p->nombre }}</option>
+                 @endforeach
+             </select>
+         </div>
+         <div class="col-md-2">
+-            <input type="number" name="anio" value="{{ $anio }}" class="form-control">
++            <select name="maestro_id" class="form-select">
++                <option value="">Todos los maestros</option>
++                @foreach($maestros as $m)
++                    <option value="{{ $m->id }}" @selected(request('maestro_id') == $m->id)>{{ $m->nombre }}</option>
++                @endforeach
++            </select>
+         </div>
+-        <div class="col-md-3">
+-            <input type="text" name="buscar" value="{{ request('buscar') }}" class="form-control" placeholder="Buscar alumno...">
++        <div class="col-md-2">
++            <select name="especialidad_id" class="form-select">
++                <option value="">Todos los talleres</option>
++                @foreach($especialidades as $esp)
++                    <option value="{{ $esp->id }}" @selected(request('especialidad_id') == $esp->id)>{{ $esp->nombre }}</option>
++                @endforeach
++            </select>
+         </div>
+-        <div class="col-md-2 d-flex align-items-center">
+-            <div class="form-check">
+-                <input class="form-check-input" type="checkbox" name="solo_pendientes" value="1" id="solo_pendientes" {{ request('solo_pendientes') ? 'checked' : '' }}>
+-                <label class="form-check-label small" for="solo_pendientes">Solo pendientes</label>
+-            </div>
++        <div class="col-md-2">
++            <select name="estado" class="form-select">
++                <option value="">Todos los estados</option>
++                @foreach(\App\Models\Pago::ESTADOS as $key => $label)
++                    <option value="{{ $key }}" @selected(request('estado') == $key)>{{ $label }}</option>
++                @endforeach
++            </select>
++        </div>
++        <div class="col-md-2">
++            <input type="text" name="buscar" value="{{ request('buscar') }}" class="form-control" placeholder="Buscar alumno...">
+         </div>
+-        <div class="col-md-2"><button class="btn btn-light w-100">Filtrar</button></div>
++        <div class="col-md-1"><button class="btn btn-light w-100">Filtrar</button></div>
+     </form>
+ </div>
+ 
+ <div class="card p-3">
+     <div class="table-responsive">
+         <table class="table align-middle">
+-            <thead><tr><th>Alumno</th><th>Concepto</th><th>Total</th><th>Yape/Transf.</th><th>Efectivo</th><th>Tarjeta</th><th>Saldo</th><th>Fecha pago</th><th class="text-end">Acciones</th></tr></thead>
++            <thead><tr><th>Alumno</th><th>Taller</th><th>Periodo</th><th>Monto</th><th>Pagado</th><th>Saldo</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead>
+             <tbody>
+             @forelse($pagos as $p)
+                 <tr>
+                     <td class="fw-semibold">{{ $p->alumno->nombre ?? '—' }}</td>
+-                    <td>{{ $p->concepto ?? '—' }}</td>
++                    <td>{{ $p->especialidad->nombre ?? '—' }}</td>
++                    <td>{{ $p->periodo->nombre ?? ($p->mesLabel().' '.$p->anio) }}</td>
+                     <td>S/ {{ number_format($p->monto_total, 2) }}</td>
+-                    <td>S/ {{ number_format($p->yape_transferencia, 2) }}</td>
+-                    <td>S/ {{ number_format($p->efectivo, 2) }}</td>
+-                    <td>S/ {{ number_format($p->tarjeta, 2) }}</td>
++                    <td>S/ {{ number_format($p->monto_pagado, 2) }}</td>
++                    <td>S/ {{ number_format($p->saldo, 2) }}</td>
+                     <td>
+-                        @if($p->saldo > 0)<span class="text-danger fw-semibold">S/ {{ number_format($p->saldo, 2) }}</span>
+-                        @else<span class="text-success">Pagado</span>@endif
++                        @if($p->estado === 'pagado')<span class="badge bg-success">Pagado</span>
++                        @elseif($p->estado === 'a_cuenta')<span class="badge bg-warning text-dark">A cuenta</span>
++                        @else<span class="badge bg-danger">Pendiente</span>@endif
+                     </td>
+-                    <td>{{ optional($p->fecha_pago)->format('d/m/Y') ?? '—' }}</td>
+                     <td class="text-end">
+-                        <a href="{{ route('pagos.recibo', $p) }}" target="_blank" class="btn btn-sm btn-light btn-icon" title="Recibo PDF"><i class="bi bi-file-earmark-pdf"></i></a>
++                        <button class="btn btn-sm btn-light btn-icon" title="Ver abonos" onclick="verAbonos({{ $p->id }})"><i class="bi bi-cash-coin"></i></button>
++                        <a href="{{ route('pagos.recibo', $p) }}" target="_blank" class="btn btn-sm btn-light btn-icon" title="Resumen PDF"><i class="bi bi-file-earmark-pdf"></i></a>
+                         @auth @if(auth()->user()->esAdmin())
+                         <button class="btn btn-sm btn-light btn-icon" onclick="editarPago({{ $p->id }})"><i class="bi bi-pencil"></i></button>
+                         <button class="btn btn-sm btn-light btn-icon text-danger" onclick="eliminarPago({{ $p->id }}, '{{ $p->alumno->nombre ?? '' }}')"><i class="bi bi-trash"></i></button>
+@@ -71,7 +98,7 @@
+                     </td>
+                 </tr>
+             @empty
+-                <tr><td colspan="9" class="text-center text-muted py-4">No hay pagos registrados para este periodo.</td></tr>
++                <tr><td colspan="8" class="text-center text-muted py-4">No hay pagos registrados con estos filtros.</td></tr>
+             @endforelse
+             </tbody>
+         </table>
+@@ -79,6 +106,61 @@
+     {{ $pagos->links() }}
+ </div>
+ 
++<!-- Modal: ver / registrar abonos de un pago -->
++<div class="modal fade" id="modalAbonos" tabindex="-1">
++    <div class="modal-dialog modal-lg">
++        <div class="modal-content">
++            <div class="modal-header" style="background:#3d2c8d;color:#fff">
++                <h5 class="modal-title">Abonos de <span id="abonos_alumno_nombre"></span></h5>
++                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
++            </div>
++            <div class="modal-body">
++                <input type="hidden" id="abonos_pago_id">
++                <div class="row text-center mb-3">
++                    <div class="col-4"><div class="text-muted small">Total</div><div class="fw-bold" id="abonos_total">—</div></div>
++                    <div class="col-4"><div class="text-muted small">Pagado</div><div class="fw-bold text-success" id="abonos_pagado">—</div></div>
++                    <div class="col-4"><div class="text-muted small">Saldo</div><div class="fw-bold text-danger" id="abonos_saldo">—</div></div>
++                </div>
++                <div class="table-responsive mb-3">
++                    <table class="table table-sm align-middle">
++                        <thead><tr><th>Fecha</th><th>Metodo</th><th>Recibo</th><th>Monto</th><th></th></tr></thead>
++                        <tbody id="abonos_tabla"></tbody>
++                    </table>
++                </div>
++                @auth @if(auth()->user()->esAdmin())
++                <hr>
++                <h6 class="small fw-semibold text-uppercase text-muted">Registrar nuevo abono</h6>
++                <form id="formAbono" class="row g-2">
++                    <div class="col-md-3">
++                        <label class="form-label small">Monto (S/)</label>
++                        <input type="number" step="0.01" min="0.01" class="form-control" id="abono_monto" required>
++                    </div>
++                    <div class="col-md-3">
++                        <label class="form-label small">Fecha</label>
++                        <input type="date" class="form-control" id="abono_fecha" required value="{{ now()->toDateString() }}">
++                    </div>
++                    <div class="col-md-3">
++                        <label class="form-label small">Metodo</label>
++                        <select class="form-select" id="abono_metodo" required>
++                            @foreach(\App\Models\PagoAbono::METODOS as $key => $label)
++                                <option value="{{ $key }}">{{ $label }}</option>
++                            @endforeach
++                        </select>
++                    </div>
++                    <div class="col-md-3">
++                        <label class="form-label small">N° Recibo</label>
++                        <input type="text" class="form-control" id="abono_recibo">
++                    </div>
++                    <div class="col-12">
++                        <button type="submit" class="btn btn-morado w-100 mt-2"><i class="bi bi-plus-lg me-1"></i>Agregar abono</button>
++                    </div>
++                </form>
++                @endif @endauth
++            </div>
++        </div>
++    </div>
++</div>
++
+ @auth @if(auth()->user()->esAdmin())
+ <div class="modal fade" id="modalPago" tabindex="-1">
+     <div class="modal-dialog modal-lg">
+@@ -104,46 +186,65 @@
+                 </div>
+                 <div class="row">
+                     <div class="col-md-4 mb-3">
+-                        <label class="form-label small fw-semibold">Mes</label>
+-                        <select class="form-select" id="pago_mes">
+-                            @foreach(\App\Models\Pago::MESES as $num => $nombre)<option value="{{ $num }}" @selected($mes==$num)>{{ $nombre }}</option>@endforeach
++                        <label class="form-label small fw-semibold">Taller</label>
++                        <select class="form-select" id="pago_especialidad_id">
++                            <option value="">-- Selecciona --</option>
++                            @foreach($especialidades as $esp)<option value="{{ $esp->id }}">{{ $esp->nombre }}</option>@endforeach
+                         </select>
+                     </div>
+                     <div class="col-md-4 mb-3">
+-                        <label class="form-label small fw-semibold">Ano</label>
+-                        <input type="number" class="form-control" id="pago_anio" value="{{ $anio }}">
++                        <label class="form-label small fw-semibold">Maestro</label>
++                        <select class="form-select" id="pago_maestro_id">
++                            <option value="">-- Selecciona --</option>
++                            @foreach($maestros as $m)<option value="{{ $m->id }}">{{ $m->nombre }}</option>@endforeach
++                        </select>
+                     </div>
+                     <div class="col-md-4 mb-3">
+-                        <label class="form-label small fw-semibold">Fecha de pago</label>
+-                        <input type="date" class="form-control" id="pago_fecha_pago">
++                        <label class="form-label small fw-semibold">Periodo</label>
++                        <select class="form-select" id="pago_periodo_id" required>
++                            <option value="">-- Selecciona --</option>
++                            @foreach($periodos as $p)<option value="{{ $p->id }}" @selected($periodoId==$p->id)>{{ $p->nombre }}</option>@endforeach
++                        </select>
+                     </div>
+                 </div>
+                 <div class="row">
+-                    <div class="col-md-3 mb-3">
++                    <div class="col-md-4 mb-3">
+                         <label class="form-label small fw-semibold">Monto total (S/)</label>
+                         <input type="number" step="0.01" min="0" class="form-control" id="pago_monto_total" required>
+                     </div>
+-                    <div class="col-md-3 mb-3">
+-                        <label class="form-label small fw-semibold">Yape/Transf.</label>
+-                        <input type="number" step="0.01" min="0" class="form-control" id="pago_yape">
+-                    </div>
+-                    <div class="col-md-3 mb-3">
+-                        <label class="form-label small fw-semibold">Efectivo</label>
+-                        <input type="number" step="0.01" min="0" class="form-control" id="pago_efectivo">
+-                    </div>
+-                    <div class="col-md-3 mb-3">
+-                        <label class="form-label small fw-semibold">Tarjeta</label>
+-                        <input type="number" step="0.01" min="0" class="form-control" id="pago_tarjeta">
+-                    </div>
+                 </div>
+                 <div class="mb-3">
+-                    <label class="form-label small fw-semibold">N° de recibo</label>
+-                    <input type="text" class="form-control" id="pago_recibo_nro">
+-                </div>
+-                <div class="mb-1">
+                     <label class="form-label small fw-semibold">Observacion</label>
+                     <textarea class="form-control" id="pago_observacion" rows="2"></textarea>
+                 </div>
++
++                <div id="bloquePrimerAbono">
++                    <hr>
++                    <h6 class="small fw-semibold text-uppercase text-muted">Primer abono (opcional)</h6>
++                    <small class="text-muted d-block mb-2">Si el alumno ya pago algo al momento de registrar, complétalo aqui. Si no, deja el monto en blanco y agrega el abono despues desde "Ver abonos".</small>
++                    <div class="row">
++                        <div class="col-md-3 mb-2">
++                            <label class="form-label small">Monto (S/)</label>
++                            <input type="number" step="0.01" min="0" class="form-control" id="abono0_monto">
++                        </div>
++                        <div class="col-md-3 mb-2">
++                            <label class="form-label small">Fecha</label>
++                            <input type="date" class="form-control" id="abono0_fecha" value="{{ now()->toDateString() }}">
++                        </div>
++                        <div class="col-md-3 mb-2">
++                            <label class="form-label small">Metodo</label>
++                            <select class="form-select" id="abono0_metodo">
++                                @foreach(\App\Models\PagoAbono::METODOS as $key => $label)
++                                    <option value="{{ $key }}">{{ $label }}</option>
++                                @endforeach
++                            </select>
++                        </div>
++                        <div class="col-md-3 mb-2">
++                            <label class="form-label small">N° Recibo</label>
++                            <input type="text" class="form-control" id="abono0_recibo">
++                        </div>
++                    </div>
++                </div>
+             </div>
+             <div class="modal-footer">
+                 <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+@@ -157,12 +258,86 @@
+ 
+ @push('scripts')
+ <script>
++    const modalAbonos = new bootstrap.Modal('#modalAbonos');
++    const esAdmin = {{ (auth()->check() && auth()->user()->esAdmin()) ? 'true' : 'false' }};
++
++    function pintarAbonos(pago) {
++        document.getElementById('abonos_pago_id').value = pago.id;
++        document.getElementById('abonos_alumno_nombre').innerText = pago.alumno?.nombre ?? '';
++        document.getElementById('abonos_total').innerText = 'S/ ' + Number(pago.monto_total).toFixed(2);
++        document.getElementById('abonos_pagado').innerText = 'S/ ' + Number(pago.monto_pagado).toFixed(2);
++        document.getElementById('abonos_saldo').innerText = 'S/ ' + Number(pago.saldo).toFixed(2);
++
++        const tbody = document.getElementById('abonos_tabla');
++        tbody.innerHTML = '';
++        (pago.abonos || []).forEach(a => {
++            const tr = document.createElement('tr');
++            tr.innerHTML = `
++                <td>${(a.fecha || '').substring(0,10)}</td>
++                <td>${a.metodo_pago}</td>
++                <td>${a.recibo_nro ?? '—'}</td>
++                <td>S/ ${Number(a.monto).toFixed(2)}</td>
++                <td class="text-end">
++                    <a href="/pagos/${pago.id}/abonos/${a.id}/recibo" target="_blank" class="btn btn-sm btn-light btn-icon" title="Recibo"><i class="bi bi-file-earmark-pdf"></i></a>
++                    ${esAdmin ? `<button class="btn btn-sm btn-light btn-icon text-danger" onclick="eliminarAbono(${pago.id}, ${a.id})"><i class="bi bi-trash"></i></button>` : ''}
++                </td>`;
++            tbody.appendChild(tr);
++        });
++        if (!(pago.abonos || []).length) {
++            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">Aun no hay abonos registrados.</td></tr>';
++        }
++    }
++
++    async function verAbonos(pagoId) {
++        const res = await maFetch(`/pagos/${pagoId}/edit`);
++        if (!res) return;
++        pintarAbonos(res.data);
++        modalAbonos.show();
++    }
++
++    const formAbono = document.getElementById('formAbono');
++    if (formAbono) {
++        formAbono.addEventListener('submit', async (e) => {
++            e.preventDefault();
++            const pagoId = document.getElementById('abonos_pago_id').value;
++            const payload = {
++                monto: document.getElementById('abono_monto').value,
++                fecha: document.getElementById('abono_fecha').value,
++                metodo_pago: document.getElementById('abono_metodo').value,
++                recibo_nro: document.getElementById('abono_recibo').value,
++            };
++            const res = await maFetch(`/pagos/${pagoId}/abonos`, {
++                method: 'POST',
++                headers: { 'Content-Type': 'application/json' },
++                body: JSON.stringify(payload),
++            });
++            if (res && res.ok) {
++                maToast('success', res.message);
++                formAbono.reset();
++                document.getElementById('abono_fecha').value = new Date().toISOString().substring(0, 10);
++                pintarAbonos(res.data);
++                setTimeout(() => location.reload(), 900);
++            }
++        });
++    }
++
++    async function eliminarAbono(pagoId, abonoId) {
++        if (!(await maConfirmarEliminar('este abono'))) return;
++        const res = await maFetch(`/pagos/${pagoId}/abonos/${abonoId}`, { method: 'DELETE' });
++        if (res && res.ok) {
++            maToast('success', res.message);
++            pintarAbonos(res.data);
++            setTimeout(() => location.reload(), 900);
++        }
++    }
++
+ @auth @if(auth()->user()->esAdmin())
+     const modalPago = new bootstrap.Modal('#modalPago');
+ 
+     function nuevoPago() {
+         document.getElementById('formPago').reset();
+         document.getElementById('pago_id').value = '';
++        document.getElementById('bloquePrimerAbono').style.display = 'block';
+         document.getElementById('tituloModalPago').innerText = 'Registrar Pago';
+     }
+ 
+@@ -173,15 +348,12 @@
+         document.getElementById('pago_id').value = d.id;
+         document.getElementById('pago_alumno_id').value = d.alumno_id;
+         document.getElementById('pago_concepto').value = d.concepto ?? '';
+-        document.getElementById('pago_mes').value = d.mes;
+-        document.getElementById('pago_anio').value = d.anio;
+-        document.getElementById('pago_fecha_pago').value = d.fecha_pago ? d.fecha_pago.substring(0,10) : '';
++        document.getElementById('pago_especialidad_id').value = d.especialidad_id ?? '';
++        document.getElementById('pago_maestro_id').value = d.maestro_id ?? '';
++        document.getElementById('pago_periodo_id').value = d.periodo_id ?? '';
+         document.getElementById('pago_monto_total').value = d.monto_total;
+-        document.getElementById('pago_yape').value = d.yape_transferencia;
+-        document.getElementById('pago_efectivo').value = d.efectivo;
+-        document.getElementById('pago_tarjeta').value = d.tarjeta;
+-        document.getElementById('pago_recibo_nro').value = d.recibo_nro ?? '';
+         document.getElementById('pago_observacion').value = d.observacion ?? '';
++        document.getElementById('bloquePrimerAbono').style.display = 'none';
+         document.getElementById('tituloModalPago').innerText = 'Editar Pago';
+         modalPago.show();
+     }
+@@ -191,17 +363,26 @@
+         const id = document.getElementById('pago_id').value;
+         const payload = {
+             alumno_id: document.getElementById('pago_alumno_id').value,
++            especialidad_id: document.getElementById('pago_especialidad_id').value || null,
++            maestro_id: document.getElementById('pago_maestro_id').value || null,
++            periodo_id: document.getElementById('pago_periodo_id').value,
+             concepto: document.getElementById('pago_concepto').value,
+-            mes: document.getElementById('pago_mes').value,
+-            anio: document.getElementById('pago_anio').value,
+-            fecha_pago: document.getElementById('pago_fecha_pago').value || null,
+             monto_total: document.getElementById('pago_monto_total').value || 0,
+-            yape_transferencia: document.getElementById('pago_yape').value || 0,
+-            efectivo: document.getElementById('pago_efectivo').value || 0,
+-            tarjeta: document.getElementById('pago_tarjeta').value || 0,
+-            recibo_nro: document.getElementById('pago_recibo_nro').value,
+             observacion: document.getElementById('pago_observacion').value,
+         };
++
++        if (!id) {
++            const monto0 = document.getElementById('abono0_monto').value;
++            if (monto0 && Number(monto0) > 0) {
++                payload.primer_abono = {
++                    monto: monto0,
++                    fecha: document.getElementById('abono0_fecha').value,
++                    metodo_pago: document.getElementById('abono0_metodo').value,
++                    recibo_nro: document.getElementById('abono0_recibo').value,
++                };
++            }
++        }
++
+         const url = id ? `/pagos/${id}` : '/pagos';
+         const res = await maFetch(url, {
+             method: id ? 'PUT' : 'POST',
+diff --git a/resources/views/pagos/recibo-abono-pdf.blade.php b/resources/views/pagos/recibo-abono-pdf.blade.php
+new file mode 100644
+index 0000000..fc2a8da
+--- /dev/null
++++ b/resources/views/pagos/recibo-abono-pdf.blade.php
+@@ -0,0 +1,41 @@
++<!DOCTYPE html>
++<html>
++<head>
++    <meta charset="UTF-8">
++    <style>
++        body { font-family: Helvetica, Arial, sans-serif; font-size: 12px; color: #222; padding: 10px; }
++        .header { text-align: center; margin-bottom: 15px; }
++        .header h2 { color: #3d2c8d; margin: 5px 0 0; }
++        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
++        td, th { padding: 6px 4px; border-bottom: 1px solid #ddd; text-align: left; }
++        .total { font-size: 16px; font-weight: bold; color: #3d2c8d; }
++        .footer { margin-top: 30px; text-align: center; font-size: 10px; color: #777; }
++    </style>
++</head>
++<body>
++    <div class="header">
++        <h2>MUSICA ARTE - CENTRO CULTURAL</h2>
++        <div>RECIBO DE ABONO N° {{ $abono->recibo_nro ?? $abono->id }}</div>
++    </div>
++
++    <table>
++        <tr><th>Alumno</th><td>{{ $pago->alumno->nombre }}</td></tr>
++        <tr><th>Taller</th><td>{{ $pago->especialidad->nombre ?? '—' }}</td></tr>
++        <tr><th>Concepto</th><td>{{ $pago->concepto ?? 'Mensualidad' }}</td></tr>
++        <tr><th>Periodo</th><td>{{ $pago->periodo->nombre ?? ($pago->mesLabel().' '.$pago->anio) }}</td></tr>
++        <tr><th>Fecha de abono</th><td>{{ $abono->fecha->format('d/m/Y') }}</td></tr>
++        <tr><th>Metodo de pago</th><td>{{ $abono->metodoLabel() }}</td></tr>
++        <tr><th>Registrado por</th><td>{{ $abono->usuario->name ?? '—' }}</td></tr>
++    </table>
++
++    <table>
++        <tr><th class="total">Monto de este abono</th><td class="total">S/ {{ number_format($abono->monto, 2) }}</td></tr>
++        <tr><th>Monto total de la deuda</th><td>S/ {{ number_format($pago->monto_total, 2) }}</td></tr>
++        <tr><th>Saldo pendiente despues de este abono</th><td>S/ {{ number_format($pago->saldo, 2) }}</td></tr>
++    </table>
++
++    <div class="footer">
++        Documento generado por el sistema de gestion Musica Arte &mdash; {{ now()->format('d/m/Y H:i') }}
++    </div>
++</body>
++</html>
+diff --git a/resources/views/pagos/recibo-pdf.blade.php b/resources/views/pagos/recibo-pdf.blade.php
+index ad6ac2f..33ccbff 100644
+--- a/resources/views/pagos/recibo-pdf.blade.php
++++ b/resources/views/pagos/recibo-pdf.blade.php
+@@ -10,32 +10,49 @@
+         td, th { padding: 6px 4px; border-bottom: 1px solid #ddd; text-align: left; }
+         .total { font-size: 15px; font-weight: bold; color: #3d2c8d; }
+         .footer { margin-top: 30px; text-align: center; font-size: 10px; color: #777; }
++        .badge { padding: 2px 8px; border-radius: 10px; font-size: 10px; }
++        .badge-pagado { background: #d1f7dd; color: #1a7a3f; }
++        .badge-a_cuenta { background: #fff3cd; color: #8a6d00; }
++        .badge-pendiente { background: #f8d7da; color: #a12631; }
+     </style>
+ </head>
+ <body>
+     <div class="header">
+         <h2>MUSICA ARTE - CENTRO CULTURAL</h2>
+-        <div>RECIBO DE PAGO N° {{ $pago->recibo_nro ?? $pago->id }}</div>
++        <div>RESUMEN DE PAGO N° {{ $pago->id }}</div>
+     </div>
+ 
+     <table>
+         <tr><th>Alumno</th><td>{{ $pago->alumno->nombre }}</td></tr>
+-        <tr><th>Especialidad</th><td>{{ $pago->alumno->especialidad->nombre ?? '—' }}</td></tr>
++        <tr><th>Taller</th><td>{{ $pago->especialidad->nombre ?? '—' }}</td></tr>
++        <tr><th>Maestro</th><td>{{ $pago->maestro->nombre ?? '—' }}</td></tr>
+         <tr><th>Concepto</th><td>{{ $pago->concepto ?? 'Mensualidad' }}</td></tr>
+-        <tr><th>Periodo</th><td>{{ $pago->mesLabel() }} {{ $pago->anio }}</td></tr>
+-        <tr><th>Fecha de pago</th><td>{{ optional($pago->fecha_pago)->format('d/m/Y') ?? '—' }}</td></tr>
++        <tr><th>Periodo</th><td>{{ $pago->periodo->nombre ?? ($pago->mesLabel().' '.$pago->anio) }}</td></tr>
++        <tr><th>Estado</th><td><span class="badge badge-{{ $pago->estado }}">{{ $pago->estadoLabel() }}</span></td></tr>
+     </table>
+ 
+     <table>
+-        <tr><th>Yape / Transferencia</th><td>S/ {{ number_format($pago->yape_transferencia, 2) }}</td></tr>
+-        <tr><th>Efectivo</th><td>S/ {{ number_format($pago->efectivo, 2) }}</td></tr>
+-        <tr><th>Tarjeta</th><td>S/ {{ number_format($pago->tarjeta, 2) }}</td></tr>
+         <tr><th class="total">Monto Total</th><td class="total">S/ {{ number_format($pago->monto_total, 2) }}</td></tr>
++        <tr><th>Monto Pagado</th><td>S/ {{ number_format($pago->monto_pagado, 2) }}</td></tr>
+         <tr><th>Saldo pendiente</th><td>S/ {{ number_format($pago->saldo, 2) }}</td></tr>
+     </table>
+ 
++    <h4 style="color:#3d2c8d">Detalle de abonos</h4>
++    <table>
++        <tr><th>Fecha</th><th>Metodo</th><th>N° Recibo</th><th>Monto</th></tr>
++        @forelse($pago->abonos as $a)
++        <tr>
++            <td>{{ $a->fecha->format('d/m/Y') }}</td>
++            <td>{{ $a->metodoLabel() }}</td>
++            <td>{{ $a->recibo_nro ?? '—' }}</td>
++            <td>S/ {{ number_format($a->monto, 2) }}</td>
++        </tr>
++        @empty
++        <tr><td colspan="4">Sin abonos registrados.</td></tr>
++        @endforelse
++    </table>
++
+     <div class="footer">
+         Documento generado por el sistema de gestion Musica Arte &mdash; {{ now()->format('d/m/Y H:i') }}
+     </div>
+ </body>
+-</html>
+diff --git a/resources/views/reportes/index.blade.php b/resources/views/reportes/index.blade.php
+index 53ee5aa..c7d3354 100644
+--- a/resources/views/reportes/index.blade.php
++++ b/resources/views/reportes/index.blade.php
+@@ -31,6 +31,15 @@
+             </div>
+         </a>
+     </div>
++    <div class="col-md-4">
++        <a href="{{ route('pagos.anual') }}" class="text-decoration-none">
++            <div class="card p-3 h-100">
++                <i class="bi bi-calendar-range fs-2" style="color:#3d2c8d"></i>
++                <h6 class="fw-semibold mt-2 mb-1">Historial de Pagos Anual</h6>
++                <small class="text-muted">Facturado, recaudado y pendiente mes a mes de todo el año</small>
++            </div>
++        </a>
++    </div>
+     <div class="col-md-4">
+         <a href="{{ route('reportes.pagos-pendientes') }}" class="text-decoration-none">
+             <div class="card p-3 h-100">
+diff --git a/resources/views/reportes/pagos-pendientes.blade.php b/resources/views/reportes/pagos-pendientes.blade.php
+index 8b8d9d8..0d8243c 100644
+--- a/resources/views/reportes/pagos-pendientes.blade.php
++++ b/resources/views/reportes/pagos-pendientes.blade.php
+@@ -1,45 +1,74 @@
+ @extends('layouts.app')
+-@section('titulo', 'Reporte: Pagos Pendientes')
++@section('titulo', 'Reporte: Estado de Pagos')
+ 
+ @section('contenido')
+ <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+     <div>
+         <a href="{{ route('reportes.index') }}" class="text-muted small"><i class="bi bi-arrow-left"></i> Volver a Reportes</a>
+-        <h5 class="fw-semibold mb-0 mt-1">Pagos Pendientes — {{ \App\Models\Pago::MESES[$mes] }} {{ $anio }}</h5>
++        <h5 class="fw-semibold mb-0 mt-1">Estado de Pagos — {{ \App\Models\Pago::MESES[$mes] }} {{ $anio }}</h5>
+     </div>
+-    <div class="d-flex gap-2">
+-        <form class="d-flex gap-2" method="GET">
+-            <select name="mes" class="form-select form-select-sm">
++    <button class="btn btn-outline-secondary btn-sm" onclick="window.print()"><i class="bi bi-printer me-1"></i> Imprimir</button>
++</div>
++
++<div class="card p-3 mb-3">
++    <form class="row g-2" method="GET">
++        <div class="col-md-2">
++            <select name="mes" class="form-select">
+                 @foreach(\App\Models\Pago::MESES as $num => $nombre)<option value="{{ $num }}" @selected($mes==$num)>{{ $nombre }}</option>@endforeach
+             </select>
+-            <input type="number" name="anio" value="{{ $anio }}" class="form-control form-control-sm" style="width:90px">
+-            <button class="btn btn-sm btn-light">Filtrar</button>
+-        </form>
+-        <button class="btn btn-outline-secondary btn-sm" onclick="window.print()"><i class="bi bi-printer me-1"></i> Imprimir</button>
+-    </div>
++        </div>
++        <div class="col-md-2">
++            <input type="number" name="anio" value="{{ $anio }}" class="form-control">
++        </div>
++        <div class="col-md-3">
++            <select name="maestro_id" class="form-select">
++                <option value="">Todos los maestros</option>
++                @foreach($maestros as $m)<option value="{{ $m->id }}" @selected(request('maestro_id')==$m->id)>{{ $m->nombre }}</option>@endforeach
++            </select>
++        </div>
++        <div class="col-md-3">
++            <select name="especialidad_id" class="form-select">
++                <option value="">Todos los talleres</option>
++                @foreach($especialidades as $esp)<option value="{{ $esp->id }}" @selected(request('especialidad_id')==$esp->id)>{{ $esp->nombre }}</option>@endforeach
++            </select>
++        </div>
++        <div class="col-md-2">
++            <select name="estado" class="form-select">
++                <option value="">Pendientes y a cuenta</option>
++                @foreach(\App\Models\Pago::ESTADOS as $key => $label)<option value="{{ $key }}" @selected(request('estado')==$key)>{{ $label }}</option>@endforeach
++            </select>
++        </div>
++        <div class="col-md-12"><button class="btn btn-light">Filtrar</button></div>
++    </form>
+ </div>
+ 
+ @if($data->isEmpty())
+-<div class="alert alert-success"><i class="bi bi-check-circle-fill me-1"></i> No hay pagos pendientes para este periodo.</div>
++<div class="alert alert-success"><i class="bi bi-check-circle-fill me-1"></i> No hay pagos pendientes con estos filtros.</div>
+ @endif
+ 
+ <div class="card p-3">
+     <div class="table-responsive">
+         <table class="table align-middle">
+-            <thead><tr><th>Alumno</th><th>Concepto</th><th>Monto total</th><th>Saldo pendiente</th></tr></thead>
++            <thead><tr><th>Alumno</th><th>Taller</th><th>Maestro</th><th>Monto total</th><th>Pagado</th><th>Saldo pendiente</th><th>Estado</th></tr></thead>
+             <tbody>
+             @forelse($data as $p)
+                 <tr>
+                     <td class="fw-semibold">{{ $p->alumno->nombre ?? '—' }}</td>
+-                    <td>{{ $p->concepto ?? '—' }}</td>
++                    <td>{{ $p->especialidad->nombre ?? '—' }}</td>
++                    <td>{{ $p->maestro->nombre ?? '—' }}</td>
+                     <td>S/ {{ number_format($p->monto_total, 2) }}</td>
++                    <td>S/ {{ number_format($p->monto_pagado, 2) }}</td>
+                     <td class="text-danger fw-bold">S/ {{ number_format($p->saldo, 2) }}</td>
++                    <td>
++                        @if($p->estado === 'a_cuenta')<span class="badge bg-warning text-dark">A cuenta</span>
++                        @else<span class="badge bg-danger">Pendiente</span>@endif
++                    </td>
+                 </tr>
+             @empty
+-                <tr><td colspan="4" class="text-center text-muted py-4">Sin datos.</td></tr>
++                <tr><td colspan="7" class="text-center text-muted py-4">Sin datos.</td></tr>
+             @endforelse
+             </tbody>
+-            <tfoot><tr class="fw-bold"><td colspan="3">Total pendiente</td><td class="text-danger">S/ {{ number_format($data->sum('saldo'), 2) }}</td></tr></tfoot>
++            <tfoot><tr class="fw-bold"><td colspan="5">Total pendiente</td><td class="text-danger">S/ {{ number_format($data->sum('saldo'), 2) }}</td><td></td></tr></tfoot>
+         </table>
+     </div>
+ </div>
+diff --git a/routes/web.php b/routes/web.php
+index bbe3db6..5a238aa 100644
+--- a/routes/web.php
++++ b/routes/web.php
+@@ -85,7 +85,9 @@ Route::middleware('auth')->group(function () {
+     // Ambos roles pueden ver el listado (index).
+     // ---------------------------------------------------------------
+     Route::get('/pagos', [PagoController::class, 'index'])->name('pagos.index');
++    Route::get('/pagos/anual', [PagoController::class, 'anual'])->name('pagos.anual');
+     Route::get('/pagos/{pago}/recibo', [ReciboController::class, 'pdf'])->name('pagos.recibo');
++    Route::get('/pagos/{pago}/abonos/{abono}/recibo', [ReciboController::class, 'pdfAbono'])->name('pagos.abono-recibo');
+     Route::get('/planilla', [PlanillaController::class, 'index'])->name('planilla.index');
+ 
+     Route::middleware('role:admin')->group(function () {
+@@ -93,6 +95,8 @@ Route::middleware('auth')->group(function () {
+         Route::get('/pagos/{pago}/edit', [PagoController::class, 'edit'])->name('pagos.edit');
+         Route::put('/pagos/{pago}', [PagoController::class, 'update'])->name('pagos.update');
+         Route::delete('/pagos/{pago}', [PagoController::class, 'destroy'])->name('pagos.destroy');
++        Route::post('/pagos/{pago}/abonos', [PagoController::class, 'storeAbono'])->name('pagos.abonos.store');
++        Route::delete('/pagos/{pago}/abonos/{abono}', [PagoController::class, 'destroyAbono'])->name('pagos.abonos.destroy');
+ 
+         Route::post('/planilla/generar', [PlanillaController::class, 'generarDesdeAsistencia'])->name('planilla.generar');
+         Route::post('/planilla', [PlanillaController::class, 'store'])->name('planilla.store');
+-- 
+2.43.0
+
