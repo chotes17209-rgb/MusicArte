@@ -13,4 +13,7 @@ php artisan view:cache
 
 php artisan migrate --force
 
-php artisan serve --host=0.0.0.0 --port="$PORT"
+# Hace que Apache escuche en el puerto que Railway asigna
+sed -i "s/80/${PORT}/g" /etc/apache2/ports.conf /etc/apache2/sites-available/000-default.conf
+
+apache2-foreground
