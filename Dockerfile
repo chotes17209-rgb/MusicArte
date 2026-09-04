@@ -5,13 +5,15 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-install pdo pdo_mysql mbstring zip exif pcntl gd \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Disable conflicting MPMs before enabling prefork
-RUN a2dismod mpm_event mpm_worker 2>/dev/null || true && \
-    a2enmod mpm_prefork rewrite
+# Disable conflicting MPMs - do this FIRST before any other apache changes
+RUN a2dismod mpm_event mpm_worker 2>/dev/null || true
 
-# Configure Apache
-RUN sed -i 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/000-default.conf
-RUN sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
+# Now that we have a clean state, enable mpm_prefork and rewrite
+RUN a2enmod mpm_prefork rewrite
+
+# Apply Apache configuration changes
+RUN sed -i 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/000-default.conf && \
+    sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
 
 WORKDIR /var/www/html
 
