@@ -1,0 +1,43 @@
+@extends('layouts.app')
+@section('titulo', 'Reporte: Planilla de Maestros')
+
+@section('contenido')
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+        <a href="{{ route('reportes.index') }}" class="text-muted small"><i class="bi bi-arrow-left"></i> Volver a Reportes</a>
+        <h5 class="fw-semibold mb-0 mt-1">Planilla de Maestros — {{ \App\Models\Pago::MESES[$mes] }} {{ $anio }}</h5>
+    </div>
+    <div class="d-flex gap-2">
+        <form class="d-flex gap-2" method="GET">
+            <select name="mes" class="form-select form-select-sm">
+                @foreach(\App\Models\Pago::MESES as $num => $nombre)<option value="{{ $num }}" @selected($mes==$num)>{{ $nombre }}</option>@endforeach
+            </select>
+            <input type="number" name="anio" value="{{ $anio }}" class="form-control form-control-sm" style="width:90px">
+            <button class="btn btn-sm btn-light">Filtrar</button>
+        </form>
+        <button class="btn btn-outline-secondary btn-sm" onclick="window.print()"><i class="bi bi-printer me-1"></i> Imprimir</button>
+    </div>
+</div>
+
+<div class="card p-3">
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead><tr><th>Maestro</th><th>Alumno</th><th>Especialidad</th><th>Horas</th><th>Monto pagado</th></tr></thead>
+            <tbody>
+            @forelse($data as $p)
+                <tr>
+                    <td class="fw-semibold">{{ $p->maestro->nombre ?? '—' }}</td>
+                    <td>{{ $p->alumno->nombre ?? '—' }}</td>
+                    <td>{{ $p->especialidad->nombre ?? '—' }}</td>
+                    <td>{{ $p->horas }}</td>
+                    <td>S/ {{ number_format($p->monto, 2) }}</td>
+                </tr>
+            @empty
+                <tr><td colspan="5" class="text-center text-muted py-4">Sin datos.</td></tr>
+            @endforelse
+            </tbody>
+            <tfoot><tr class="fw-bold"><td colspan="4">Total</td><td>S/ {{ number_format($data->sum('monto'), 2) }}</td></tr></tfoot>
+        </table>
+    </div>
+</div>
+@endsection
