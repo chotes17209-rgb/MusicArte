@@ -235,8 +235,18 @@
             'Accept': 'application/json',
         }, options.headers || {});
 
+        const metodo = (options.method || 'GET').toUpperCase();
+
         try {
-            const res = await fetch(url, options);
+            let res = await fetch(url, options);
+
+            // El borde de Railway a veces corta la conexion justo al reusarla
+            // (499) sin que la peticion llegue a la app. Como un GET no
+            // modifica nada, es seguro reintentarlo una sola vez en silencio.
+            if (res.status === 499 && metodo === 'GET') {
+                res = await fetch(url, options);
+            }
+
             const data = await res.json().catch(() => ({}));
             if (!res.ok) {
                 if (res.status === 422 && data.errors) {
@@ -310,4 +320,4 @@
 </script>
 @stack('scripts')
 </body>
-</html>
+</html>git add resources/views/layouts/app.blade.php
