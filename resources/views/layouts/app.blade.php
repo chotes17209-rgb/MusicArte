@@ -208,7 +208,11 @@
 
     function maToast(icon, message) { Toast.fire({ icon, title: message }); }
 
-      const _maFetchEnCurso = new Map();
+    // Evita que un doble clic (o doble tap) dispare dos peticiones identicas
+    // en simultaneo. Si ya hay una peticion en curso al mismo metodo+URL,
+    // la segunda llamada reutiliza la promesa de la primera en vez de
+    // abrir una conexion nueva (esto era lo que causaba los 499 en produccion).
+    const _maFetchEnCurso = new Map();
 
     function maFetch(url, options = {}) {
         const clave = `${options.method || 'GET'} ${url}`;
