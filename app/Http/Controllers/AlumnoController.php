@@ -8,6 +8,7 @@ use App\Models\Especialidad;
 use App\Models\Horario;
 use App\Models\Maestro;
 use App\Models\Periodo;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -17,14 +18,39 @@ class AlumnoController extends Controller
     {
         $query = Alumno::with(['especialidad', 'maestro']);
 
+        // 1.3 Busqueda automatica/reactiva: nombre, dni o tutor.
         if ($request->filled('buscar')) {
-            $query->where('nombre', 'like', '%'.$request->buscar.'%');
+            $buscar = $request->buscar;
+            $query->where(function ($q) use ($buscar) {
+                $q->where('nombre', 'like', "%{$buscar}%")
+                    ->orWhere('dni', 'like', "%{$buscar}%")
+                    ->orWhere('tutor', 'like', "%{$buscar}%");
+            });
         }
+
         if ($request->filled('especialidad_id')) {
             $query->where('especialidad_id', $request->especialidad_id);
         }
+
+        // 1.2 Filtro por maestro.
+        if ($request->filled('maestro_id')) {
+            $query->where('maestro_id', $request->maestro_id);
+        }
+
         if ($request->filled('estado')) {
             $query->where('activo', $request->estado === 'activo');
+        }
+
+        // 1.1 Filtro por periodo/mes: se considera "del periodo" al alumno que
+        // tiene al menos un horario/clase programada dentro de ese periodo.
+        // NOTA: en la Fase 3 (gestion de periodos) se creara una tabla pivote
+        // alumno_periodo para poder marcar activo/inactivo por mes de forma
+        // independiente del horario, lo cual hara este filtro mas preciso.
+        if ($request->filled('periodo_id')) {
+            $periodoId = $request->periodo_id;
+            $query->whereHas('horarios', function ($q) use ($periodoId) {
+                $q->where('periodo_id', $periodoId);
+            });
         }
 
         $alumnos = $query->orderBy('nombre')->paginate(15)->withQueryString();
@@ -33,6 +59,15 @@ class AlumnoController extends Controller
         $maestros = Maestro::where('activo', true)->orderBy('nombre')->get();
         $periodos = Periodo::where('activo', true)->orderByDesc('anio')->orderByDesc('mes')->get();
 
+        // Peticion AJAX (busqueda/filtros reactivos): solo devolvemos el
+        // fragmento de la tabla, sin recargar toda la pagina.
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'ok' => true,
+                'html' => view('alumnos._tabla', compact('alumnos'))->render(),
+            ]);
+        }
+
         return view('alumnos.index', compact('alumnos', 'especialidades', 'maestros', 'periodos'));
     }
 
@@ -40,29 +75,30 @@ class AlumnoController extends Controller
     {
         $data = $this->validarDatos($request);
         $alumno = Alumno::create($data);
- 
+
         $mensajeHorario = $this->programarHorario($request, $alumno);
- 
+
         return response()->json(['ok' => true, 'message' => "Alumno '{$alumno->nombre}' registrado correctamente.".$mensajeHorario, 'data' => $alumno]);
     }
- 
+
     public function edit(Alumno $alumno)
     {
         $alumno->load(['horarios' => fn ($q) => $q->where('activo', true)]);
- 
+
         return response()->json(['ok' => true, 'data' => $alumno]);
     }
- 
+
     public function update(Request $request, Alumno $alumno)
     {
         $data = $this->validarDatos($request);
         $alumno->update($data);
- 
+
         $mensajeHorario = $this->programarHorario($request, $alumno);
- 
+
         return response()->json(['ok' => true, 'message' => 'Datos del alumno actualizados.'.$mensajeHorario, 'data' => $alumno]);
     }
-/**
+
+    /**
      * Si el formulario trae periodo + un horario por dia, crea/actualiza el
      * Horario (plantilla semanal) de cada dia del alumno -con su propia hora-
      * y genera automaticamente las Clases en el calendario para todo el rango
@@ -80,7 +116,6 @@ class AlumnoController extends Controller
             'horarios.*.dia_semana' => 'required|integer|between:1,7',
             'horarios.*.hora_inicio' => 'required',
             'horarios.*.hora_fin' => 'required',
-            'horario_salon' => 'nullable|string|max:50',
         ], [
             'periodo_id.required' => 'Selecciona el periodo para programar las clases.',
             'horarios.required' => 'Selecciona al menos un dia de clase.',
@@ -110,7 +145,9 @@ class AlumnoController extends Controller
                         'periodo_id' => $periodo->id,
                         'hora_inicio' => $h['hora_inicio'],
                         'hora_fin' => $h['hora_fin'],
-                        'salon' => $data['horario_salon'] ?? null,
+                        // El salon ahora se gestiona desde el modulo de
+                        // Horarios/Talleres (Fase 2), ya no desde el
+                        // formulario de registro de alumnos.
                         'activo' => true,
                     ]
                 );
@@ -148,6 +185,7 @@ class AlumnoController extends Controller
 
         return " Se generaron {$creadas} clases en el calendario para el periodo {$periodo->nombre}.";
     }
+
     public function destroy(Alumno $alumno)
     {
         $alumno->delete();
@@ -157,9 +195,8 @@ class AlumnoController extends Controller
 
     private function validarDatos(Request $request): array
     {
-        return $request->validate([
+        $data = $request->validate([
             'nombre' => 'required|string|max:150',
-            'edad' => 'nullable|string|max:20',
             'fecha_nacimiento' => 'nullable|date',
             'especialidad_id' => 'nullable|exists:especialidades,id',
             'maestro_id' => 'nullable|exists:maestros,id',
@@ -167,12 +204,31 @@ class AlumnoController extends Controller
             'celular' => 'nullable|string|max:20',
             'dni' => 'nullable|string|max:20',
             'diagnostico' => 'nullable|string',
-            'direccion' => 'nullable|string|max:255',
             'fecha_ingreso' => 'nullable|date',
             'activo' => 'nullable|boolean',
             'observaciones' => 'nullable|string',
         ], [
             'nombre.required' => 'El nombre del alumno es obligatorio.',
         ]);
+
+        // 2.1 Edad automatica: se calcula en el servidor a partir de la
+        // fecha de nacimiento, nunca se toma un valor de edad enviado por
+        // el usuario. Si no hay fecha de nacimiento, no hay edad.
+        $data['edad'] = $this->calcularEdad($data['fecha_nacimiento'] ?? null);
+
+        // 2.2 Ya no se solicita direccion en el formulario. No se incluye en
+        // $data para no sobrescribir con vacio un registro ya existente; el
+        // campo se mantiene en la base de datos solo por compatibilidad con
+        // datos historicos, pero deja de usarse en la aplicacion.
+        return $data;
+    }
+
+    private function calcularEdad(?string $fechaNacimiento): ?int
+    {
+        if (! $fechaNacimiento) {
+            return null;
+        }
+
+        return Carbon::parse($fechaNacimiento)->age;
     }
 }

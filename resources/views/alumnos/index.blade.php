@@ -13,57 +13,54 @@
 </div>
 
 <div class="card p-3 mb-3">
-    <form class="row g-2" method="GET">
-        <div class="col-md-4">
-            <input type="text" name="buscar" class="form-control" placeholder="Buscar por nombre..." value="{{ request('buscar') }}">
-        </div>
+    <form class="row g-2" id="formFiltrosAlumnos" method="GET" onsubmit="return false;">
         <div class="col-md-3">
-            <select name="especialidad_id" class="form-select">
+            <input type="text" name="buscar" id="filtro_buscar" class="form-control"
+                   placeholder="Buscar por nombre, DNI o tutor..." value="{{ request('buscar') }}" autocomplete="off">
+        </div>
+        <div class="col-md-2">
+            <select name="periodo_id" id="filtro_periodo_id" class="form-select">
+                <option value="">Todos los periodos</option>
+                @foreach($periodos as $p)
+                    <option value="{{ $p->id }}" @selected(request('periodo_id') == $p->id)>{{ $p->nombre }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select name="maestro_id" id="filtro_maestro_id" class="form-select">
+                <option value="">Todos los maestros</option>
+                @foreach($maestros as $m)
+                    <option value="{{ $m->id }}" @selected(request('maestro_id') == $m->id)>{{ $m->nombre }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select name="especialidad_id" id="filtro_especialidad_id" class="form-select">
                 <option value="">Todas las especialidades</option>
                 @foreach($especialidades as $esp)
                     <option value="{{ $esp->id }}" @selected(request('especialidad_id') == $esp->id)>{{ $esp->nombre }}</option>
                 @endforeach
             </select>
         </div>
-        <div class="col-md-3">
-            <select name="estado" class="form-select">
+        <div class="col-md-2">
+            <select name="estado" id="filtro_estado" class="form-select">
                 <option value="">Todos los estados</option>
                 <option value="activo" @selected(request('estado')=='activo')>Activos</option>
                 <option value="inactivo" @selected(request('estado')=='inactivo')>Inactivos</option>
             </select>
         </div>
-        <div class="col-md-2">
-            <button class="btn btn-light w-100"><i class="bi bi-search me-1"></i>Filtrar</button>
+        <div class="col-md-1 d-grid">
+            <button type="button" class="btn btn-light" onclick="limpiarFiltrosAlumnos()" title="Limpiar filtros">
+                <i class="bi bi-x-lg"></i>
+            </button>
         </div>
     </form>
 </div>
 
 <div class="card p-3">
-    <div class="table-responsive">
-        <table class="table align-middle">
-            <thead><tr><th>Nombre</th><th>Edad</th><th>Especialidad</th><th>Maestro</th><th>Tutor</th><th>Celular</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead>
-            <tbody>
-            @forelse($alumnos as $a)
-                <tr>
-                    <td class="fw-semibold">{{ $a->nombre }}</td>
-                    <td>{{ $a->edad ?? '—' }}</td>
-                    <td>{{ $a->especialidad->nombre ?? '—' }}</td>
-                    <td>{{ $a->maestro->nombre ?? '—' }}</td>
-                    <td>{{ $a->tutor ?? '—' }}</td>
-                    <td>{{ $a->celular ?? '—' }}</td>
-                    <td>@if($a->activo)<span class="badge bg-success">Activo</span>@else<span class="badge bg-secondary">Inactivo</span>@endif</td>
-                    <td class="text-end">
-                        <button class="btn btn-sm btn-light btn-icon" onclick="editarAlumno({{ $a->id }})"><i class="bi bi-pencil"></i></button>
-                        <button class="btn btn-sm btn-light btn-icon text-danger" onclick="eliminarAlumno({{ $a->id }}, '{{ $a->nombre }}')"><i class="bi bi-trash"></i></button>
-                    </td>
-                </tr>
-            @empty
-                <tr><td colspan="8" class="text-center text-muted py-4">No se encontraron alumnos con los filtros aplicados.</td></tr>
-            @endforelse
-            </tbody>
-        </table>
+    <div id="tablaAlumnosWrap">
+        @include('alumnos._tabla')
     </div>
-    {{ $alumnos->links() }}
 </div>
 
 <div class="modal fade" id="modalAlumno" tabindex="-1">
@@ -82,7 +79,9 @@
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label small fw-semibold">Edad</label>
-                        <input type="text" class="form-control" id="alumno_edad" placeholder="Ej. 9 anos">
+                        <input type="text" class="form-control" id="alumno_edad" readonly tabindex="-1"
+                               placeholder="Se calcula sola">
+                        <small class="text-muted">Se calcula automaticamente desde la fecha de nacimiento.</small>
                     </div>
                 </div>
                 <div class="row">
@@ -125,14 +124,10 @@
                         <input type="text" class="form-control" id="alumno_celular">
                     </div>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label small fw-semibold">Direccion</label>
-                    <input type="text" class="form-control" id="alumno_direccion">
-                </div>
                 <hr>
                 <h6 class="fw-semibold small text-uppercase text-muted mb-2">Programar clases (opcional)</h6>
                 <div class="row">
-                    <div class="col-md-8 mb-2">
+                    <div class="col-md-12 mb-2">
                         <label class="form-label small fw-semibold">Periodo</label>
                         <select class="form-select" id="alumno_periodo_id">
                             <option value="">-- No programar clases ahora --</option>
@@ -143,10 +138,6 @@
                             @endforeach
                         </select>
                         <small class="text-muted" id="alumno_periodo_duracion"></small>
-                    </div>
-                    <div class="col-md-4 mb-2">
-                        <label class="form-label small fw-semibold">Salon</label>
-                        <input type="text" class="form-control" id="alumno_horario_salon">
                     </div>
                 </div>
                 <div class="mb-3">
@@ -171,7 +162,7 @@
                             </tbody>
                         </table>
                     </div>
-                    <small class="text-muted">Cada dia puede tener una hora distinta (ej. Martes 4pm, Miercoles y Jueves 5pm). Al guardar, las clases se crean automaticamente en el calendario para todo el periodo.</small>
+                    <small class="text-muted">Cada dia puede tener una hora distinta (ej. Martes 4pm, Miercoles y Jueves 5pm). Al guardar, las clases se crean automaticamente en el calendario para todo el periodo. El salon se asigna desde el modulo de Horarios.</small>
                 </div>
                 <div class="row">
                     <div class="col-md-6 mb-3">
@@ -207,9 +198,32 @@
 <script>
     const modalAlumno = new bootstrap.Modal('#modalAlumno');
 
+    /* ---------------------------------------------------------------
+     * 2.1 Edad automatica: se recalcula cada vez que cambia la fecha
+     * de nacimiento. El campo de edad es de solo lectura.
+     * ------------------------------------------------------------- */
+    function calcularEdadDesdeFecha(fechaTexto) {
+        if (!fechaTexto) return '';
+        const nacimiento = new Date(fechaTexto + 'T00:00:00');
+        if (isNaN(nacimiento.getTime())) return '';
+
+        const hoy = new Date();
+        let edad = hoy.getFullYear() - nacimiento.getFullYear();
+        const aunNoCumple = (hoy.getMonth() < nacimiento.getMonth()) ||
+            (hoy.getMonth() === nacimiento.getMonth() && hoy.getDate() < nacimiento.getDate());
+        if (aunNoCumple) edad--;
+
+        return edad >= 0 ? edad : '';
+    }
+
+    document.getElementById('alumno_fecha_nacimiento').addEventListener('change', function () {
+        document.getElementById('alumno_edad').value = calcularEdadDesdeFecha(this.value);
+    });
+
     function nuevoAlumno() {
         document.getElementById('formAlumno').reset();
         document.getElementById('alumno_id').value = '';
+        document.getElementById('alumno_edad').value = '';
         document.getElementById('alumno_periodo_duracion').innerText = '';
         for (let diaNum = 1; diaNum <= 7; diaNum++) {
             document.getElementById('alumno_dia_' + diaNum + '_inicio').disabled = true;
@@ -245,14 +259,13 @@
 
         document.getElementById('alumno_id').value = d.id;
         document.getElementById('alumno_nombre').value = d.nombre;
-        document.getElementById('alumno_edad').value = d.edad ?? '';
         document.getElementById('alumno_fecha_nacimiento').value = d.fecha_nacimiento ?? '';
+        document.getElementById('alumno_edad').value = d.fecha_nacimiento ? calcularEdadDesdeFecha(d.fecha_nacimiento) : (d.edad ?? '');
         document.getElementById('alumno_dni').value = d.dni ?? '';
         document.getElementById('alumno_especialidad_id').value = d.especialidad_id ?? '';
         document.getElementById('alumno_maestro_id').value = d.maestro_id ?? '';
         document.getElementById('alumno_tutor').value = d.tutor ?? '';
         document.getElementById('alumno_celular').value = d.celular ?? '';
-        document.getElementById('alumno_direccion').value = d.direccion ?? '';
         document.getElementById('alumno_fecha_ingreso').value = d.fecha_ingreso ?? '';
         document.getElementById('alumno_activo').checked = !!d.activo;
         document.getElementById('alumno_diagnostico').value = d.diagnostico ?? '';
@@ -263,7 +276,6 @@
         try {
             const periodoSel = document.getElementById('alumno_periodo_id');
             const duracionTxt = document.getElementById('alumno_periodo_duracion');
-            const salonInput = document.getElementById('alumno_horario_salon');
 
             for (let diaNum = 1; diaNum <= 7; diaNum++) {
                 const cb = document.getElementById('alumno_dia_' + diaNum);
@@ -275,7 +287,6 @@
             }
             if (periodoSel) periodoSel.value = '';
             if (duracionTxt) duracionTxt.innerText = '';
-            if (salonInput) salonInput.value = '';
 
             if (d.horarios && d.horarios.length) {
                 d.horarios.forEach(h => {
@@ -288,7 +299,6 @@
                 });
 
                 const h0 = d.horarios[0];
-                if (salonInput) salonInput.value = h0.salon ?? '';
                 if (h0.periodo_id && periodoSel) {
                     periodoSel.value = h0.periodo_id;
                     periodoSel.dispatchEvent(new Event('change'));
@@ -339,14 +349,12 @@
 
         const payload = {
             nombre: document.getElementById('alumno_nombre').value,
-            edad: document.getElementById('alumno_edad').value,
             fecha_nacimiento: document.getElementById('alumno_fecha_nacimiento').value || null,
             dni: document.getElementById('alumno_dni').value,
             especialidad_id: document.getElementById('alumno_especialidad_id').value || null,
             maestro_id: document.getElementById('alumno_maestro_id').value || null,
             tutor: document.getElementById('alumno_tutor').value,
             celular: document.getElementById('alumno_celular').value,
-            direccion: document.getElementById('alumno_direccion').value,
             fecha_ingreso: document.getElementById('alumno_fecha_ingreso').value || null,
             activo: document.getElementById('alumno_activo').checked ? 1 : 0,
             diagnostico: document.getElementById('alumno_diagnostico').value,
@@ -356,7 +364,6 @@
         if (periodoId && horariosDias.length) {
             payload.periodo_id = periodoId;
             payload.horarios = horariosDias;
-            payload.horario_salon = document.getElementById('alumno_horario_salon').value;
         }
 
         const url = id ? `/alumnos/${id}` : '/alumnos';
@@ -368,7 +375,7 @@
         if (res && res.ok) {
             maToast('success', res.message);
             modalAlumno.hide();
-            setTimeout(() => location.reload(), 700);
+            buscarAlumnosReactivo();
         }
     });
 
@@ -377,8 +384,55 @@
         const res = await maFetch(`/alumnos/${id}`, { method: 'DELETE' });
         if (res && res.ok) {
             maToast('success', res.message);
-            setTimeout(() => location.reload(), 700);
+            buscarAlumnosReactivo();
         }
     }
+
+    /* ---------------------------------------------------------------
+     * 1.1 / 1.2 / 1.3 Filtros y busqueda reactiva (sin boton "Buscar").
+     * Cada cambio en los filtros, o cada tecla escrita en "buscar" (con
+     * un pequeno debounce), recarga solo la tabla via AJAX.
+     * ------------------------------------------------------------- */
+    let debounceBuscarAlumnos = null;
+
+    async function buscarAlumnosReactivo(url = null) {
+        const form = document.getElementById('formFiltrosAlumnos');
+        const params = new URLSearchParams(new FormData(form));
+        const target = url || (`{{ route('alumnos.index') }}?` + params.toString());
+
+        const res = await fetch(target, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        document.getElementById('tablaAlumnosWrap').innerHTML = data.html;
+
+        // URL navegable/compartible con los filtros aplicados, sin recargar.
+        window.history.replaceState({}, '', `{{ route('alumnos.index') }}?` + params.toString());
+    }
+
+    document.getElementById('filtro_buscar').addEventListener('input', function () {
+        clearTimeout(debounceBuscarAlumnos);
+        debounceBuscarAlumnos = setTimeout(() => buscarAlumnosReactivo(), 350);
+    });
+
+    ['filtro_periodo_id', 'filtro_maestro_id', 'filtro_especialidad_id', 'filtro_estado'].forEach(id => {
+        document.getElementById(id).addEventListener('change', () => buscarAlumnosReactivo());
+    });
+
+    function limpiarFiltrosAlumnos() {
+        document.getElementById('formFiltrosAlumnos').reset();
+        buscarAlumnosReactivo();
+    }
+
+    // Permite que los links de paginacion (dentro de la tabla) tambien
+    // recarguen solo la tabla, sin salir de la busqueda reactiva.
+    document.getElementById('tablaAlumnosWrap').addEventListener('click', function (e) {
+        const link = e.target.closest('a');
+        if (!link || !link.href) return;
+        if (!link.closest('.pagination') && !link.closest('nav')) return;
+        e.preventDefault();
+        buscarAlumnosReactivo(link.href);
+    });
 </script>
 @endpush

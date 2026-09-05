@@ -208,7 +208,23 @@
 
     function maToast(icon, message) { Toast.fire({ icon, title: message }); }
 
-    async function maFetch(url, options = {}) {
+      const _maFetchEnCurso = new Map();
+
+    function maFetch(url, options = {}) {
+        const clave = `${options.method || 'GET'} ${url}`;
+        if (_maFetchEnCurso.has(clave)) {
+            return _maFetchEnCurso.get(clave);
+        }
+
+        const promesa = _maFetchEjecutar(url, options).finally(() => {
+            _maFetchEnCurso.delete(clave);
+        });
+
+        _maFetchEnCurso.set(clave, promesa);
+        return promesa;
+    }
+
+    async function _maFetchEjecutar(url, options) {
         options.headers = Object.assign({
             'X-CSRF-TOKEN': CSRF_TOKEN,
             'X-Requested-With': 'XMLHttpRequest',
