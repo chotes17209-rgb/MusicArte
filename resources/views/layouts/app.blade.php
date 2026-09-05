@@ -228,6 +228,8 @@
         return promesa;
     }
 
+    function _esperar(ms) { return new Promise(r => setTimeout(r, ms)); }
+
     async function _maFetchEjecutar(url, options) {
         options.headers = Object.assign({
             'X-CSRF-TOKEN': CSRF_TOKEN,
@@ -236,15 +238,20 @@
         }, options.headers || {});
 
         const metodo = (options.method || 'GET').toUpperCase();
+        const esperas = [250, 600]; // ms antes de cada reintento
 
         try {
             let res = await fetch(url, options);
 
             // El borde de Railway a veces corta la conexion justo al reusarla
             // (499) sin que la peticion llegue a la app. Como un GET no
-            // modifica nada, es seguro reintentarlo una sola vez en silencio.
-            if (res.status === 499 && metodo === 'GET') {
+            // modifica nada, es seguro reintentarlo en silencio. Se espera
+            // un poco entre intentos para no reusar la misma conexion rota.
+            let intento = 0;
+            while (res.status === 499 && metodo === 'GET' && intento < esperas.length) {
+                await _esperar(esperas[intento]);
                 res = await fetch(url, options);
+                intento++;
             }
 
             const data = await res.json().catch(() => ({}));
@@ -320,4 +327,4 @@
 </script>
 @stack('scripts')
 </body>
-</html>git add resources/views/layouts/app.blade.php
+</html>
