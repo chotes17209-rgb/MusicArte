@@ -4,11 +4,22 @@
 @push('estilos')
 <link href="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/6.1.11/index.global.min.css" rel="stylesheet">
 <style>
-    #calendar { background: #fff; border-radius: 14px; padding: 1rem; border: 1px solid #edeef5; }
-    .fc-event { cursor: pointer; border: none !important; padding: 2px 4px; }
-    .fc-toolbar-title { font-size: 1.1rem !important; font-weight: 600; color: #3d2c8d; }
-    .fc-button-primary { background: #3d2c8d !important; border-color: #3d2c8d !important; }
+    /* Seccion 5: calendario mas moderno y ordenado. Semana de Lunes a
+       Domingo (firstDay:1 en la config de FullCalendar mas abajo), asi
+       el Domingo siempre cae correctamente al lado derecho. */
+    #calendar { background: #fff; border-radius: 16px; padding: 1.25rem; border: 1px solid #edeef5; box-shadow: 0 2px 10px rgba(61,44,141,.04); }
+    .fc { font-family: inherit; }
+    .fc-event { cursor: pointer; border: none !important; padding: 3px 6px; border-radius: 6px !important; font-size: .8rem; font-weight: 500; }
+    .fc-toolbar-title { font-size: 1.15rem !important; font-weight: 700; color: #3d2c8d; }
+    .fc-button-primary { background: #3d2c8d !important; border-color: #3d2c8d !important; border-radius: 8px !important; text-transform: capitalize; }
     .fc-button-primary:hover { background: #2a1e63 !important; }
+    .fc-button-active { background: #2a1e63 !important; }
+    .fc-col-header-cell { background: #f7f6fc; text-transform: uppercase; font-size: .72rem; letter-spacing: .04em; color: #3d2c8d; padding: 8px 0; }
+    .fc-day-sun .fc-col-header-cell-cushion, .fc-day-sun.fc-daygrid-day-number { color: #a3288c; }
+    .fc-daygrid-day.fc-day-today, .fc-timegrid-col.fc-day-today { background: #f1eefb !important; }
+    .fc-scrollgrid { border-radius: 10px; overflow: hidden; }
+    .fc-timegrid-slot-label, .fc-timegrid-axis-cushion { font-size: .75rem; color: #777; }
+    #filtroMaestro, #filtroAlumno { border-radius: 8px; }
 </style>
 @endpush
 
@@ -176,6 +187,9 @@
         const calendarEl = document.getElementById('calendar');
         calendar = new FullCalendar.Calendar(calendarEl, {
             locale: 'es',
+            // Seccion 5: la semana siempre inicia en Lunes, asi el Domingo
+            // queda correctamente ubicado al lado derecho.
+            firstDay: 1,
             initialView: 'timeGridWeek',
             headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek' },
             slotMinTime: '08:00:00',

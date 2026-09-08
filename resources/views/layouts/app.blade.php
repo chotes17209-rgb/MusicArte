@@ -93,6 +93,35 @@
         }
         .toggler-mobile { display: none; }
         @media (max-width: 991px) { .toggler-mobile { display: inline-flex; } }
+
+        /* Toques modernos generales: tarjetas con leve elevacion al pasar el mouse */
+        .card { transition: box-shadow .15s ease, transform .15s ease; }
+        .card.p-3:hover, .card.p-4:hover { box-shadow: 0 6px 20px rgba(61,44,141,.10); }
+        a .card:hover { transform: translateY(-2px); }
+        .badge { font-weight: 600; letter-spacing: .2px; }
+        ::-webkit-scrollbar { height: 8px; width: 8px; }
+        ::-webkit-scrollbar-thumb { background: #d7d3ee; border-radius: 10px; }
+
+        /* --------------------------------------------------------------
+         * Tablero de horarios por maestro: replica el cuadro fisico de
+         * horarios (hoja pegada en salon), pero digital y responsive.
+         * -------------------------------------------------------------- */
+        .tablero-maestro { border: 1px solid #e3e1f2; border-radius: 12px; overflow: hidden; margin-bottom: 1.25rem; background: #fff; }
+        .tablero-header { background: linear-gradient(90deg, var(--ma-morado), var(--ma-morado-oscuro)); color: #fff; padding: .6rem 1rem; display: flex; align-items: baseline; gap: .6rem; flex-wrap: wrap; }
+        .tablero-titulo { font-weight: 700; letter-spacing: .3px; font-size: .95rem; }
+        .tablero-sub { font-size: .78rem; opacity: .85; }
+        table.tablero-tabla { margin-bottom: 0; border-collapse: separate; border-spacing: 0; }
+        table.tablero-tabla th { background: #f1eefb; color: #3d2c8d; font-size: .72rem; text-transform: uppercase; text-align: center; padding: .5rem .35rem; border-bottom: 1px solid #e3e1f2; white-space: nowrap; }
+        table.tablero-tabla td { border: 1px solid #eeecf8; padding: .4rem .45rem; font-size: .82rem; vertical-align: top; }
+        table.tablero-tabla td.col-hora { background: #faf9fd; font-weight: 600; color: #3d2c8d; text-align: center; white-space: nowrap; width: 90px; }
+        table.tablero-tabla td.celda-ocupada { background: #fbf6df; }
+        .alumno-celda { line-height: 1.3; }
+        .alumno-celda + .alumno-celda { margin-top: 4px; padding-top: 4px; border-top: 1px dashed #e3d9a8; }
+        .alumno-celda.inactivo { color: #b02a37; text-decoration: line-through; opacity: .75; }
+        .edad-celda { color: #6b6b80; font-size: .78em; margin-left: 2px; }
+        @media (max-width: 575px) {
+            table.tablero-tabla th, table.tablero-tabla td { font-size: .74rem; padding: .3rem; }
+        }
     </style>
     @stack('estilos')
 </head>

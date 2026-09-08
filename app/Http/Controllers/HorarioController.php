@@ -12,15 +12,55 @@ use Illuminate\Support\Facades\DB;
 
 class HorarioController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $horarios = Horario::with(['alumno', 'maestro', 'especialidad'])
+        $periodoId = $request->get('periodo_id')
+            ?? \App\Models\Periodo::where('activo', true)->orderByDesc('anio')->orderByDesc('mes')->value('id');
+
+        $horarios = Horario::with(['alumno', 'maestro', 'especialidad', 'periodo'])
+            ->when($periodoId, fn ($q) => $q->where('periodo_id', $periodoId))
             ->orderBy('dia_semana')->orderBy('hora_inicio')->get();
 
         $alumnos = Alumno::activos()->orderBy('nombre')->get();
         $maestros = Maestro::where('activo', true)->orderBy('nombre')->get();
+        $especialidades = \App\Models\Especialidad::where('activo', true)->orderBy('nombre')->get();
+        $periodos = \App\Models\Periodo::orderByDesc('anio')->orderByDesc('mes')->get();
 
-        return view('horarios.index', compact('horarios', 'alumnos', 'maestros'));
+        return view('horarios.index', compact('horarios', 'alumnos', 'maestros', 'especialidades', 'periodos', 'periodoId'));
+    }
+
+    /**
+     * "Tablero de horarios": el equivalente digital del cuadro fisico que
+     * se pegaba en cada salon (maestro, dia y hora en una grilla). Un
+     * bloque por cada maestro activo, para el periodo seleccionado, ya que
+     * los horarios y hasta el maestro asignado pueden variar de un mes a
+     * otro (por eso siempre se elige el periodo primero).
+     */
+    public function tablero(Request $request)
+    {
+        $periodoId = $request->get('periodo_id')
+            ?? \App\Models\Periodo::where('activo', true)->orderByDesc('anio')->orderByDesc('mes')->value('id');
+
+        $periodo = $periodoId ? \App\Models\Periodo::find($periodoId) : null;
+        $periodos = \App\Models\Periodo::orderByDesc('anio')->orderByDesc('mes')->get();
+
+        $maestroFiltroId = $request->get('maestro_id');
+
+        $maestros = Maestro::where('activo', true)
+            ->when($maestroFiltroId, fn ($q) => $q->where('id', $maestroFiltroId))
+            ->orderBy('nombre')->get();
+
+        $horariosPorMaestro = collect();
+        if ($periodo) {
+            $horariosPorMaestro = Horario::with(['alumno', 'especialidad'])
+                ->where('periodo_id', $periodo->id)
+                ->whereIn('maestro_id', $maestros->pluck('id'))
+                ->orderBy('dia_semana')->orderBy('hora_inicio')
+                ->get()
+                ->groupBy('maestro_id');
+        }
+
+        return view('horarios.tablero', compact('maestros', 'horariosPorMaestro', 'periodo', 'periodos', 'maestroFiltroId'));
     }
 
     /**
@@ -183,6 +223,7 @@ class HorarioController extends Controller
             'alumno_id' => 'required|exists:alumnos,id',
             'maestro_id' => 'nullable|exists:maestros,id',
             'especialidad_id' => 'nullable|exists:especialidades,id',
+            'periodo_id' => 'required|exists:periodos,id',
             'dia_semana' => 'required|integer|between:1,7',
             'hora_inicio' => 'required',
             'hora_fin' => 'required|after:hora_inicio',
@@ -190,6 +231,7 @@ class HorarioController extends Controller
             'activo' => 'nullable|boolean',
         ], [
             'alumno_id.required' => 'Selecciona un alumno.',
+            'periodo_id.required' => 'Selecciona el periodo al que pertenece este horario.',
             'dia_semana.required' => 'Selecciona el dia de la semana.',
             'hora_fin.after' => 'La hora de fin debe ser posterior a la hora de inicio.',
         ]);

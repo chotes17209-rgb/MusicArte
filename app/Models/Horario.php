@@ -12,7 +12,7 @@ class Horario extends Model
     protected $table = 'horarios';
 
     protected $fillable = [
-        'alumno_id', 'maestro_id', 'especialidad_id', 'periodo_id',
+        'alumno_id', 'alumno_taller_id', 'maestro_id', 'especialidad_id', 'periodo_id',
         'dia_semana', 'hora_inicio', 'hora_fin', 'salon', 'activo',
     ];
 
@@ -31,6 +31,12 @@ class Horario extends Model
         return $this->belongsTo(Alumno::class);
     }
 
+    /** El taller especifico (de los varios que puede tener el alumno) al que pertenece este horario. */
+    public function alumnoTaller()
+    {
+        return $this->belongsTo(AlumnoTaller::class);
+    }
+
     public function maestro()
     {
         return $this->belongsTo(Maestro::class);
@@ -40,7 +46,8 @@ class Horario extends Model
     {
         return $this->belongsTo(Especialidad::class);
     }
-        public function periodo()
+
+    public function periodo()
     {
         return $this->belongsTo(Periodo::class);
     }

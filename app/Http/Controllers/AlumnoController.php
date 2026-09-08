@@ -3,11 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Alumno;
-use App\Models\Clase;
+use App\Models\AlumnoTaller;
 use App\Models\Especialidad;
-use App\Models\Horario;
 use App\Models\Maestro;
 use App\Models\Periodo;
+use App\Services\HorarioService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,7 +16,90 @@ class AlumnoController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Alumno::with(['especialidad', 'maestro']);
+        $query = $this->aplicarFiltros($request);
+
+        $alumnos = $query->orderBy('nombre')->paginate(15)->withQueryString();
+
+        $especialidades = Especialidad::where('activo', true)->orderBy('nombre')->get();
+        $maestros = Maestro::where('activo', true)->orderBy('nombre')->get();
+        $periodos = Periodo::where('activo', true)->orderByDesc('anio')->orderByDesc('mes')->get();
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'ok' => true,
+                'html' => view('alumnos._tabla', compact('alumnos'))->render(),
+            ]);
+        }
+
+        return view('alumnos.index', compact('alumnos', 'especialidades', 'maestros', 'periodos'));
+    }
+
+    /**
+     * "Ver" alumno (CRUD completo: la R de "Read"). Muestra el perfil
+     * completo y, sobre todo, la LINEA DE TIEMPO por periodo: con que
+     * maestro/taller/horario estuvo en cada mes. Se arma a partir de los
+     * horarios reales (Horario), que nunca se sobreescriben entre periodos
+     * (ver HorarioService), asi que es la fuente mas confiable para
+     * responder "con que maestro estuvo en enero" sin importar si el
+     * taller se edito o se creo uno nuevo para reinscribirlo.
+     */
+    public function show(Alumno $alumno)
+    {
+        $alumno->load(['especialidad', 'maestro']);
+
+        $horariosPorPeriodo = \App\Models\Horario::with(['maestro', 'especialidad', 'periodo'])
+            ->where('alumno_id', $alumno->id)
+            ->get()
+            ->groupBy('periodo_id');
+
+        $estadosPorPeriodo = $alumno->historialPeriodos()->pluck('estado', 'periodo_id');
+
+        $idsPeriodos = $horariosPorPeriodo->keys()
+            ->merge($estadosPorPeriodo->keys())
+            ->merge($alumno->talleres()->pluck('periodo_id'))
+            ->filter()->unique();
+
+        $periodos = Periodo::whereIn('id', $idsPeriodos)->orderByDesc('anio')->orderByDesc('mes')->get();
+
+        $lineaDeTiempo = $periodos->map(function ($periodo) use ($horariosPorPeriodo, $estadosPorPeriodo, $alumno) {
+            $horarios = $horariosPorPeriodo->get($periodo->id, collect());
+            $talleresDelPeriodo = $alumno->talleres()->where('periodo_id', $periodo->id)
+                ->with(['especialidad', 'maestro'])->get();
+
+            return [
+                'periodo' => $periodo,
+                'estado' => $estadosPorPeriodo->get($periodo->id, $horarios->isNotEmpty() ? 'activo' : null),
+                'horarios' => $horarios->sortBy('dia_semana'),
+                'talleres' => $talleresDelPeriodo,
+            ];
+        });
+
+        $pagos = $alumno->pagos()->orderByDesc('anio')->orderByDesc('mes')->limit(12)->get();
+        $tallerActual = $alumno->talleres()->where('estado', 'activo')->with(['especialidad', 'maestro', 'periodo'])->get();
+
+        return view('alumnos.show', compact('alumno', 'lineaDeTiempo', 'pagos', 'tallerActual'));
+    }
+
+    /**
+     * Seccion 18: imprimir la lista de alumnos respetando los mismos
+     * filtros (periodo, maestro, especialidad, estado, busqueda) que se
+     * tenian aplicados en la pantalla de alumnos.
+     */
+    public function imprimir(Request $request)
+    {
+        $alumnos = $this->aplicarFiltros($request)->orderBy('nombre')->get();
+
+        $especialidad = $request->filled('especialidad_id') ? Especialidad::find($request->especialidad_id) : null;
+        $maestro = $request->filled('maestro_id') ? Maestro::find($request->maestro_id) : null;
+        $periodo = $request->filled('periodo_id') ? Periodo::find($request->periodo_id) : null;
+
+        return view('alumnos.imprimir', compact('alumnos', 'especialidad', 'maestro', 'periodo'));
+    }
+
+    private function aplicarFiltros(Request $request)
+    {
+        $query = Alumno::with(['especialidad', 'maestro'])
+            ->withCount(['talleres as talleres_activos_count' => fn ($q) => $q->where('estado', 'activo')]);
 
         // 1.3 Busqueda automatica/reactiva: nombre, dni o tutor.
         if ($request->filled('buscar')) {
@@ -32,20 +115,26 @@ class AlumnoController extends Controller
             $query->where('especialidad_id', $request->especialidad_id);
         }
 
-        // 1.2 Filtro por maestro.
+        // 1.2 Filtro por maestro: revisa tanto el "taller principal" (legado)
+        // como cualquier taller activo del alumno, para cubrir el caso de
+        // alumnos con varios talleres y distintos maestros.
         if ($request->filled('maestro_id')) {
-            $query->where('maestro_id', $request->maestro_id);
+            $maestroId = $request->maestro_id;
+            $query->where(function ($q) use ($maestroId) {
+                $q->where('maestro_id', $maestroId)
+                    ->orWhereHas('talleres', function ($qt) use ($maestroId) {
+                        $qt->where('maestro_id', $maestroId)->where('estado', 'activo');
+                    });
+            });
         }
 
         if ($request->filled('estado')) {
             $query->where('activo', $request->estado === 'activo');
         }
 
-        // 1.1 Filtro por periodo/mes: se considera "del periodo" al alumno que
-        // tiene al menos un horario/clase programada dentro de ese periodo.
-        // NOTA: en la Fase 3 (gestion de periodos) se creara una tabla pivote
-        // alumno_periodo para poder marcar activo/inactivo por mes de forma
-        // independiente del horario, lo cual hara este filtro mas preciso.
+        // 1.1 Filtro por periodo/mes: se considera "del periodo" al alumno
+        // que tiene al menos un horario programado dentro de ese periodo
+        // (en cualquiera de sus talleres).
         if ($request->filled('periodo_id')) {
             $periodoId = $request->periodo_id;
             $query->whereHas('horarios', function ($q) use ($periodoId) {
@@ -53,37 +142,41 @@ class AlumnoController extends Controller
             });
         }
 
-        $alumnos = $query->orderBy('nombre')->paginate(15)->withQueryString();
-
-        $especialidades = Especialidad::where('activo', true)->orderBy('nombre')->get();
-        $maestros = Maestro::where('activo', true)->orderBy('nombre')->get();
-        $periodos = Periodo::where('activo', true)->orderByDesc('anio')->orderByDesc('mes')->get();
-
-        // Peticion AJAX (busqueda/filtros reactivos): solo devolvemos el
-        // fragmento de la tabla, sin recargar toda la pagina.
-        if ($request->ajax() || $request->wantsJson()) {
-            return response()->json([
-                'ok' => true,
-                'html' => view('alumnos._tabla', compact('alumnos'))->render(),
-            ]);
-        }
-
-        return view('alumnos.index', compact('alumnos', 'especialidades', 'maestros', 'periodos'));
+        return $query;
     }
 
     public function store(Request $request)
     {
         $data = $this->validarDatos($request);
-        $alumno = Alumno::create($data);
 
-        $mensajeHorario = $this->programarHorario($request, $alumno);
+        $alumno = DB::transaction(function () use ($request, $data) {
+            $alumno = Alumno::create($data);
+            $this->crearTallerInicial($request, $alumno);
 
-        return response()->json(['ok' => true, 'message' => "Alumno '{$alumno->nombre}' registrado correctamente.".$mensajeHorario, 'data' => $alumno]);
+            return $alumno;
+        });
+
+        $alumno->sincronizarTallerPrincipal();
+
+        return response()->json([
+            'ok' => true,
+            'message' => "Alumno '{$alumno->nombre}' registrado correctamente.",
+            'data' => $alumno->load('talleres.especialidad', 'talleres.maestro'),
+        ]);
     }
 
     public function edit(Alumno $alumno)
     {
-        $alumno->load(['horarios' => fn ($q) => $q->where('activo', true)]);
+        // Un alumno puede tener varios talleres (seccion 3): se cargan todos
+        // (activos e inactivos) con su especialidad, maestro, periodo y su
+        // propio horario, para poder gestionarlos desde el modal.
+        $alumno->load([
+            'talleres' => fn ($q) => $q->orderByDesc('estado')->orderBy('id'),
+            'talleres.especialidad',
+            'talleres.maestro',
+            'talleres.periodo',
+            'talleres.horarios' => fn ($q) => $q->where('activo', true),
+        ]);
 
         return response()->json(['ok' => true, 'data' => $alumno]);
     }
@@ -93,104 +186,47 @@ class AlumnoController extends Controller
         $data = $this->validarDatos($request);
         $alumno->update($data);
 
-        $mensajeHorario = $this->programarHorario($request, $alumno);
-
-        return response()->json(['ok' => true, 'message' => 'Datos del alumno actualizados.'.$mensajeHorario, 'data' => $alumno]);
-    }
-
-    /**
-     * Si el formulario trae periodo + un horario por dia, crea/actualiza el
-     * Horario (plantilla semanal) de cada dia del alumno -con su propia hora-
-     * y genera automaticamente las Clases en el calendario para todo el rango
-     * de fechas del periodo. No hace falta tocar el calendario a mano.
-     */
-    private function programarHorario(Request $request, Alumno $alumno): string
-    {
-        if (empty($request->input('horarios'))) {
-            return '';
-        }
-
-        $data = $request->validate([
-            'periodo_id' => 'required|exists:periodos,id',
-            'horarios' => 'required|array|min:1',
-            'horarios.*.dia_semana' => 'required|integer|between:1,7',
-            'horarios.*.hora_inicio' => 'required',
-            'horarios.*.hora_fin' => 'required',
-        ], [
-            'periodo_id.required' => 'Selecciona el periodo para programar las clases.',
-            'horarios.required' => 'Selecciona al menos un dia de clase.',
-            'horarios.*.hora_inicio.required' => 'Falta la hora de inicio en uno de los dias marcados.',
-            'horarios.*.hora_fin.required' => 'Falta la hora de fin en uno de los dias marcados.',
-        ]);
-
-        // Validamos a mano que la hora de fin sea posterior a la de inicio, dia por dia.
-        foreach ($data['horarios'] as $i => $h) {
-            if (strtotime($h['hora_fin']) <= strtotime($h['hora_inicio'])) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
-                    "horarios.$i.hora_fin" => 'La hora de fin debe ser posterior a la hora de inicio ('.Horario::DIAS[$h['dia_semana']].').',
-                ]);
-            }
-        }
-
-        $periodo = Periodo::findOrFail($data['periodo_id']);
-        $creadas = 0;
-
-        DB::transaction(function () use ($alumno, $periodo, $data, &$creadas) {
-            foreach ($data['horarios'] as $h) {
-                $horario = Horario::updateOrCreate(
-                    ['alumno_id' => $alumno->id, 'dia_semana' => $h['dia_semana']],
-                    [
-                        'maestro_id' => $alumno->maestro_id,
-                        'especialidad_id' => $alumno->especialidad_id,
-                        'periodo_id' => $periodo->id,
-                        'hora_inicio' => $h['hora_inicio'],
-                        'hora_fin' => $h['hora_fin'],
-                        // El salon ahora se gestiona desde el modulo de
-                        // Horarios/Talleres (Fase 2), ya no desde el
-                        // formulario de registro de alumnos.
-                        'activo' => true,
-                    ]
-                );
-
-                for ($fecha = $periodo->fecha_inicio->copy(); $fecha->lte($periodo->fecha_fin); $fecha->addDay()) {
-                    if ($fecha->isoWeekday() != $h['dia_semana']) {
-                        continue;
-                    }
-
-                    $existe = Clase::where('horario_id', $horario->id)
-                        ->whereDate('fecha', $fecha->toDateString())
-                        ->exists();
-
-                    if ($existe) {
-                        continue;
-                    }
-
-                    Clase::create([
-                        'horario_id' => $horario->id,
-                        'alumno_id' => $alumno->id,
-                        'maestro_id' => $horario->maestro_id,
-                        'especialidad_id' => $horario->especialidad_id,
-                        'periodo_id' => $periodo->id,
-                        'fecha' => $fecha->toDateString(),
-                        'hora_inicio' => $horario->hora_inicio,
-                        'hora_fin' => $horario->hora_fin,
-                        'salon' => $horario->salon,
-                        'estado' => 'programada',
-                    ]);
-
-                    $creadas++;
-                }
-            }
-        });
-
-        return " Se generaron {$creadas} clases en el calendario para el periodo {$periodo->nombre}.";
+        return response()->json(['ok' => true, 'message' => 'Datos del alumno actualizados.', 'data' => $alumno]);
     }
 
     public function destroy(Alumno $alumno)
     {
+        // Al eliminar el alumno se eliminan en cascada sus talleres,
+        // horarios y clases (relacion cascadeOnDelete en las migraciones).
         $alumno->delete();
 
         return response()->json(['ok' => true, 'message' => 'Alumno eliminado.']);
+    }
+
+    /**
+     * Al registrar un alumno nuevo, opcionalmente se puede inscribir de una
+     * vez en su primer taller (especialidad + maestro + periodo/horarios).
+     * Para agregarle mas talleres despues, se usa AlumnoTallerController
+     * desde la pantalla de edicion.
+     */
+    private function crearTallerInicial(Request $request, Alumno $alumno): void
+    {
+        if (! $request->filled('especialidad_id')) {
+            return;
+        }
+
+        $data = $request->validate([
+            'especialidad_id' => 'required|exists:especialidades,id',
+            'maestro_id' => 'nullable|exists:maestros,id',
+            'periodo_id' => 'nullable|exists:periodos,id',
+        ]);
+
+        $taller = AlumnoTaller::create([
+            'alumno_id' => $alumno->id,
+            'especialidad_id' => $data['especialidad_id'],
+            'maestro_id' => $data['maestro_id'] ?? null,
+            'periodo_id' => $data['periodo_id'] ?? null,
+            'estado' => 'activo',
+        ]);
+
+        if ($request->filled('horarios')) {
+            HorarioService::generar($taller, $request->input('horarios'));
+        }
     }
 
     private function validarDatos(Request $request): array
@@ -198,8 +234,6 @@ class AlumnoController extends Controller
         $data = $request->validate([
             'nombre' => 'required|string|max:150',
             'fecha_nacimiento' => 'nullable|date',
-            'especialidad_id' => 'nullable|exists:especialidades,id',
-            'maestro_id' => 'nullable|exists:maestros,id',
             'tutor' => 'nullable|string|max:150',
             'celular' => 'nullable|string|max:20',
             'dni' => 'nullable|string|max:20',

@@ -1,0 +1,1381 @@
+diff --git a/.gitignore b/.gitignore
+index 53e46e2..ff4960a 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -12,3 +12,11 @@ npm-debug.log
+ yarn-error.log
+ /.idea
+ /.vscode
++
++# Cache de vistas compiladas y sesiones de Laravel (no deben versionarse)
++/storage/framework/views/*
++!/storage/framework/views/.gitignore
++/storage/framework/sessions/*
++!/storage/framework/sessions/.gitignore
++/storage/framework/cache/*
++!/storage/framework/cache/.gitignore
+diff --git a/resources/views/layouts/app.blade.php b/resources/views/layouts/app.blade.php
+index 6c28f3f..491f131 100644
+--- a/resources/views/layouts/app.blade.php
++++ b/resources/views/layouts/app.blade.php
+@@ -208,7 +208,27 @@
+ 
+     function maToast(icon, message) { Toast.fire({ icon, title: message }); }
+ 
+-    async function maFetch(url, options = {}) {
++    // Evita que un doble clic (o doble tap) dispare dos peticiones identicas
++    // en simultaneo. Si ya hay una peticion en curso al mismo metodo+URL,
++    // la segunda llamada reutiliza la promesa de la primera en vez de
++    // abrir una conexion nueva (esto era lo que causaba los 499 en produccion).
++    const _maFetchEnCurso = new Map();
++
++    function maFetch(url, options = {}) {
++        const clave = `${options.method || 'GET'} ${url}`;
++        if (_maFetchEnCurso.has(clave)) {
++            return _maFetchEnCurso.get(clave);
++        }
++
++        const promesa = _maFetchEjecutar(url, options).finally(() => {
++            _maFetchEnCurso.delete(clave);
++        });
++
++        _maFetchEnCurso.set(clave, promesa);
++        return promesa;
++    }
++
++    async function _maFetchEjecutar(url, options) {
+         options.headers = Object.assign({
+             'X-CSRF-TOKEN': CSRF_TOKEN,
+             'X-Requested-With': 'XMLHttpRequest',
+diff --git a/storage/framework/cache/.gitignore b/storage/framework/cache/.gitignore
+new file mode 100644
+index 0000000..d6b7ef3
+--- /dev/null
++++ b/storage/framework/cache/.gitignore
+@@ -0,0 +1,2 @@
++*
++!.gitignore
+diff --git a/storage/framework/sessions/.gitignore b/storage/framework/sessions/.gitignore
+new file mode 100644
+index 0000000..d6b7ef3
+--- /dev/null
++++ b/storage/framework/sessions/.gitignore
+@@ -0,0 +1,2 @@
++*
++!.gitignore
+diff --git a/storage/framework/sessions/.gitkeep b/storage/framework/sessions/.gitkeep
+deleted file mode 100644
+index e69de29..0000000
+diff --git a/storage/framework/sessions/KGKRYjZU37Lv6zpYZgT2ePNUhXCqdkNlq8g9u1Qm b/storage/framework/sessions/KGKRYjZU37Lv6zpYZgT2ePNUhXCqdkNlq8g9u1Qm
+deleted file mode 100644
+index 627c855..0000000
+--- a/storage/framework/sessions/KGKRYjZU37Lv6zpYZgT2ePNUhXCqdkNlq8g9u1Qm
++++ /dev/null
+@@ -1 +0,0 @@
+-a:5:{s:6:"_token";s:40:"GlY67h9XuEoTScuX5klUupjWD0j3PuYSYbpsWPk5";s:3:"url";a:0:{}s:9:"_previous";a:1:{s:3:"url";s:51:"http://127.0.0.1:8000/pagos?anio=2026&buscar=&mes=8";}s:6:"_flash";a:2:{s:3:"old";a:0:{}s:3:"new";a:0:{}}s:50:"login_web_59ba36addc2b2f9401580f014c7f58ea4e30989d";i:1;}
+\ No newline at end of file
+diff --git a/storage/framework/sessions/g2YAjHCqteHiYvypoKZw8NbXS7G3c3Nr8P5ZQQUw b/storage/framework/sessions/g2YAjHCqteHiYvypoKZw8NbXS7G3c3Nr8P5ZQQUw
+deleted file mode 100644
+index 44d51df..0000000
+--- a/storage/framework/sessions/g2YAjHCqteHiYvypoKZw8NbXS7G3c3Nr8P5ZQQUw
++++ /dev/null
+@@ -1 +0,0 @@
+-a:5:{s:6:"_token";s:40:"3Jzk455BmZ0gJsIlTaw4jG2dc2b0xGxXrhpXwxMQ";s:3:"url";a:0:{}s:9:"_previous";a:1:{s:3:"url";s:30:"http://127.0.0.1:8000/planilla";}s:6:"_flash";a:2:{s:3:"old";a:0:{}s:3:"new";a:0:{}}s:50:"login_web_59ba36addc2b2f9401580f014c7f58ea4e30989d";i:1;}
+\ No newline at end of file
+diff --git a/storage/framework/views/.gitignore b/storage/framework/views/.gitignore
+new file mode 100644
+index 0000000..d6b7ef3
+--- /dev/null
++++ b/storage/framework/views/.gitignore
+@@ -0,0 +1,2 @@
++*
++!.gitignore
+diff --git a/storage/framework/views/.gitkeep b/storage/framework/views/.gitkeep
+deleted file mode 100644
+index e69de29..0000000
+diff --git a/storage/framework/views/1a58e6ca8caf1b16cb622bee242e0516.php b/storage/framework/views/1a58e6ca8caf1b16cb622bee242e0516.php
+deleted file mode 100644
+index bf3f494..0000000
+--- a/storage/framework/views/1a58e6ca8caf1b16cb622bee242e0516.php
++++ /dev/null
+@@ -1,60 +0,0 @@
+-<!DOCTYPE html>
+-<html lang="es">
+-<head>
+-    <meta charset="UTF-8">
+-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+-    <title>Ingresar - MusicArte</title>
+-    <link rel="icon" href="<?php echo e(asset('images/logo.png')); ?>">
+-    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
+-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+-    <style>
+-        body {
+-            font-family: 'Poppins', sans-serif;
+-            min-height: 100vh;
+-            display: flex; align-items: center; justify-content: center;
+-            background: linear-gradient(135deg, #2a1e63, #3d2c8d 60%, #5a3fc0);
+-        }
+-        .login-card { width: 100%; max-width: 400px; border-radius: 18px; border: none; box-shadow: 0 20px 50px rgba(0,0,0,.3); }
+-        .login-card img { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 4px #f2b134; }
+-        .btn-morado { background: #3d2c8d; border-color: #3d2c8d; }
+-        .btn-morado:hover { background: #2a1e63; border-color: #2a1e63; }
+-    </style>
+-</head>
+-<body>
+-    <div class="card login-card p-4">
+-        <div class="text-center mb-3">
+-            <img src="<?php echo e(asset('images/logo.png')); ?>" alt="MusicArte">
+-            <h4 class="fw-bold mt-3 mb-0" style="color:#3d2c8d">MUSICARTE</h4>
+-            <small class="text-muted">Centro Cultural &mdash; Panel de Gestion</small>
+-        </div>
+-
+-        <?php if($errors->any()): ?>
+-            <div class="alert alert-danger py-2">
+-                <?php $__currentLoopData = $errors->all(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $error): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+-                    <div class="small"><?php echo e($error); ?></div>
+-                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+-            </div>
+-        <?php endif; ?>
+-
+-        <form method="POST" action="<?php echo e(route('login.attempt')); ?>">
+-            <?php echo csrf_field(); ?>
+-            <div class="mb-3">
+-                <label class="form-label small fw-semibold">Correo electronico</label>
+-                <input type="email" name="email" class="form-control" value="<?php echo e(old('email')); ?>" required autofocus placeholder="correo@musicarte.pe">
+-            </div>
+-            <div class="mb-3">
+-                <label class="form-label small fw-semibold">Contrasena</label>
+-                <input type="password" name="password" class="form-control" required placeholder="••••••••">
+-            </div>
+-            <div class="form-check mb-3">
+-                <input class="form-check-input" type="checkbox" name="remember" id="remember">
+-                <label class="form-check-label small" for="remember">Recordarme</label>
+-            </div>
+-            <button type="submit" class="btn btn-morado w-100 text-white fw-semibold py-2">Ingresar</button>
+-        </form>
+-        <p class="text-center text-muted small mt-3 mb-0">Sistema interno &mdash; acceso restringido al personal.</p>
+-    </div>
+-</body>
+-</html>
+-<?php /**PATH D:\XAMPP\htdocs\musicarte\resources\views/auth/login.blade.php ENDPATH**/ ?>
+\ No newline at end of file
+diff --git a/storage/framework/views/2f7ef37b90398c80e22c2b6e0e732746.php b/storage/framework/views/2f7ef37b90398c80e22c2b6e0e732746.php
+deleted file mode 100644
+index ccbcfca..0000000
+--- a/storage/framework/views/2f7ef37b90398c80e22c2b6e0e732746.php
++++ /dev/null
+@@ -1,183 +0,0 @@
+-<?php $__env->startSection('titulo', 'Maestros'); ?>
+-
+-<?php $__env->startSection('contenido'); ?>
+-<div class="d-flex justify-content-between align-items-center mb-3">
+-    <div>
+-        <h5 class="fw-semibold mb-0">Maestros</h5>
+-        <small class="text-muted">Plana docente del centro cultural. Un maestro puede ensenar varias especialidades.</small>
+-    </div>
+-    <button class="btn btn-morado" data-bs-toggle="modal" data-bs-target="#modalMaestro" onclick="nuevoMaestro()">
+-        <i class="bi bi-plus-lg me-1"></i> Nuevo Maestro
+-    </button>
+-</div>
+-
+-<div class="card p-3">
+-    <div class="table-responsive">
+-        <table class="table align-middle">
+-            <thead><tr><th>Nombre</th><th>Especialidades</th><th>Telefono</th><th>Email</th><th>Alumnos</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead>
+-            <tbody>
+-            <?php $__empty_1 = true; $__currentLoopData = $maestros; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $m): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+-                <tr>
+-                    <td class="fw-semibold"><?php echo e($m->nombre); ?></td>
+-                    <td>
+-                        <?php $__empty_2 = true; $__currentLoopData = $m->especialidades; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $esp): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_2 = false; ?>
+-                            <span class="badge mb-1" style="background:<?php echo e($esp->color); ?>" title="S/ <?php echo e(number_format($esp->pivot->tarifa_hora, 2)); ?> por hora"><?php echo e($esp->nombre); ?> · S/<?php echo e(number_format($esp->pivot->tarifa_hora, 0)); ?>/h</span>
+-                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_2): ?>
+-                            <span class="text-muted">—</span>
+-                        <?php endif; ?>
+-                    </td>
+-                    <td><?php echo e($m->telefono ?? '—'); ?></td>
+-                    <td><?php echo e($m->email ?? '—'); ?></td>
+-                    <td><?php echo e($m->alumnos_count); ?></td>
+-                    <td><?php if($m->activo): ?><span class="badge bg-success">Activo</span><?php else: ?><span class="badge bg-secondary">Inactivo</span><?php endif; ?></td>
+-                    <td class="text-end">
+-                        <button class="btn btn-sm btn-light btn-icon" onclick="editarMaestro(<?php echo e($m->id); ?>)"><i class="bi bi-pencil"></i></button>
+-                        <button class="btn btn-sm btn-light btn-icon text-danger" onclick="eliminarMaestro(<?php echo e($m->id); ?>, '<?php echo e($m->nombre); ?>')"><i class="bi bi-trash"></i></button>
+-                    </td>
+-                </tr>
+-            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+-                <tr><td colspan="7" class="text-center text-muted py-4">Aun no hay maestros registrados.</td></tr>
+-            <?php endif; ?>
+-            </tbody>
+-        </table>
+-    </div>
+-</div>
+-
+-<div class="modal fade" id="modalMaestro" tabindex="-1">
+-    <div class="modal-dialog">
+-        <form class="modal-content" id="formMaestro">
+-            <div class="modal-header" style="background:#3d2c8d;color:#fff">
+-                <h5 class="modal-title" id="tituloModalMaestro">Nuevo Maestro</h5>
+-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+-            </div>
+-            <div class="modal-body">
+-                <input type="hidden" id="maestro_id">
+-                <div class="mb-3">
+-                    <label class="form-label small fw-semibold">Nombre completo</label>
+-                    <input type="text" class="form-control" id="maestro_nombre" required>
+-                </div>
+-                <div class="mb-3">
+-                    <label class="form-label small fw-semibold">Especialidades que ensena y tarifa por hora (S/)</label>
+-                    <div class="border rounded p-2" style="max-height:220px;overflow-y:auto">
+-                        <?php $__currentLoopData = $especialidades; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $esp): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+-                            <div class="row g-2 align-items-center mb-1">
+-                                <div class="col-7">
+-                                    <div class="form-check">
+-                                        <input class="form-check-input maestro-especialidad-check" type="checkbox" value="<?php echo e($esp->id); ?>" id="esp_check_<?php echo e($esp->id); ?>" onchange="toggleTarifaInput(<?php echo e($esp->id); ?>)">
+-                                        <label class="form-check-label small" for="esp_check_<?php echo e($esp->id); ?>"><?php echo e($esp->nombre); ?></label>
+-                                    </div>
+-                                </div>
+-                                <div class="col-5">
+-                                    <input type="number" step="0.5" min="0" class="form-control form-control-sm maestro-tarifa-input" id="esp_tarifa_<?php echo e($esp->id); ?>" placeholder="S//hora" disabled>
+-                                </div>
+-                            </div>
+-                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+-                    </div>
+-                    <small class="text-muted">Marca las especialidades y define cuanto se le paga por hora en cada una (puede variar, ej. Piano S/10, Bateria S/15).</small>
+-                </div>
+-                <div class="row">
+-                    <div class="col-6 mb-3">
+-                        <label class="form-label small fw-semibold">Telefono</label>
+-                        <input type="text" class="form-control" id="maestro_telefono">
+-                    </div>
+-                    <div class="col-6 mb-3">
+-                        <label class="form-label small fw-semibold">Email</label>
+-                        <input type="email" class="form-control" id="maestro_email">
+-                    </div>
+-                </div>
+-                <div class="form-check form-switch">
+-                    <input class="form-check-input" type="checkbox" id="maestro_activo" checked>
+-                    <label class="form-check-label small">Maestro activo</label>
+-                </div>
+-            </div>
+-            <div class="modal-footer">
+-                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+-                <button type="submit" class="btn btn-morado">Guardar</button>
+-            </div>
+-        </form>
+-    </div>
+-</div>
+-<?php $__env->stopSection(); ?>
+-
+-<?php $__env->startPush('scripts'); ?>
+-<script>
+-    const modalMaestro = new bootstrap.Modal('#modalMaestro');
+-
+-    function limpiarChecksEspecialidad() {
+-        document.querySelectorAll('.maestro-especialidad-check').forEach(c => c.checked = false);
+-        document.querySelectorAll('.maestro-tarifa-input').forEach(i => { i.value = ''; i.disabled = true; });
+-    }
+-
+-    function toggleTarifaInput(espId) {
+-        const chk = document.getElementById(`esp_check_${espId}`);
+-        const tarifa = document.getElementById(`esp_tarifa_${espId}`);
+-        tarifa.disabled = !chk.checked;
+-        if (!chk.checked) tarifa.value = '';
+-    }
+-
+-    function nuevoMaestro() {
+-        document.getElementById('formMaestro').reset();
+-        document.getElementById('maestro_id').value = '';
+-        limpiarChecksEspecialidad();
+-        document.getElementById('tituloModalMaestro').innerText = 'Nuevo Maestro';
+-    }
+-
+-    async function editarMaestro(id) {
+-        const res = await maFetch(`/maestros/${id}/edit`);
+-        if (!res) return;
+-        const d = res.data;
+-        document.getElementById('maestro_id').value = d.id;
+-        document.getElementById('maestro_nombre').value = d.nombre;
+-        document.getElementById('maestro_telefono').value = d.telefono ?? '';
+-        document.getElementById('maestro_email').value = d.email ?? '';
+-        document.getElementById('maestro_activo').checked = !!d.activo;
+-        limpiarChecksEspecialidad();
+-        (d.especialidades || []).forEach(esp => {
+-            const chk = document.getElementById(`esp_check_${esp.id}`);
+-            const tarifa = document.getElementById(`esp_tarifa_${esp.id}`);
+-            if (chk) { chk.checked = true; }
+-            if (tarifa) { tarifa.disabled = false; tarifa.value = esp.pivot?.tarifa_hora ?? ''; }
+-        });
+-        document.getElementById('tituloModalMaestro').innerText = 'Editar Maestro';
+-        modalMaestro.show();
+-    }
+-
+-    document.getElementById('formMaestro').addEventListener('submit', async (e) => {
+-        e.preventDefault();
+-        const id = document.getElementById('maestro_id').value;
+-        const especialidades = Array.from(document.querySelectorAll('.maestro-especialidad-check:checked')).map(c => ({
+-            id: c.value,
+-            tarifa: document.getElementById(`esp_tarifa_${c.value}`).value || 0,
+-        }));
+-        const payload = {
+-            nombre: document.getElementById('maestro_nombre').value,
+-            especialidades: especialidades,
+-            telefono: document.getElementById('maestro_telefono').value,
+-            email: document.getElementById('maestro_email').value,
+-            activo: document.getElementById('maestro_activo').checked ? 1 : 0,
+-        };
+-        const url = id ? `/maestros/${id}` : '/maestros';
+-        const res = await maFetch(url, {
+-            method: id ? 'PUT' : 'POST',
+-            headers: { 'Content-Type': 'application/json' },
+-            body: JSON.stringify(payload),
+-        });
+-        if (res && res.ok) {
+-            maToast('success', res.message);
+-            modalMaestro.hide();
+-            setTimeout(() => location.reload(), 700);
+-        }
+-    });
+-
+-    async function eliminarMaestro(id, nombre) {
+-        if (!(await maConfirmarEliminar(nombre))) return;
+-        const res = await maFetch(`/maestros/${id}`, { method: 'DELETE' });
+-        if (res && res.ok) {
+-            maToast('success', res.message);
+-            setTimeout(() => location.reload(), 700);
+-        }
+-    }
+-</script>
+-<?php $__env->stopPush(); ?>
+-
+-<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH D:\XAMPP\htdocs\musicarte\resources\views/maestros/index.blade.php ENDPATH**/ ?>
+\ No newline at end of file
+diff --git a/storage/framework/views/808d374b382277505c57076772947acc.php b/storage/framework/views/808d374b382277505c57076772947acc.php
+deleted file mode 100644
+index a37796a..0000000
+--- a/storage/framework/views/808d374b382277505c57076772947acc.php
++++ /dev/null
+@@ -1,293 +0,0 @@
+-<!DOCTYPE html>
+-<html lang="es">
+-<head>
+-    <meta charset="UTF-8">
+-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+-    <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
+-    <title><?php echo $__env->yieldContent('titulo', 'Panel'); ?> - MusicArte</title>
+-    <link rel="icon" href="<?php echo e(asset('images/logo.png')); ?>">
+-
+-    <!-- Bootstrap 5 -->
+-    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
+-    <!-- SweetAlert2 -->
+-    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.10.5/sweetalert2.all.min.js"></script>
+-    <!-- Google Font -->
+-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+-
+-    <style>
+-        :root {
+-            --ma-morado: #3d2c8d;
+-            --ma-morado-oscuro: #2a1e63;
+-            --ma-dorado: #f2b134;
+-            --ma-gris: #f4f5f9;
+-        }
+-        html, body { overflow-x: hidden; }
+-        body { font-family: 'Poppins', sans-serif; background: var(--ma-gris); }
+-
+-        .sidebar {
+-            width: 250px; height: 100vh; background: linear-gradient(180deg, var(--ma-morado-oscuro), var(--ma-morado));
+-            position: fixed; top: 0; left: 0; z-index: 1030;
+-            display: flex; flex-direction: column;
+-            transition: transform .25s ease, width .25s ease;
+-        }
+-        .sidebar .logo-box { flex: 0 0 auto; padding: 1.25rem 1rem; text-align: center; border-bottom: 1px solid rgba(255,255,255,.15); }
+-        .sidebar .logo-box img { width: 78px; height: 78px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 3px rgba(255,255,255,.25); }
+-        .sidebar .logo-box h6 { color: #fff; margin: .5rem 0 0; font-weight: 600; letter-spacing: .5px; }
+-
+-        /* Nav con scroll propio: asi siempre se puede bajar a ver todas las opciones */
+-        .sidebar nav {
+-            flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; flex-wrap: nowrap;
+-            scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.25) transparent;
+-        }
+-        .sidebar nav::-webkit-scrollbar { width: 5px; }
+-        .sidebar nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,.25); border-radius: 10px; }
+-
+-        .sidebar .nav-link { color: rgba(255,255,255,.8); padding: .65rem 1.2rem; font-size: .92rem; display: flex; align-items: center; gap: .6rem; border-left: 3px solid transparent; white-space: nowrap; }
+-        .sidebar .nav-link i { font-size: 1.05rem; width: 20px; text-align: center; flex-shrink: 0; }
+-        .sidebar .nav-link:hover, .sidebar .nav-link.active { color: #fff; background: rgba(255,255,255,.08); border-left-color: var(--ma-dorado); }
+-        .sidebar .nav-section { color: rgba(255,255,255,.45); font-size: .7rem; text-transform: uppercase; letter-spacing: 1px; padding: 1rem 1.2rem .3rem; }
+-
+-        .content-wrap { margin-left: 250px; min-height: 100vh; display: flex; flex-direction: column; transition: margin-left .25s ease; }
+-
+-        /* Estado colapsado (solo iconos, texto oculto de verdad) */
+-        .sidebar.collapsed { width: 74px; }
+-        .sidebar.collapsed .logo-box h6,
+-        .sidebar.collapsed .logo-box small,
+-        .sidebar.collapsed .nav-section,
+-        .sidebar.collapsed .nav-link .nav-text { display: none; }
+-        .sidebar.collapsed .logo-box img { width: 42px; height: 42px; }
+-        .sidebar.collapsed .nav-link { justify-content: center; padding-left: 0; padding-right: 0; }
+-        .content-wrap.collapsed { margin-left: 74px; }
+-
+-        .btn-collapse-sidebar {
+-            position: absolute; top: 1.1rem; right: -14px; width: 28px; height: 28px;
+-            border-radius: 50%; background: var(--ma-dorado); color: #3a2900; border: none;
+-            display: flex; align-items: center; justify-content: center; z-index: 1031;
+-        }
+-
+-        .topbar { background: #fff; border-bottom: 1px solid #e9e9f2; padding: .7rem 1.5rem; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 1020; }
+-        .main-content { padding: 1.5rem; flex: 1; }
+-        .btn-morado { background: var(--ma-morado); border-color: var(--ma-morado); color: #fff; }
+-        .btn-morado:hover { background: var(--ma-morado-oscuro); border-color: var(--ma-morado-oscuro); color: #fff; }
+-        .badge-rol-admin { background: var(--ma-dorado); color: #3a2900; }
+-        .badge-rol-recepcion { background: #6c757d; }
+-        .card-kpi { border: none; border-radius: 14px; box-shadow: 0 2px 12px rgba(61,44,141,.08); }
+-        .card { border-radius: 14px; border: 1px solid #edeef5; }
+-        .table thead th { font-size: .78rem; text-transform: uppercase; letter-spacing: .4px; color: #6b6b80; border-bottom-width: 1px; }
+-        .btn-icon { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; }
+-        .aviso-flotante { border-left: 5px solid var(--ma-morado); }
+-        .aviso-urgente { border-left-color: #dc3545 !important; }
+-        .aviso-advertencia { border-left-color: #f2b134 !important; }
+-
+-        @media (max-width: 991px) {
+-            .sidebar { transform: translateX(-100%); width: 250px !important; }
+-            .sidebar.show { transform: translateX(0); }
+-            .sidebar.collapsed .nav-link .nav-text,
+-            .sidebar.collapsed .logo-box h6,
+-            .sidebar.collapsed .logo-box small,
+-            .sidebar.collapsed .nav-section { display: inline; }
+-            .sidebar.collapsed .nav-link { justify-content: flex-start; padding-left: 1.2rem; }
+-            .content-wrap, .content-wrap.collapsed { margin-left: 0; }
+-            .btn-collapse-sidebar { display: none !important; }
+-        }
+-        .toggler-mobile { display: none; }
+-        @media (max-width: 991px) { .toggler-mobile { display: inline-flex; } }
+-    </style>
+-    <?php echo $__env->yieldPushContent('estilos'); ?>
+-</head>
+-<body>
+-
+-<div class="sidebar" id="sidebar">
+-    <button class="btn-collapse-sidebar d-none d-lg-flex" id="btnCollapseSidebar" title="Contraer menu">
+-        <i class="bi bi-chevron-left" id="iconCollapseSidebar"></i>
+-    </button>
+-    <div class="logo-box">
+-        <img src="<?php echo e(asset('images/logo.png')); ?>" alt="MusicArte">
+-        <h6>MUSICARTE</h6>
+-        <small class="text-white-50">Centro Cultural</small>
+-    </div>
+-    <nav class="nav flex-column py-2">
+-        <a class="nav-link <?php echo e(request()->routeIs('dashboard') ? 'active' : ''); ?>" href="<?php echo e(route('dashboard')); ?>"><i class="bi bi-speedometer2"></i> <span class="nav-text">Dashboard</span></a>
+-
+-        <div class="nav-section">Academico</div>
+-        <a class="nav-link <?php echo e(request()->routeIs('alumnos.*') ? 'active' : ''); ?>" href="<?php echo e(route('alumnos.index')); ?>"><i class="bi bi-people"></i> <span class="nav-text">Alumnos</span></a>
+-        <a class="nav-link <?php echo e(request()->routeIs('maestros.*') ? 'active' : ''); ?>" href="<?php echo e(route('maestros.index')); ?>"><i class="bi bi-person-badge"></i> <span class="nav-text">Maestros</span></a>
+-        <a class="nav-link <?php echo e(request()->routeIs('especialidades.*') ? 'active' : ''); ?>" href="<?php echo e(route('especialidades.index')); ?>"><i class="bi bi-music-note-list"></i> <span class="nav-text">Especialidades</span></a>
+-        <a class="nav-link <?php echo e(request()->routeIs('periodos.*') ? 'active' : ''); ?>" href="<?php echo e(route('periodos.index')); ?>"><i class="bi bi-calendar-range"></i> <span class="nav-text">Periodos</span></a>
+-
+-        <div class="nav-section">Clases</div>
+-        <a class="nav-link <?php echo e(request()->routeIs('calendario.*') ? 'active' : ''); ?>" href="<?php echo e(route('calendario.index')); ?>"><i class="bi bi-calendar3"></i> <span class="nav-text">Calendario</span></a>
+-        <a class="nav-link <?php echo e(request()->routeIs('horarios.*') ? 'active' : ''); ?>" href="<?php echo e(route('horarios.index')); ?>"><i class="bi bi-clock-history"></i> <span class="nav-text">Horarios</span></a>
+-        <a class="nav-link <?php echo e(request()->routeIs('asistencia.*') ? 'active' : ''); ?>" href="<?php echo e(route('asistencia.index')); ?>"><i class="bi bi-clipboard-check"></i> <span class="nav-text">Asistencia</span></a>
+-        <a class="nav-link <?php echo e(request()->routeIs('recitales.*') ? 'active' : ''); ?>" href="<?php echo e(route('recitales.index')); ?>"><i class="bi bi-mic"></i> <span class="nav-text">Recitales/Eventos</span></a>
+-
+-        <div class="nav-section">Administracion</div>
+-        <a class="nav-link <?php echo e(request()->routeIs('pagos.*') ? 'active' : ''); ?>" href="<?php echo e(route('pagos.index')); ?>"><i class="bi bi-cash-coin"></i> <span class="nav-text">Pagos</span></a>
+-        <a class="nav-link <?php echo e(request()->routeIs('egresos.*') ? 'active' : ''); ?>" href="<?php echo e(route('egresos.index')); ?>"><i class="bi bi-receipt"></i> <span class="nav-text">Egresos</span></a>
+-        <a class="nav-link <?php echo e(request()->routeIs('caja-chica.*') ? 'active' : ''); ?>" href="<?php echo e(route('caja-chica.index')); ?>"><i class="bi bi-wallet2"></i> <span class="nav-text">Caja Chica</span></a>
+-        <a class="nav-link <?php echo e(request()->routeIs('planilla.*') ? 'active' : ''); ?>" href="<?php echo e(route('planilla.index')); ?>"><i class="bi bi-file-earmark-person"></i> <span class="nav-text">Planilla Maestros</span></a>
+-
+-        <div class="nav-section">General</div>
+-        <a class="nav-link <?php echo e(request()->routeIs('avisos.*') ? 'active' : ''); ?>" href="<?php echo e(route('avisos.index')); ?>"><i class="bi bi-megaphone"></i> <span class="nav-text">Avisos</span></a>
+-        <a class="nav-link <?php echo e(request()->routeIs('reportes.*') ? 'active' : ''); ?>" href="<?php echo e(route('reportes.index')); ?>"><i class="bi bi-graph-up"></i> <span class="nav-text">Reportes</span></a>
+-    </nav>
+-</div>
+-
+-<div class="content-wrap" id="contentWrap">
+-    <div class="topbar">
+-        <div class="d-flex align-items-center gap-2">
+-            <button class="btn btn-light toggler-mobile" id="btnToggleSidebar"><i class="bi bi-list fs-4"></i></button>
+-            <h5 class="mb-0 fw-semibold text-dark"><?php echo $__env->yieldContent('titulo', 'Panel'); ?></h5>
+-        </div>
+-        <div class="d-flex align-items-center gap-3">
+-            <button class="btn btn-light position-relative btn-icon" id="btnAvisos" title="Avisos">
+-                <i class="bi bi-bell fs-5"></i>
+-                <?php if(($avisosFlotantes ?? collect())->count() > 0): ?>
+-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"><?php echo e($avisosFlotantes->count()); ?></span>
+-                <?php endif; ?>
+-            </button>
+-            <div class="dropdown">
+-                <button class="btn btn-light dropdown-toggle d-flex align-items-center gap-2" data-bs-toggle="dropdown">
+-                    <i class="bi bi-person-circle fs-5"></i>
+-                    <span class="d-none d-sm-inline"><?php echo e(auth()->user()->name); ?></span>
+-                    <span class="badge <?php echo e(auth()->user()->esAdmin() ? 'badge-rol-admin' : 'badge-rol-recepcion'); ?>"><?php echo e(auth()->user()->rolLabel()); ?></span>
+-                </button>
+-                <ul class="dropdown-menu dropdown-menu-end">
+-                    <li>
+-                        <form action="<?php echo e(route('logout')); ?>" method="POST">
+-                            <?php echo csrf_field(); ?>
+-                            <button class="dropdown-item text-danger" type="submit"><i class="bi bi-box-arrow-right me-2"></i>Cerrar sesion</button>
+-                        </form>
+-                    </li>
+-                </ul>
+-            </div>
+-        </div>
+-    </div>
+-
+-    <div class="main-content">
+-        <?php echo $__env->yieldContent('contenido'); ?>
+-    </div>
+-</div>
+-
+-<!-- ===================== MODAL VENTANA FLOTANTE DE AVISOS ===================== -->
+-<div class="modal fade" id="modalAvisos" tabindex="-1">
+-    <div class="modal-dialog modal-dialog-centered modal-lg">
+-        <div class="modal-content">
+-            <div class="modal-header" style="background: var(--ma-morado); color: #fff;">
+-                <h5 class="modal-title"><i class="bi bi-megaphone-fill me-2"></i>Avisos del Centro Cultural</h5>
+-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+-            </div>
+-            <div class="modal-body">
+-                <?php $__empty_1 = true; $__currentLoopData = ($avisosFlotantes ?? collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $aviso): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+-                    <div class="alert aviso-flotante aviso-<?php echo e($aviso->tipo); ?> mb-2" data-aviso-id="<?php echo e($aviso->id); ?>">
+-                        <div class="d-flex justify-content-between">
+-                            <strong><?php echo e($aviso->titulo); ?></strong>
+-                            <button class="btn-close" style="font-size:.7rem" onclick="descartarAviso(<?php echo e($aviso->id); ?>, this)"></button>
+-                        </div>
+-                        <div class="small text-muted mt-1"><?php echo nl2br(e($aviso->mensaje)); ?></div>
+-                    </div>
+-                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+-                    <p class="text-muted mb-0">No hay avisos activos por el momento.</p>
+-                <?php endif; ?>
+-            </div>
+-        </div>
+-    </div>
+-</div>
+-
+-<!-- Bootstrap 5 JS -->
+-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+-
+-<script>
+-    const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').content;
+-
+-    // ---------- Helpers globales de UI (toasts, confirmaciones, fetch AJAX) ----------
+-    const Toast = Swal.mixin({
+-        toast: true, position: 'top-end', showConfirmButton: false, timer: 3200, timerProgressBar: true,
+-    });
+-
+-    function maToast(icon, message) { Toast.fire({ icon, title: message }); }
+-
+-    async function maFetch(url, options = {}) {
+-        options.headers = Object.assign({
+-            'X-CSRF-TOKEN': CSRF_TOKEN,
+-            'X-Requested-With': 'XMLHttpRequest',
+-            'Accept': 'application/json',
+-        }, options.headers || {});
+-
+-        try {
+-            const res = await fetch(url, options);
+-            const data = await res.json().catch(() => ({}));
+-            if (!res.ok) {
+-                if (res.status === 422 && data.errors) {
+-                    const msgs = Object.values(data.errors).flat().join('<br>');
+-                    Swal.fire({ icon: 'warning', title: 'Revisa el formulario', html: msgs });
+-                } else {
+-                    Swal.fire({ icon: 'error', title: 'No se pudo completar', text: data.message || 'Ocurrio un error inesperado.' });
+-                }
+-                return null;
+-            }
+-            return data;
+-        } catch (e) {
+-            Swal.fire({ icon: 'error', title: 'Error de conexion', text: 'Revisa tu conexion e intenta de nuevo.' });
+-            return null;
+-        }
+-    }
+-
+-    function maConfirmarEliminar(nombre = 'este registro') {
+-        return Swal.fire({
+-            icon: 'warning',
+-            title: '¿Eliminar?',
+-            html: `Vas a eliminar <b>${nombre}</b>. Esta accion no se puede deshacer.`,
+-            showCancelButton: true,
+-            confirmButtonText: 'Si, eliminar',
+-            cancelButtonText: 'Cancelar',
+-            confirmButtonColor: '#dc3545',
+-        }).then(r => r.isConfirmed);
+-    }
+-
+-    async function descartarAviso(id, btn) {
+-        await maFetch(`/avisos/${id}/descartar`, { method: 'POST' });
+-        btn.closest('.aviso-flotante').remove();
+-    }
+-
+-    document.getElementById('btnAvisos')?.addEventListener('click', () => {
+-        new bootstrap.Modal('#modalAvisos').show();
+-    });
+-
+-    document.getElementById('btnToggleSidebar')?.addEventListener('click', () => {
+-        document.getElementById('sidebar').classList.toggle('show');
+-    });
+-
+-    document.getElementById('btnCollapseSidebar')?.addEventListener('click', () => {
+-        const collapsed = document.getElementById('sidebar').classList.toggle('collapsed');
+-        document.getElementById('contentWrap')?.classList.toggle('collapsed');
+-        localStorage.setItem('ma_sidebar_collapsed', collapsed ? '1' : '0');
+-        document.getElementById('iconCollapseSidebar').className = collapsed ? 'bi bi-chevron-right' : 'bi bi-chevron-left';
+-    });
+-
+-    if (localStorage.getItem('ma_sidebar_collapsed') === '1' && window.innerWidth >= 992) {
+-        document.getElementById('sidebar').classList.add('collapsed');
+-        document.getElementById('contentWrap')?.classList.add('collapsed');
+-        const iconInicial = document.getElementById('iconCollapseSidebar');
+-        if (iconInicial) iconInicial.className = 'bi bi-chevron-right';
+-    }
+-
+-    // Muestra automaticamente el popup de avisos urgentes al cargar el dashboard
+-    <?php if(($avisosFlotantes ?? collect())->where('tipo', 'urgente')->count() > 0 && request()->routeIs('dashboard')): ?>
+-        window.addEventListener('DOMContentLoaded', () => {
+-            new bootstrap.Modal('#modalAvisos').show();
+-        });
+-    <?php endif; ?>
+-
+-    // Mensajes flash de sesion (redirects normales)
+-    <?php if(session('success')): ?>
+-        window.addEventListener('DOMContentLoaded', () => maToast('success', <?php echo json_encode(session('success'), 15, 512) ?>));
+-    <?php endif; ?>
+-    <?php if(session('error')): ?>
+-        window.addEventListener('DOMContentLoaded', () => maToast('error', <?php echo json_encode(session('error'), 15, 512) ?>));
+-    <?php endif; ?>
+-</script>
+-<?php echo $__env->yieldPushContent('scripts'); ?>
+-</body>
+-</html><?php /**PATH D:\XAMPP\htdocs\musicarte\resources\views/layouts/app.blade.php ENDPATH**/ ?>
+\ No newline at end of file
+diff --git a/storage/framework/views/8a0fe3ec9e3fe45e42db11d4fdb9fdaa.php b/storage/framework/views/8a0fe3ec9e3fe45e42db11d4fdb9fdaa.php
+deleted file mode 100644
+index a4768cf..0000000
+--- a/storage/framework/views/8a0fe3ec9e3fe45e42db11d4fdb9fdaa.php
++++ /dev/null
+@@ -1,385 +0,0 @@
+-<?php $__env->startSection('titulo', 'Alumnos'); ?>
+-
+-<?php $__env->startSection('contenido'); ?>
+-<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+-    <div>
+-        <h5 class="fw-semibold mb-0">Alumnos</h5>
+-        <small class="text-muted">Registro de estudiantes del centro cultural</small>
+-    </div>
+-    <button class="btn btn-morado" data-bs-toggle="modal" data-bs-target="#modalAlumno" onclick="nuevoAlumno()">
+-        <i class="bi bi-plus-lg me-1"></i> Nuevo Alumno
+-    </button>
+-</div>
+-
+-<div class="card p-3 mb-3">
+-    <form class="row g-2" method="GET">
+-        <div class="col-md-4">
+-            <input type="text" name="buscar" class="form-control" placeholder="Buscar por nombre..." value="<?php echo e(request('buscar')); ?>">
+-        </div>
+-        <div class="col-md-3">
+-            <select name="especialidad_id" class="form-select">
+-                <option value="">Todas las especialidades</option>
+-                <?php $__currentLoopData = $especialidades; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $esp): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+-                    <option value="<?php echo e($esp->id); ?>" <?php if(request('especialidad_id') == $esp->id): echo 'selected'; endif; ?>><?php echo e($esp->nombre); ?></option>
+-                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+-            </select>
+-        </div>
+-        <div class="col-md-3">
+-            <select name="estado" class="form-select">
+-                <option value="">Todos los estados</option>
+-                <option value="activo" <?php if(request('estado')=='activo'): echo 'selected'; endif; ?>>Activos</option>
+-                <option value="inactivo" <?php if(request('estado')=='inactivo'): echo 'selected'; endif; ?>>Inactivos</option>
+-            </select>
+-        </div>
+-        <div class="col-md-2">
+-            <button class="btn btn-light w-100"><i class="bi bi-search me-1"></i>Filtrar</button>
+-        </div>
+-    </form>
+-</div>
+-
+-<div class="card p-3">
+-    <div class="table-responsive">
+-        <table class="table align-middle">
+-            <thead><tr><th>Nombre</th><th>Edad</th><th>Especialidad</th><th>Maestro</th><th>Tutor</th><th>Celular</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead>
+-            <tbody>
+-            <?php $__empty_1 = true; $__currentLoopData = $alumnos; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $a): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+-                <tr>
+-                    <td class="fw-semibold"><?php echo e($a->nombre); ?></td>
+-                    <td><?php echo e($a->edad ?? '—'); ?></td>
+-                    <td><?php echo e($a->especialidad->nombre ?? '—'); ?></td>
+-                    <td><?php echo e($a->maestro->nombre ?? '—'); ?></td>
+-                    <td><?php echo e($a->tutor ?? '—'); ?></td>
+-                    <td><?php echo e($a->celular ?? '—'); ?></td>
+-                    <td><?php if($a->activo): ?><span class="badge bg-success">Activo</span><?php else: ?><span class="badge bg-secondary">Inactivo</span><?php endif; ?></td>
+-                    <td class="text-end">
+-                        <button class="btn btn-sm btn-light btn-icon" onclick="editarAlumno(<?php echo e($a->id); ?>)"><i class="bi bi-pencil"></i></button>
+-                        <button class="btn btn-sm btn-light btn-icon text-danger" onclick="eliminarAlumno(<?php echo e($a->id); ?>, '<?php echo e($a->nombre); ?>')"><i class="bi bi-trash"></i></button>
+-                    </td>
+-                </tr>
+-            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+-                <tr><td colspan="8" class="text-center text-muted py-4">No se encontraron alumnos con los filtros aplicados.</td></tr>
+-            <?php endif; ?>
+-            </tbody>
+-        </table>
+-    </div>
+-    <?php echo e($alumnos->links()); ?>
+-
+-</div>
+-
+-<div class="modal fade" id="modalAlumno" tabindex="-1">
+-    <div class="modal-dialog modal-lg">
+-        <form class="modal-content" id="formAlumno">
+-            <div class="modal-header" style="background:#3d2c8d;color:#fff">
+-                <h5 class="modal-title" id="tituloModalAlumno">Nuevo Alumno</h5>
+-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+-            </div>
+-            <div class="modal-body">
+-                <input type="hidden" id="alumno_id">
+-                <div class="row">
+-                    <div class="col-md-8 mb-3">
+-                        <label class="form-label small fw-semibold">Nombre completo</label>
+-                        <input type="text" class="form-control" id="alumno_nombre" required>
+-                    </div>
+-                    <div class="col-md-4 mb-3">
+-                        <label class="form-label small fw-semibold">Edad</label>
+-                        <input type="text" class="form-control" id="alumno_edad" placeholder="Ej. 9 anos">
+-                    </div>
+-                </div>
+-                <div class="row">
+-                    <div class="col-md-6 mb-3">
+-                        <label class="form-label small fw-semibold">Fecha de nacimiento</label>
+-                        <input type="date" class="form-control" id="alumno_fecha_nacimiento">
+-                    </div>
+-                    <div class="col-md-6 mb-3">
+-                        <label class="form-label small fw-semibold">DNI</label>
+-                        <input type="text" class="form-control" id="alumno_dni">
+-                    </div>
+-                </div>
+-                <div class="row">
+-                    <div class="col-md-6 mb-3">
+-                        <label class="form-label small fw-semibold">Especialidad</label>
+-                        <select class="form-select" id="alumno_especialidad_id">
+-                            <option value="">-- Selecciona --</option>
+-                            <?php $__currentLoopData = $especialidades; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $esp): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+-                                <option value="<?php echo e($esp->id); ?>"><?php echo e($esp->nombre); ?></option>
+-                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+-                        </select>
+-                    </div>
+-                    <div class="col-md-6 mb-3">
+-                        <label class="form-label small fw-semibold">Maestro asignado</label>
+-                        <select class="form-select" id="alumno_maestro_id">
+-                            <option value="">-- Selecciona --</option>
+-                            <?php $__currentLoopData = $maestros; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $m): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+-                                <option value="<?php echo e($m->id); ?>"><?php echo e($m->nombre); ?></option>
+-                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+-                        </select>
+-                    </div>
+-                </div>
+-                <div class="row">
+-                    <div class="col-md-6 mb-3">
+-                        <label class="form-label small fw-semibold">Tutor / Apoderado</label>
+-                        <input type="text" class="form-control" id="alumno_tutor">
+-                    </div>
+-                    <div class="col-md-6 mb-3">
+-                        <label class="form-label small fw-semibold">Celular de contacto</label>
+-                        <input type="text" class="form-control" id="alumno_celular">
+-                    </div>
+-                </div>
+-                <div class="mb-3">
+-                    <label class="form-label small fw-semibold">Direccion</label>
+-                    <input type="text" class="form-control" id="alumno_direccion">
+-                </div>
+-                <hr>
+-                <h6 class="fw-semibold small text-uppercase text-muted mb-2">Programar clases (opcional)</h6>
+-                <div class="row">
+-                    <div class="col-md-8 mb-2">
+-                        <label class="form-label small fw-semibold">Periodo</label>
+-                        <select class="form-select" id="alumno_periodo_id">
+-                            <option value="">-- No programar clases ahora --</option>
+-                            <?php $__currentLoopData = $periodos; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $p): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+-                                <option value="<?php echo e($p->id); ?>"
+-                                    data-inicio="<?php echo e($p->fecha_inicio->format('d/m/Y')); ?>"
+-                                    data-fin="<?php echo e($p->fecha_fin->format('d/m/Y')); ?>"><?php echo e($p->nombre); ?></option>
+-                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+-                        </select>
+-                        <small class="text-muted" id="alumno_periodo_duracion"></small>
+-                    </div>
+-                    <div class="col-md-4 mb-2">
+-                        <label class="form-label small fw-semibold">Salon</label>
+-                        <input type="text" class="form-control" id="alumno_horario_salon">
+-                    </div>
+-                </div>
+-                <div class="mb-3">
+-                    <label class="form-label small fw-semibold">Dias y horario de clase</label>
+-                    <div class="table-responsive">
+-                        <table class="table table-sm align-middle mb-0">
+-                            <thead>
+-                                <tr><th style="width:36px"></th><th>Dia</th><th>Hora inicio</th><th>Hora fin</th></tr>
+-                            </thead>
+-                            <tbody>
+-                                <?php $__currentLoopData = ['1'=>'Lunes','2'=>'Martes','3'=>'Miercoles','4'=>'Jueves','5'=>'Viernes','6'=>'Sabado','7'=>'Domingo']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $num => $label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+-                                <tr>
+-                                    <td>
+-                                        <input class="form-check-input alumno-dia" type="checkbox" value="<?php echo e($num); ?>"
+-                                               id="alumno_dia_<?php echo e($num); ?>" onchange="toggleDiaHorario(<?php echo e($num); ?>)">
+-                                    </td>
+-                                    <td><label for="alumno_dia_<?php echo e($num); ?>" class="mb-0"><?php echo e($label); ?></label></td>
+-                                    <td><input type="time" class="form-control form-control-sm" id="alumno_dia_<?php echo e($num); ?>_inicio" disabled></td>
+-                                    <td><input type="time" class="form-control form-control-sm" id="alumno_dia_<?php echo e($num); ?>_fin" disabled></td>
+-                                </tr>
+-                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+-                            </tbody>
+-                        </table>
+-                    </div>
+-                    <small class="text-muted">Cada dia puede tener una hora distinta (ej. Martes 4pm, Miercoles y Jueves 5pm). Al guardar, las clases se crean automaticamente en el calendario para todo el periodo.</small>
+-                </div>
+-                <div class="row">
+-                    <div class="col-md-6 mb-3">
+-                        <label class="form-label small fw-semibold">Fecha de ingreso</label>
+-                        <input type="date" class="form-control" id="alumno_fecha_ingreso">
+-                    </div>
+-                    <div class="col-md-6 mb-3 d-flex align-items-end">
+-                        <div class="form-check form-switch">
+-                            <input class="form-check-input" type="checkbox" id="alumno_activo" checked>
+-                            <label class="form-check-label small">Alumno activo</label>
+-                        </div>
+-                    </div>
+-                </div>
+-                <div class="mb-3">
+-                    <label class="form-label small fw-semibold">Diagnostico / condicion especial (opcional)</label>
+-                    <textarea class="form-control" id="alumno_diagnostico" rows="2"></textarea>
+-                </div>
+-                <div class="mb-1">
+-                    <label class="form-label small fw-semibold">Observaciones</label>
+-                    <textarea class="form-control" id="alumno_observaciones" rows="2"></textarea>
+-                </div>
+-            </div>
+-            <div class="modal-footer">
+-                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+-                <button type="submit" class="btn btn-morado">Guardar</button>
+-            </div>
+-        </form>
+-    </div>
+-</div>
+-<?php $__env->stopSection(); ?>
+-
+-<?php $__env->startPush('scripts'); ?>
+-<script>
+-    const modalAlumno = new bootstrap.Modal('#modalAlumno');
+-
+-    function nuevoAlumno() {
+-        document.getElementById('formAlumno').reset();
+-        document.getElementById('alumno_id').value = '';
+-        document.getElementById('alumno_periodo_duracion').innerText = '';
+-        for (let diaNum = 1; diaNum <= 7; diaNum++) {
+-            document.getElementById('alumno_dia_' + diaNum + '_inicio').disabled = true;
+-            document.getElementById('alumno_dia_' + diaNum + '_inicio').value = '';
+-            document.getElementById('alumno_dia_' + diaNum + '_fin').disabled = true;
+-            document.getElementById('alumno_dia_' + diaNum + '_fin').value = '';
+-        }
+-        document.getElementById('tituloModalAlumno').innerText = 'Nuevo Alumno';
+-    }
+-
+-    function toggleDiaHorario(diaNum) {
+-        const checked = document.getElementById('alumno_dia_' + diaNum).checked;
+-        const inicio = document.getElementById('alumno_dia_' + diaNum + '_inicio');
+-        const fin = document.getElementById('alumno_dia_' + diaNum + '_fin');
+-        inicio.disabled = !checked;
+-        fin.disabled = !checked;
+-        if (!checked) {
+-            inicio.value = '';
+-            fin.value = '';
+-        }
+-    }
+-
+-    document.getElementById('alumno_periodo_id').addEventListener('change', function () {
+-        const opt = this.options[this.selectedIndex];
+-        const txt = document.getElementById('alumno_periodo_duracion');
+-        txt.innerText = this.value ? `Del ${opt.dataset.inicio} al ${opt.dataset.fin}` : '';
+-    });
+-
+-    async function editarAlumno(id) {
+-        const res = await maFetch(`/alumnos/${id}/edit`);
+-        if (!res) return;
+-        const d = res.data;
+-
+-        document.getElementById('alumno_id').value = d.id;
+-        document.getElementById('alumno_nombre').value = d.nombre;
+-        document.getElementById('alumno_edad').value = d.edad ?? '';
+-        document.getElementById('alumno_fecha_nacimiento').value = d.fecha_nacimiento ?? '';
+-        document.getElementById('alumno_dni').value = d.dni ?? '';
+-        document.getElementById('alumno_especialidad_id').value = d.especialidad_id ?? '';
+-        document.getElementById('alumno_maestro_id').value = d.maestro_id ?? '';
+-        document.getElementById('alumno_tutor').value = d.tutor ?? '';
+-        document.getElementById('alumno_celular').value = d.celular ?? '';
+-        document.getElementById('alumno_direccion').value = d.direccion ?? '';
+-        document.getElementById('alumno_fecha_ingreso').value = d.fecha_ingreso ?? '';
+-        document.getElementById('alumno_activo').checked = !!d.activo;
+-        document.getElementById('alumno_diagnostico').value = d.diagnostico ?? '';
+-        document.getElementById('alumno_observaciones').value = d.observaciones ?? '';
+-
+-        // Precarga del horario/periodo: envuelto en try/catch para que, si falta
+-        // algun campo nuevo en el HTML, el modal se abra igual (no se rompe todo).
+-        try {
+-            const periodoSel = document.getElementById('alumno_periodo_id');
+-            const duracionTxt = document.getElementById('alumno_periodo_duracion');
+-            const salonInput = document.getElementById('alumno_horario_salon');
+-
+-            for (let diaNum = 1; diaNum <= 7; diaNum++) {
+-                const cb = document.getElementById('alumno_dia_' + diaNum);
+-                const hi = document.getElementById('alumno_dia_' + diaNum + '_inicio');
+-                const hf = document.getElementById('alumno_dia_' + diaNum + '_fin');
+-                if (cb) cb.checked = false;
+-                if (hi) { hi.disabled = true; hi.value = ''; }
+-                if (hf) { hf.disabled = true; hf.value = ''; }
+-            }
+-            if (periodoSel) periodoSel.value = '';
+-            if (duracionTxt) duracionTxt.innerText = '';
+-            if (salonInput) salonInput.value = '';
+-
+-            if (d.horarios && d.horarios.length) {
+-                d.horarios.forEach(h => {
+-                    const cb = document.getElementById('alumno_dia_' + h.dia_semana);
+-                    const hi = document.getElementById('alumno_dia_' + h.dia_semana + '_inicio');
+-                    const hf = document.getElementById('alumno_dia_' + h.dia_semana + '_fin');
+-                    if (cb) cb.checked = true;
+-                    if (hi) { hi.disabled = false; hi.value = (h.hora_inicio || '').substring(0, 5); }
+-                    if (hf) { hf.disabled = false; hf.value = (h.hora_fin || '').substring(0, 5); }
+-                });
+-
+-                const h0 = d.horarios[0];
+-                if (salonInput) salonInput.value = h0.salon ?? '';
+-                if (h0.periodo_id && periodoSel) {
+-                    periodoSel.value = h0.periodo_id;
+-                    periodoSel.dispatchEvent(new Event('change'));
+-                }
+-            }
+-        } catch (err) {
+-            console.error('No se pudo precargar el horario del alumno:', err);
+-        }
+-
+-        document.getElementById('tituloModalAlumno').innerText = 'Editar Alumno';
+-        modalAlumno.show();
+-    }
+-
+-    document.getElementById('formAlumno').addEventListener('submit', async (e) => {
+-        e.preventDefault();
+-        const id = document.getElementById('alumno_id').value;
+-
+-        const periodoId = document.getElementById('alumno_periodo_id').value;
+-        const horariosDias = [];
+-        for (let dia = 1; dia <= 7; dia++) {
+-            const cb = document.getElementById('alumno_dia_' + dia);
+-            if (cb && cb.checked) {
+-                horariosDias.push({
+-                    dia_semana: dia,
+-                    hora_inicio: document.getElementById('alumno_dia_' + dia + '_inicio').value,
+-                    hora_fin: document.getElementById('alumno_dia_' + dia + '_fin').value,
+-                });
+-            }
+-        }
+-
+-        if (horariosDias.length && !periodoId) {
+-            Swal.fire({
+-                icon: 'warning',
+-                title: 'Falta el periodo',
+-                text: 'Marcaste dias de clase pero no seleccionaste un Periodo. Ve al menu "Periodos", crea uno (ej. Agosto 2026) y luego seleccionalo aqui para que las clases se generen en el calendario.',
+-            });
+-            return;
+-        }
+-
+-        if (horariosDias.some(h => !h.hora_inicio || !h.hora_fin)) {
+-            Swal.fire({
+-                icon: 'warning',
+-                title: 'Horario incompleto',
+-                text: 'Completa la hora de inicio y de fin en cada dia que marcaste.',
+-            });
+-            return;
+-        }
+-
+-        const payload = {
+-            nombre: document.getElementById('alumno_nombre').value,
+-            edad: document.getElementById('alumno_edad').value,
+-            fecha_nacimiento: document.getElementById('alumno_fecha_nacimiento').value || null,
+-            dni: document.getElementById('alumno_dni').value,
+-            especialidad_id: document.getElementById('alumno_especialidad_id').value || null,
+-            maestro_id: document.getElementById('alumno_maestro_id').value || null,
+-            tutor: document.getElementById('alumno_tutor').value,
+-            celular: document.getElementById('alumno_celular').value,
+-            direccion: document.getElementById('alumno_direccion').value,
+-            fecha_ingreso: document.getElementById('alumno_fecha_ingreso').value || null,
+-            activo: document.getElementById('alumno_activo').checked ? 1 : 0,
+-            diagnostico: document.getElementById('alumno_diagnostico').value,
+-            observaciones: document.getElementById('alumno_observaciones').value,
+-        };
+-
+-        if (periodoId && horariosDias.length) {
+-            payload.periodo_id = periodoId;
+-            payload.horarios = horariosDias;
+-            payload.horario_salon = document.getElementById('alumno_horario_salon').value;
+-        }
+-
+-        const url = id ? `/alumnos/${id}` : '/alumnos';
+-        const res = await maFetch(url, {
+-            method: id ? 'PUT' : 'POST',
+-            headers: { 'Content-Type': 'application/json' },
+-            body: JSON.stringify(payload),
+-        });
+-        if (res && res.ok) {
+-            maToast('success', res.message);
+-            modalAlumno.hide();
+-            setTimeout(() => location.reload(), 700);
+-        }
+-    });
+-
+-    async function eliminarAlumno(id, nombre) {
+-        if (!(await maConfirmarEliminar(nombre))) return;
+-        const res = await maFetch(`/alumnos/${id}`, { method: 'DELETE' });
+-        if (res && res.ok) {
+-            maToast('success', res.message);
+-            setTimeout(() => location.reload(), 700);
+-        }
+-    }
+-</script>
+-<?php $__env->stopPush(); ?>
+-<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH D:\XAMPP\htdocs\musicarte\resources\views/alumnos/index.blade.php ENDPATH**/ ?>
+\ No newline at end of file
+diff --git a/storage/framework/views/a3ba4bebf139a390bb90146d01bc0af5.php b/storage/framework/views/a3ba4bebf139a390bb90146d01bc0af5.php
+deleted file mode 100644
+index 8dea78d..0000000
+--- a/storage/framework/views/a3ba4bebf139a390bb90146d01bc0af5.php
++++ /dev/null
+@@ -1,93 +0,0 @@
+-<?php if($paginator->hasPages()): ?>
+-    <nav class="d-flex justify-items-center justify-content-between">
+-        <div class="d-flex justify-content-between flex-fill d-sm-none">
+-            <ul class="pagination">
+-                
+-                <?php if($paginator->onFirstPage()): ?>
+-                    <li class="page-item disabled" aria-disabled="true">
+-                        <span class="page-link"><?php echo app('translator')->get('pagination.previous'); ?></span>
+-                    </li>
+-                <?php else: ?>
+-                    <li class="page-item">
+-                        <a class="page-link" href="<?php echo e($paginator->previousPageUrl()); ?>" rel="prev"><?php echo app('translator')->get('pagination.previous'); ?></a>
+-                    </li>
+-                <?php endif; ?>
+-
+-                
+-                <?php if($paginator->hasMorePages()): ?>
+-                    <li class="page-item">
+-                        <a class="page-link" href="<?php echo e($paginator->nextPageUrl()); ?>" rel="next"><?php echo app('translator')->get('pagination.next'); ?></a>
+-                    </li>
+-                <?php else: ?>
+-                    <li class="page-item disabled" aria-disabled="true">
+-                        <span class="page-link"><?php echo app('translator')->get('pagination.next'); ?></span>
+-                    </li>
+-                <?php endif; ?>
+-            </ul>
+-        </div>
+-
+-        <div class="d-none flex-sm-fill d-sm-flex align-items-sm-center justify-content-sm-between">
+-            <div>
+-                <p class="small text-muted">
+-                    <?php echo __('Showing'); ?>
+-
+-                    <span class="fw-semibold"><?php echo e($paginator->firstItem()); ?></span>
+-                    <?php echo __('to'); ?>
+-
+-                    <span class="fw-semibold"><?php echo e($paginator->lastItem()); ?></span>
+-                    <?php echo __('of'); ?>
+-
+-                    <span class="fw-semibold"><?php echo e($paginator->total()); ?></span>
+-                    <?php echo __('results'); ?>
+-
+-                </p>
+-            </div>
+-
+-            <div>
+-                <ul class="pagination">
+-                    
+-                    <?php if($paginator->onFirstPage()): ?>
+-                        <li class="page-item disabled" aria-disabled="true" aria-label="<?php echo app('translator')->get('pagination.previous'); ?>">
+-                            <span class="page-link" aria-hidden="true">&lsaquo;</span>
+-                        </li>
+-                    <?php else: ?>
+-                        <li class="page-item">
+-                            <a class="page-link" href="<?php echo e($paginator->previousPageUrl()); ?>" rel="prev" aria-label="<?php echo app('translator')->get('pagination.previous'); ?>">&lsaquo;</a>
+-                        </li>
+-                    <?php endif; ?>
+-
+-                    
+-                    <?php $__currentLoopData = $elements; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $element): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+-                        
+-                        <?php if(is_string($element)): ?>
+-                            <li class="page-item disabled" aria-disabled="true"><span class="page-link"><?php echo e($element); ?></span></li>
+-                        <?php endif; ?>
+-
+-                        
+-                        <?php if(is_array($element)): ?>
+-                            <?php $__currentLoopData = $element; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $page => $url): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+-                                <?php if($page == $paginator->currentPage()): ?>
+-                                    <li class="page-item active" aria-current="page"><span class="page-link"><?php echo e($page); ?></span></li>
+-                                <?php else: ?>
+-                                    <li class="page-item"><a class="page-link" href="<?php echo e($url); ?>"><?php echo e($page); ?></a></li>
+-                                <?php endif; ?>
+-                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+-                        <?php endif; ?>
+-                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+-
+-                    
+-                    <?php if($paginator->hasMorePages()): ?>
+-                        <li class="page-item">
+-                            <a class="page-link" href="<?php echo e($paginator->nextPageUrl()); ?>" rel="next" aria-label="<?php echo app('translator')->get('pagination.next'); ?>">&rsaquo;</a>
+-                        </li>
+-                    <?php else: ?>
+-                        <li class="page-item disabled" aria-disabled="true" aria-label="<?php echo app('translator')->get('pagination.next'); ?>">
+-                            <span class="page-link" aria-hidden="true">&rsaquo;</span>
+-                        </li>
+-                    <?php endif; ?>
+-                </ul>
+-            </div>
+-        </div>
+-    </nav>
+-<?php endif; ?>
+-<?php /**PATH D:\XAMPP\htdocs\musicarte\vendor\laravel\framework\src\Illuminate\Pagination/resources/views/bootstrap-5.blade.php ENDPATH**/ ?>
+\ No newline at end of file
+diff --git a/storage/framework/views/c2a8478f9763f16a02f432af0f366973.php b/storage/framework/views/c2a8478f9763f16a02f432af0f366973.php
+deleted file mode 100644
+index a47e421..0000000
+--- a/storage/framework/views/c2a8478f9763f16a02f432af0f366973.php
++++ /dev/null
+@@ -1,230 +0,0 @@
+-<?php $__env->startSection('titulo', 'Pagos'); ?>
+-
+-<?php $__env->startSection('contenido'); ?>
+-<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+-    <div>
+-        <h5 class="fw-semibold mb-0">Pagos / Mensualidades</h5>
+-        <small class="text-muted"><?php echo e(\App\Models\Pago::MESES[$mes]); ?> <?php echo e($anio); ?></small>
+-    </div>
+-    <?php if(auth()->guard()->check()): ?> <?php if(auth()->user()->esAdmin()): ?>
+-    <button class="btn btn-morado" data-bs-toggle="modal" data-bs-target="#modalPago" onclick="nuevoPago()"><i class="bi bi-plus-lg me-1"></i> Registrar Pago</button>
+-    <?php else: ?>
+-    <span class="badge bg-secondary"><i class="bi bi-lock-fill me-1"></i>Modo solo lectura (precios reservados al administrador)</span>
+-    <?php endif; ?> <?php endif; ?>
+-</div>
+-
+-<div class="row g-3 mb-3">
+-    <div class="col-md-4"><div class="card p-3 card-kpi"><div class="text-muted small">Recaudado del mes</div><div class="fs-4 fw-bold text-success">S/ <?php echo e(number_format($totales['recaudado'], 2)); ?></div></div></div>
+-    <div class="col-md-4"><div class="card p-3 card-kpi"><div class="text-muted small">Pendiente de cobro</div><div class="fs-4 fw-bold text-danger">S/ <?php echo e(number_format($totales['pendiente'], 2)); ?></div></div></div>
+-</div>
+-
+-<div class="card p-3 mb-3">
+-    <form class="row g-2" method="GET">
+-        <div class="col-md-3">
+-            <select name="mes" class="form-select">
+-                <?php $__currentLoopData = \App\Models\Pago::MESES; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $num => $nombre): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+-                    <option value="<?php echo e($num); ?>" <?php if($mes==$num): echo 'selected'; endif; ?>><?php echo e($nombre); ?></option>
+-                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+-            </select>
+-        </div>
+-        <div class="col-md-2">
+-            <input type="number" name="anio" value="<?php echo e($anio); ?>" class="form-control">
+-        </div>
+-        <div class="col-md-3">
+-            <input type="text" name="buscar" value="<?php echo e(request('buscar')); ?>" class="form-control" placeholder="Buscar alumno...">
+-        </div>
+-        <div class="col-md-2 d-flex align-items-center">
+-            <div class="form-check">
+-                <input class="form-check-input" type="checkbox" name="solo_pendientes" value="1" id="solo_pendientes" <?php echo e(request('solo_pendientes') ? 'checked' : ''); ?>>
+-                <label class="form-check-label small" for="solo_pendientes">Solo pendientes</label>
+-            </div>
+-        </div>
+-        <div class="col-md-2"><button class="btn btn-light w-100">Filtrar</button></div>
+-    </form>
+-</div>
+-
+-<div class="card p-3">
+-    <div class="table-responsive">
+-        <table class="table align-middle">
+-            <thead><tr><th>Alumno</th><th>Concepto</th><th>Total</th><th>Yape/Transf.</th><th>Efectivo</th><th>Tarjeta</th><th>Saldo</th><th>Fecha pago</th><th class="text-end">Acciones</th></tr></thead>
+-            <tbody>
+-            <?php $__empty_1 = true; $__currentLoopData = $pagos; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $p): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+-                <tr>
+-                    <td class="fw-semibold"><?php echo e($p->alumno->nombre ?? '—'); ?></td>
+-                    <td><?php echo e($p->concepto ?? '—'); ?></td>
+-                    <td>S/ <?php echo e(number_format($p->monto_total, 2)); ?></td>
+-                    <td>S/ <?php echo e(number_format($p->yape_transferencia, 2)); ?></td>
+-                    <td>S/ <?php echo e(number_format($p->efectivo, 2)); ?></td>
+-                    <td>S/ <?php echo e(number_format($p->tarjeta, 2)); ?></td>
+-                    <td>
+-                        <?php if($p->saldo > 0): ?><span class="text-danger fw-semibold">S/ <?php echo e(number_format($p->saldo, 2)); ?></span>
+-                        <?php else: ?><span class="text-success">Pagado</span><?php endif; ?>
+-                    </td>
+-                    <td><?php echo e(optional($p->fecha_pago)->format('d/m/Y') ?? '—'); ?></td>
+-                    <td class="text-end">
+-                        <a href="<?php echo e(route('pagos.recibo', $p)); ?>" target="_blank" class="btn btn-sm btn-light btn-icon" title="Recibo PDF"><i class="bi bi-file-earmark-pdf"></i></a>
+-                        <?php if(auth()->guard()->check()): ?> <?php if(auth()->user()->esAdmin()): ?>
+-                        <button class="btn btn-sm btn-light btn-icon" onclick="editarPago(<?php echo e($p->id); ?>)"><i class="bi bi-pencil"></i></button>
+-                        <button class="btn btn-sm btn-light btn-icon text-danger" onclick="eliminarPago(<?php echo e($p->id); ?>, '<?php echo e($p->alumno->nombre ?? ''); ?>')"><i class="bi bi-trash"></i></button>
+-                        <?php endif; ?> <?php endif; ?>
+-                    </td>
+-                </tr>
+-            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+-                <tr><td colspan="9" class="text-center text-muted py-4">No hay pagos registrados para este periodo.</td></tr>
+-            <?php endif; ?>
+-            </tbody>
+-        </table>
+-    </div>
+-    <?php echo e($pagos->links()); ?>
+-
+-</div>
+-
+-<?php if(auth()->guard()->check()): ?> <?php if(auth()->user()->esAdmin()): ?>
+-<div class="modal fade" id="modalPago" tabindex="-1">
+-    <div class="modal-dialog modal-lg">
+-        <form class="modal-content" id="formPago">
+-            <div class="modal-header" style="background:#3d2c8d;color:#fff">
+-                <h5 class="modal-title" id="tituloModalPago">Registrar Pago</h5>
+-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+-            </div>
+-            <div class="modal-body">
+-                <input type="hidden" id="pago_id">
+-                <div class="row">
+-                    <div class="col-md-6 mb-3">
+-                        <label class="form-label small fw-semibold">Alumno</label>
+-                        <select class="form-select" id="pago_alumno_id" required>
+-                            <option value="">-- Selecciona --</option>
+-                            <?php $__currentLoopData = $alumnos; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $a): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><option value="<?php echo e($a->id); ?>"><?php echo e($a->nombre); ?></option><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+-                        </select>
+-                    </div>
+-                    <div class="col-md-6 mb-3">
+-                        <label class="form-label small fw-semibold">Concepto</label>
+-                        <input type="text" class="form-control" id="pago_concepto" placeholder="Ej. Mensualidad Piano">
+-                    </div>
+-                </div>
+-                <div class="row">
+-                    <div class="col-md-4 mb-3">
+-                        <label class="form-label small fw-semibold">Mes</label>
+-                        <select class="form-select" id="pago_mes">
+-                            <?php $__currentLoopData = \App\Models\Pago::MESES; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $num => $nombre): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><option value="<?php echo e($num); ?>" <?php if($mes==$num): echo 'selected'; endif; ?>><?php echo e($nombre); ?></option><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+-                        </select>
+-                    </div>
+-                    <div class="col-md-4 mb-3">
+-                        <label class="form-label small fw-semibold">Ano</label>
+-                        <input type="number" class="form-control" id="pago_anio" value="<?php echo e($anio); ?>">
+-                    </div>
+-                    <div class="col-md-4 mb-3">
+-                        <label class="form-label small fw-semibold">Fecha de pago</label>
+-                        <input type="date" class="form-control" id="pago_fecha_pago">
+-                    </div>
+-                </div>
+-                <div class="row">
+-                    <div class="col-md-3 mb-3">
+-                        <label class="form-label small fw-semibold">Monto total (S/)</label>
+-                        <input type="number" step="0.01" min="0" class="form-control" id="pago_monto_total" required>
+-                    </div>
+-                    <div class="col-md-3 mb-3">
+-                        <label class="form-label small fw-semibold">Yape/Transf.</label>
+-                        <input type="number" step="0.01" min="0" class="form-control" id="pago_yape">
+-                    </div>
+-                    <div class="col-md-3 mb-3">
+-                        <label class="form-label small fw-semibold">Efectivo</label>
+-                        <input type="number" step="0.01" min="0" class="form-control" id="pago_efectivo">
+-                    </div>
+-                    <div class="col-md-3 mb-3">
+-                        <label class="form-label small fw-semibold">Tarjeta</label>
+-                        <input type="number" step="0.01" min="0" class="form-control" id="pago_tarjeta">
+-                    </div>
+-                </div>
+-                <div class="mb-3">
+-                    <label class="form-label small fw-semibold">N° de recibo</label>
+-                    <input type="text" class="form-control" id="pago_recibo_nro">
+-                </div>
+-                <div class="mb-1">
+-                    <label class="form-label small fw-semibold">Observacion</label>
+-                    <textarea class="form-control" id="pago_observacion" rows="2"></textarea>
+-                </div>
+-            </div>
+-            <div class="modal-footer">
+-                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+-                <button type="submit" class="btn btn-morado">Guardar</button>
+-            </div>
+-        </form>
+-    </div>
+-</div>
+-<?php endif; ?> <?php endif; ?>
+-<?php $__env->stopSection(); ?>
+-
+-<?php $__env->startPush('scripts'); ?>
+-<script>
+-<?php if(auth()->guard()->check()): ?> <?php if(auth()->user()->esAdmin()): ?>
+-    const modalPago = new bootstrap.Modal('#modalPago');
+-
+-    function nuevoPago() {
+-        document.getElementById('formPago').reset();
+-        document.getElementById('pago_id').value = '';
+-        document.getElementById('tituloModalPago').innerText = 'Registrar Pago';
+-    }
+-
+-    async function editarPago(id) {
+-        const res = await maFetch(`/pagos/${id}/edit`);
+-        if (!res) return;
+-        const d = res.data;
+-        document.getElementById('pago_id').value = d.id;
+-        document.getElementById('pago_alumno_id').value = d.alumno_id;
+-        document.getElementById('pago_concepto').value = d.concepto ?? '';
+-        document.getElementById('pago_mes').value = d.mes;
+-        document.getElementById('pago_anio').value = d.anio;
+-        document.getElementById('pago_fecha_pago').value = d.fecha_pago ? d.fecha_pago.substring(0,10) : '';
+-        document.getElementById('pago_monto_total').value = d.monto_total;
+-        document.getElementById('pago_yape').value = d.yape_transferencia;
+-        document.getElementById('pago_efectivo').value = d.efectivo;
+-        document.getElementById('pago_tarjeta').value = d.tarjeta;
+-        document.getElementById('pago_recibo_nro').value = d.recibo_nro ?? '';
+-        document.getElementById('pago_observacion').value = d.observacion ?? '';
+-        document.getElementById('tituloModalPago').innerText = 'Editar Pago';
+-        modalPago.show();
+-    }
+-
+-    document.getElementById('formPago').addEventListener('submit', async (e) => {
+-        e.preventDefault();
+-        const id = document.getElementById('pago_id').value;
+-        const payload = {
+-            alumno_id: document.getElementById('pago_alumno_id').value,
+-            concepto: document.getElementById('pago_concepto').value,
+-            mes: document.getElementById('pago_mes').value,
+-            anio: document.getElementById('pago_anio').value,
+-            fecha_pago: document.getElementById('pago_fecha_pago').value || null,
+-            monto_total: document.getElementById('pago_monto_total').value || 0,
+-            yape_transferencia: document.getElementById('pago_yape').value || 0,
+-            efectivo: document.getElementById('pago_efectivo').value || 0,
+-            tarjeta: document.getElementById('pago_tarjeta').value || 0,
+-            recibo_nro: document.getElementById('pago_recibo_nro').value,
+-            observacion: document.getElementById('pago_observacion').value,
+-        };
+-        const url = id ? `/pagos/${id}` : '/pagos';
+-        const res = await maFetch(url, {
+-            method: id ? 'PUT' : 'POST',
+-            headers: { 'Content-Type': 'application/json' },
+-            body: JSON.stringify(payload),
+-        });
+-        if (res && res.ok) {
+-            maToast('success', res.message);
+-            modalPago.hide();
+-            setTimeout(() => location.reload(), 700);
+-        }
+-    });
+-
+-    async function eliminarPago(id, nombre) {
+-        if (!(await maConfirmarEliminar(`el pago de ${nombre}`))) return;
+-        const res = await maFetch(`/pagos/${id}`, { method: 'DELETE' });
+-        if (res && res.ok) {
+-            maToast('success', res.message);
+-            setTimeout(() => location.reload(), 700);
+-        }
+-    }
+-<?php endif; ?> <?php endif; ?>
+-</script>
+-<?php $__env->stopPush(); ?>
+-
+-<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH D:\XAMPP\htdocs\musicarte\resources\views/pagos/index.blade.php ENDPATH**/ ?>
+\ No newline at end of file

@@ -16,6 +16,36 @@ class MaestroController extends Controller
         return view('maestros.index', compact('maestros', 'especialidades'));
     }
 
+    /**
+     * "Ver" maestro (Read del CRUD). Muestra su tablero de horarios estilo
+     * el cuadro fisico que se usaba en salon: una fila por hora, una
+     * columna por dia, con el alumno (y su edad) en cada casilla — para un
+     * periodo especifico, ya que el maestro y los horarios pueden cambiar
+     * de un mes a otro.
+     */
+    public function show(Maestro $maestro, Request $request)
+    {
+        $maestro->load('especialidades');
+
+        $periodoId = $request->get('periodo_id');
+        $periodo = $periodoId
+            ? \App\Models\Periodo::find($periodoId)
+            : \App\Models\Periodo::where('activo', true)->orderByDesc('anio')->orderByDesc('mes')->first();
+
+        $horarios = collect();
+        if ($periodo) {
+            $horarios = \App\Models\Horario::with(['alumno', 'especialidad'])
+                ->where('maestro_id', $maestro->id)
+                ->where('periodo_id', $periodo->id)
+                ->orderBy('dia_semana')->orderBy('hora_inicio')
+                ->get();
+        }
+
+        $periodos = \App\Models\Periodo::orderByDesc('anio')->orderByDesc('mes')->get();
+
+        return view('maestros.show', compact('maestro', 'horarios', 'periodo', 'periodos'));
+    }
+
     public function store(Request $request)
     {
         $data = $this->validarDatos($request);

@@ -2,14 +2,19 @@
 @section('titulo', 'Periodos')
 
 @section('contenido')
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <div>
         <h5 class="fw-semibold mb-0">Periodos</h5>
         <small class="text-muted">Define cuanto dura cada periodo de clases (normalmente 4 semanas por mes)</small>
     </div>
-    <button class="btn btn-morado" data-bs-toggle="modal" data-bs-target="#modalPeriodo" onclick="nuevoPeriodo()">
-        <i class="bi bi-plus-lg me-1"></i> Nuevo Periodo
-    </button>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalPaseAlumnos" onclick="prepararPaseAlumnos()">
+            <i class="bi bi-arrow-right-circle me-1"></i> Pasar alumnos al siguiente periodo
+        </button>
+        <button class="btn btn-morado" data-bs-toggle="modal" data-bs-target="#modalPeriodo" onclick="nuevoPeriodo()">
+            <i class="bi bi-plus-lg me-1"></i> Nuevo Periodo
+        </button>
+    </div>
 </div>
 
 <div class="card p-3">
@@ -34,6 +39,9 @@
             @endforelse
             </tbody>
         </table>
+    </div>
+    <div class="text-end">
+        <a href="{{ route('alumnos.historial') }}" class="small">Ver historial de actividad por alumno <i class="bi bi-arrow-right"></i></a>
     </div>
 </div>
 
@@ -85,6 +93,61 @@
                 <button type="submit" class="btn btn-morado">Guardar</button>
             </div>
         </form>
+    </div>
+</div>
+
+{{-- ======================================================
+     Seccion 8: pasar alumnos activos de un periodo al siguiente.
+     ====================================================== --}}
+<div class="modal fade" id="modalPaseAlumnos" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#3d2c8d;color:#fff">
+                <h5 class="modal-title">Pasar alumnos al siguiente periodo</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold">Periodo anterior</label>
+                        <select class="form-select" id="pase_periodo_anterior_id" onchange="cargarCandidatosPase()">
+                            <option value="">-- Selecciona --</option>
+                            @foreach($periodos as $p)
+                                <option value="{{ $p->id }}">{{ $p->nombre }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold">Periodo nuevo (destino)</label>
+                        <select class="form-select" id="pase_periodo_nuevo_id">
+                            <option value="">-- Selecciona --</option>
+                            @foreach($periodos as $p)
+                                <option value="{{ $p->id }}">{{ $p->nombre }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                <div id="pase_estado_vacio" class="text-muted small">Selecciona el periodo anterior para ver los alumnos que estuvieron activos.</div>
+
+                <div id="pase_lista_wrap" class="d-none">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="small text-muted">Alumnos activos en el periodo anterior. Desmarca a quienes no continuan.</span>
+                        <div>
+                            <button type="button" class="btn btn-sm btn-light" onclick="marcarTodosPase(true)">Marcar todos</button>
+                            <button type="button" class="btn btn-sm btn-light" onclick="marcarTodosPase(false)">Desmarcar todos</button>
+                        </div>
+                    </div>
+                    <div id="pase_lista_alumnos" class="border rounded p-2" style="max-height:320px; overflow-y:auto;"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-morado" onclick="confirmarPaseAlumnos()">
+                    <i class="bi bi-arrow-right-circle me-1"></i> Pasar seleccionados al nuevo periodo
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 @endsection
@@ -153,6 +216,92 @@
         if (res && res.ok) {
             maToast('success', res.message);
             setTimeout(() => location.reload(), 700);
+        }
+    }
+
+    /* ---------------------------------------------------------------
+     * Seccion 8: pasar alumnos activos al siguiente periodo.
+     * ------------------------------------------------------------- */
+    let candidatosPaseActual = [];
+
+    function prepararPaseAlumnos() {
+        document.getElementById('pase_periodo_anterior_id').value = '';
+        document.getElementById('pase_periodo_nuevo_id').value = '';
+        document.getElementById('pase_lista_wrap').classList.add('d-none');
+        document.getElementById('pase_estado_vacio').classList.remove('d-none');
+        document.getElementById('pase_lista_alumnos').innerHTML = '';
+        candidatosPaseActual = [];
+    }
+
+    async function cargarCandidatosPase() {
+        const periodoId = document.getElementById('pase_periodo_anterior_id').value;
+        if (!periodoId) {
+            document.getElementById('pase_lista_wrap').classList.add('d-none');
+            document.getElementById('pase_estado_vacio').classList.remove('d-none');
+            return;
+        }
+
+        const res = await maFetch(`/periodos/${periodoId}/candidatos`);
+        if (!res || !res.ok) return;
+
+        candidatosPaseActual = res.data;
+        const cont = document.getElementById('pase_lista_alumnos');
+
+        if (!candidatosPaseActual.length) {
+            document.getElementById('pase_lista_wrap').classList.add('d-none');
+            document.getElementById('pase_estado_vacio').classList.remove('d-none');
+            document.getElementById('pase_estado_vacio').innerText = 'Ese periodo no tiene alumnos activos registrados.';
+            return;
+        }
+
+        document.getElementById('pase_estado_vacio').classList.add('d-none');
+        document.getElementById('pase_lista_wrap').classList.remove('d-none');
+
+        cont.innerHTML = candidatosPaseActual.map(a => `
+            <div class="form-check">
+                <input class="form-check-input pase-alumno-checkbox" type="checkbox" value="${a.id}" id="pase_alumno_${a.id}" checked>
+                <label class="form-check-label" for="pase_alumno_${a.id}">${a.nombre}</label>
+            </div>
+        `).join('');
+    }
+
+    function marcarTodosPase(marcar) {
+        document.querySelectorAll('.pase-alumno-checkbox').forEach(cb => cb.checked = marcar);
+    }
+
+    async function confirmarPaseAlumnos() {
+        const periodoAnteriorId = document.getElementById('pase_periodo_anterior_id').value;
+        const periodoNuevoId = document.getElementById('pase_periodo_nuevo_id').value;
+
+        if (!periodoAnteriorId || !periodoNuevoId) {
+            Swal.fire({ icon: 'warning', title: 'Faltan datos', text: 'Selecciona el periodo anterior y el periodo nuevo.' });
+            return;
+        }
+        if (periodoAnteriorId === periodoNuevoId) {
+            Swal.fire({ icon: 'warning', title: 'Periodos iguales', text: 'El periodo anterior y el nuevo deben ser distintos.' });
+            return;
+        }
+
+        const seleccionados = Array.from(document.querySelectorAll('.pase-alumno-checkbox:checked')).map(cb => cb.value);
+
+        const confirmacion = await Swal.fire({
+            icon: 'question',
+            title: 'Confirmar pase de alumnos',
+            text: `${seleccionados.length} alumno(s) pasaran activos al nuevo periodo. Los no marcados quedaran inactivos ese mes. ¿Continuar?`,
+            showCancelButton: true,
+            confirmButtonText: 'Si, pasar alumnos',
+            cancelButtonText: 'Cancelar',
+        });
+        if (!confirmacion.isConfirmed) return;
+
+        const res = await maFetch(`/periodos/${periodoNuevoId}/pasar-alumnos`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ periodo_anterior_id: periodoAnteriorId, alumno_ids: seleccionados }),
+        });
+        if (res && res.ok) {
+            maToast('success', res.message);
+            bootstrap.Modal.getInstance(document.getElementById('modalPaseAlumnos')).hide();
         }
     }
 </script>

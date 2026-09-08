@@ -41,6 +41,15 @@
         </a>
     </div>
     <div class="col-md-4">
+        <a href="{{ route('reportes.pagos-anual') }}" class="text-decoration-none">
+            <div class="card p-3 h-100">
+                <i class="bi bi-calendar-range fs-2" style="color:#3d2c8d"></i>
+                <h6 class="fw-semibold mt-2 mb-1">Historial de Pagos Anual</h6>
+                <small class="text-muted">Enero a diciembre: cobrado, a cuenta y deudores</small>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-4">
         <a href="{{ route('reportes.planilla-maestros') }}" class="text-decoration-none">
             <div class="card p-3 h-100">
                 <i class="bi bi-file-earmark-person fs-2" style="color:#3d2c8d"></i>

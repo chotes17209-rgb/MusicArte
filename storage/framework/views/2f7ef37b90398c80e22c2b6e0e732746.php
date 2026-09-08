@@ -11,6 +11,10 @@
     </button>
 </div>
 
+<div class="d-flex justify-content-end mb-2">
+    <a href="<?php echo e(route('horarios.tablero')); ?>" class="small"><i class="bi bi-grid-3x3-gap me-1"></i> Ver tablero de horarios de todos los maestros</a>
+</div>
+
 <div class="card p-3">
     <div class="table-responsive">
         <table class="table align-middle">
@@ -31,8 +35,9 @@
                     <td><?php echo e($m->alumnos_count); ?></td>
                     <td><?php if($m->activo): ?><span class="badge bg-success">Activo</span><?php else: ?><span class="badge bg-secondary">Inactivo</span><?php endif; ?></td>
                     <td class="text-end">
-                        <button class="btn btn-sm btn-light btn-icon" onclick="editarMaestro(<?php echo e($m->id); ?>)"><i class="bi bi-pencil"></i></button>
-                        <button class="btn btn-sm btn-light btn-icon text-danger" onclick="eliminarMaestro(<?php echo e($m->id); ?>, '<?php echo e($m->nombre); ?>')"><i class="bi bi-trash"></i></button>
+                        <a href="<?php echo e(route('maestros.show', $m)); ?>" class="btn btn-sm btn-light btn-icon" title="Ver horario"><i class="bi bi-eye"></i></a>
+                        <button class="btn btn-sm btn-light btn-icon" onclick="editarMaestro(<?php echo e($m->id); ?>)" title="Editar"><i class="bi bi-pencil"></i></button>
+                        <button class="btn btn-sm btn-light btn-icon text-danger" onclick="eliminarMaestro(<?php echo e($m->id); ?>, '<?php echo e($m->nombre); ?>')" title="Eliminar"><i class="bi bi-trash"></i></button>
                     </td>
                 </tr>
             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>

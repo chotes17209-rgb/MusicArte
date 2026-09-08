@@ -6,6 +6,7 @@
                 <th>Edad</th>
                 <th>Especialidad</th>
                 <th>Maestro</th>
+                <th>Talleres</th>
                 <th>Tutor</th>
                 <th>Celular</th>
                 <th>Estado</th>
@@ -19,6 +20,12 @@
                 <td><?php echo e($a->edad ?? '—'); ?></td>
                 <td><?php echo e($a->especialidad->nombre ?? '—'); ?></td>
                 <td><?php echo e($a->maestro->nombre ?? '—'); ?></td>
+                <td>
+                    <span class="badge bg-light text-dark border">
+                        <?php echo e($a->talleres_activos_count); ?> <?php echo e(Str::plural('taller', $a->talleres_activos_count)); ?>
+
+                    </span>
+                </td>
                 <td><?php echo e($a->tutor ?? '—'); ?></td>
                 <td><?php echo e($a->celular ?? '—'); ?></td>
                 <td>
@@ -29,12 +36,13 @@
                     <?php endif; ?>
                 </td>
                 <td class="text-end">
-                    <button class="btn btn-sm btn-light btn-icon" onclick="editarAlumno(<?php echo e($a->id); ?>)"><i class="bi bi-pencil"></i></button>
-                    <button class="btn btn-sm btn-light btn-icon text-danger" onclick="eliminarAlumno(<?php echo e($a->id); ?>, '<?php echo e($a->nombre); ?>')"><i class="bi bi-trash"></i></button>
+                    <a href="<?php echo e(route('alumnos.show', $a)); ?>" class="btn btn-sm btn-light btn-icon" title="Ver perfil e historial"><i class="bi bi-eye"></i></a>
+                    <button class="btn btn-sm btn-light btn-icon" onclick="editarAlumno(<?php echo e($a->id); ?>)" title="Editar"><i class="bi bi-pencil"></i></button>
+                    <button class="btn btn-sm btn-light btn-icon text-danger" onclick="eliminarAlumno(<?php echo e($a->id); ?>, '<?php echo e($a->nombre); ?>')" title="Eliminar"><i class="bi bi-trash"></i></button>
                 </td>
             </tr>
         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-            <tr><td colspan="8" class="text-center text-muted py-4">No se encontraron alumnos con los filtros aplicados.</td></tr>
+            <tr><td colspan="9" class="text-center text-muted py-4">No se encontraron alumnos con los filtros aplicados.</td></tr>
         <?php endif; ?>
         </tbody>
     </table>

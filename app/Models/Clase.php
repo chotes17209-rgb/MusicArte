@@ -12,7 +12,7 @@ class Clase extends Model
     protected $table = 'clases';
 
     protected $fillable = [
-        'horario_id', 'alumno_id', 'maestro_id', 'especialidad_id', 'periodo_id',
+        'horario_id', 'alumno_id', 'alumno_taller_id', 'maestro_id', 'especialidad_id', 'periodo_id',
         'fecha', 'hora_inicio', 'hora_fin', 'salon', 'estado', 'notas',
     ];
 
@@ -29,6 +29,12 @@ class Clase extends Model
     public function alumno()
     {
         return $this->belongsTo(Alumno::class);
+    }
+
+    /** El taller especifico al que pertenece esta clase. */
+    public function alumnoTaller()
+    {
+        return $this->belongsTo(AlumnoTaller::class);
     }
 
     public function maestro()

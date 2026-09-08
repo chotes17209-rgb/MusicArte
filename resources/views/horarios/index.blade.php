@@ -5,23 +5,36 @@
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <div>
         <h5 class="fw-semibold mb-0">Horarios (plantilla semanal)</h5>
-        <small class="text-muted">Define el dia y hora fija de cada alumno; luego genera las clases en el calendario</small>
+        <small class="text-muted">Define el día y hora fija de cada alumno, por periodo; luego genera las clases en el calendario</small>
     </div>
-    <div class="d-flex gap-2">
-        <a href="{{ route('horarios.mensual') }}" class="btn btn-outline-secondary"><i class="bi bi-calendar-week me-1"></i> Vista mensual por semanas</a>
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="{{ route('horarios.tablero', ['periodo_id' => $periodoId]) }}" class="btn btn-outline-secondary"><i class="bi bi-grid-3x3-gap me-1"></i> Ver tablero por maestro</a>
+        <a href="{{ route('horarios.mensual') }}" class="btn btn-outline-secondary"><i class="bi bi-calendar-week me-1"></i> Vista mensual</a>
         <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalGenerar"><i class="bi bi-calendar-plus me-1"></i> Generar clases</button>
         <button class="btn btn-morado" data-bs-toggle="modal" data-bs-target="#modalHorario" onclick="nuevoHorario()"><i class="bi bi-plus-lg me-1"></i> Nuevo Horario</button>
     </div>
 </div>
 
+<div class="card p-3 mb-3">
+    <form method="GET" class="d-flex gap-2 align-items-center flex-wrap">
+        <label class="small fw-semibold mb-0">Periodo:</label>
+        <select name="periodo_id" class="form-select form-select-sm" style="max-width:220px" onchange="this.form.submit()">
+            @foreach($periodos as $p)
+                <option value="{{ $p->id }}" @selected($periodoId == $p->id)>{{ $p->nombre }}</option>
+            @endforeach
+        </select>
+        <span class="text-muted small">{{ $horarios->count() }} horario(s) en este periodo</span>
+    </form>
+</div>
+
 <div class="card p-3">
     <div class="table-responsive">
         <table class="table align-middle">
-            <thead><tr><th>Alumno</th><th>Dia</th><th>Hora</th><th>Maestro</th><th>Especialidad</th><th>Salon</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead>
+            <thead><tr><th>Alumno</th><th>Día</th><th>Hora</th><th>Maestro</th><th>Especialidad</th><th>Salón</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead>
             <tbody>
             @forelse($horarios as $h)
                 <tr>
-                    <td class="fw-semibold">{{ $h->alumno->nombre }}</td>
+                    <td class="fw-semibold">{{ $h->alumno->nombre ?? '—' }}</td>
                     <td>{{ $h->diaLabel() }}</td>
                     <td>{{ \Carbon\Carbon::parse($h->hora_inicio)->format('H:i') }} - {{ \Carbon\Carbon::parse($h->hora_fin)->format('H:i') }}</td>
                     <td>{{ $h->maestro->nombre ?? '—' }}</td>
@@ -29,12 +42,12 @@
                     <td>{{ $h->salon ?? '—' }}</td>
                     <td>@if($h->activo)<span class="badge bg-success">Activo</span>@else<span class="badge bg-secondary">Inactivo</span>@endif</td>
                     <td class="text-end">
-                        <button class="btn btn-sm btn-light btn-icon" onclick="editarHorario({{ $h->id }})"><i class="bi bi-pencil"></i></button>
-                        <button class="btn btn-sm btn-light btn-icon text-danger" onclick="eliminarHorario({{ $h->id }}, '{{ $h->alumno->nombre }}')"><i class="bi bi-trash"></i></button>
+                        <button class="btn btn-sm btn-light btn-icon" onclick="editarHorario({{ $h->id }})" title="Editar"><i class="bi bi-pencil"></i></button>
+                        <button class="btn btn-sm btn-light btn-icon text-danger" onclick="eliminarHorario({{ $h->id }}, '{{ $h->alumno->nombre ?? '' }}')" title="Eliminar"><i class="bi bi-trash"></i></button>
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="8" class="text-center text-muted py-4">Aun no hay horarios registrados.</td></tr>
+                <tr><td colspan="8" class="text-center text-muted py-4">No hay horarios registrados para este periodo.</td></tr>
             @endforelse
             </tbody>
         </table>
@@ -60,20 +73,40 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label small fw-semibold">Maestro</label>
-                    <select class="form-select" id="horario_maestro_id">
-                        <option value="">-- Selecciona --</option>
-                        @foreach($maestros as $m)
-                            <option value="{{ $m->id }}">{{ $m->nombre }}</option>
-                        @endforeach
-                    </select>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label small fw-semibold">Maestro</label>
+                        <select class="form-select" id="horario_maestro_id">
+                            <option value="">-- Selecciona --</option>
+                            @foreach($maestros as $m)
+                                <option value="{{ $m->id }}">{{ $m->nombre }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label small fw-semibold">Especialidad / Taller</label>
+                        <select class="form-select" id="horario_especialidad_id">
+                            <option value="">-- Selecciona --</option>
+                            @foreach($especialidades as $esp)
+                                <option value="{{ $esp->id }}">{{ $esp->nombre }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label small fw-semibold">Dia de la semana</label>
+                    <label class="form-label small fw-semibold">Periodo</label>
+                    <select class="form-select" id="horario_periodo_id" required>
+                        @foreach($periodos as $p)
+                            <option value="{{ $p->id }}" @selected($periodoId == $p->id)>{{ $p->nombre }}</option>
+                        @endforeach
+                    </select>
+                    <small class="text-muted">Cada mes es un periodo distinto: asi se conserva el historial de con que maestro estuvo cada alumno.</small>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Día de la semana</label>
                     <select class="form-select" id="horario_dia_semana" required>
-                        <option value="1">Lunes</option><option value="2">Martes</option><option value="3">Miercoles</option>
-                        <option value="4">Jueves</option><option value="5">Viernes</option><option value="6">Sabado</option><option value="7">Domingo</option>
+                        <option value="1">Lunes</option><option value="2">Martes</option><option value="3">Miércoles</option>
+                        <option value="4">Jueves</option><option value="5">Viernes</option><option value="6">Sábado</option><option value="7">Domingo</option>
                     </select>
                 </div>
                 <div class="row">
@@ -87,7 +120,7 @@
                     </div>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label small fw-semibold">Salon / Ambiente</label>
+                    <label class="form-label small fw-semibold">Salón / Ambiente</label>
                     <input type="text" class="form-control" id="horario_salon">
                 </div>
                 <div class="form-check form-switch">
@@ -112,7 +145,7 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p class="small text-muted">Se crearan las clases del calendario a partir de todos los horarios activos, en el rango de fechas indicado.</p>
+                <p class="small text-muted">Se crearán las clases del calendario a partir de todos los horarios activos, en el rango de fechas indicado.</p>
                 <div class="row">
                     <div class="col-6 mb-3">
                         <label class="form-label small fw-semibold">Desde</label>
@@ -141,6 +174,7 @@
     function nuevoHorario() {
         document.getElementById('formHorario').reset();
         document.getElementById('horario_id').value = '';
+        document.getElementById('horario_periodo_id').value = '{{ $periodoId }}';
         document.getElementById('tituloModalHorario').innerText = 'Nuevo Horario';
     }
 
@@ -151,6 +185,8 @@
         document.getElementById('horario_id').value = d.id;
         document.getElementById('horario_alumno_id').value = d.alumno_id;
         document.getElementById('horario_maestro_id').value = d.maestro_id ?? '';
+        document.getElementById('horario_especialidad_id').value = d.especialidad_id ?? '';
+        document.getElementById('horario_periodo_id').value = d.periodo_id ?? '{{ $periodoId }}';
         document.getElementById('horario_dia_semana').value = d.dia_semana;
         document.getElementById('horario_hora_inicio').value = d.hora_inicio;
         document.getElementById('horario_hora_fin').value = d.hora_fin;
@@ -166,6 +202,8 @@
         const payload = {
             alumno_id: document.getElementById('horario_alumno_id').value,
             maestro_id: document.getElementById('horario_maestro_id').value || null,
+            especialidad_id: document.getElementById('horario_especialidad_id').value || null,
+            periodo_id: document.getElementById('horario_periodo_id').value,
             dia_semana: document.getElementById('horario_dia_semana').value,
             hora_inicio: document.getElementById('horario_hora_inicio').value,
             hora_fin: document.getElementById('horario_hora_fin').value,

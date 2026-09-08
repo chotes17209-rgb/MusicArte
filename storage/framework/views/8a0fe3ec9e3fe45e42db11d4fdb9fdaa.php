@@ -53,6 +53,11 @@
                 <i class="bi bi-x-lg"></i>
             </button>
         </div>
+        <div class="col-12 d-flex justify-content-end">
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="imprimirListaAlumnos()">
+                <i class="bi bi-printer me-1"></i> Imprimir lista de alumnos
+            </button>
+        </div>
     </form>
 </div>
 
@@ -95,26 +100,6 @@
                 </div>
                 <div class="row">
                     <div class="col-md-6 mb-3">
-                        <label class="form-label small fw-semibold">Especialidad</label>
-                        <select class="form-select" id="alumno_especialidad_id">
-                            <option value="">-- Selecciona --</option>
-                            <?php $__currentLoopData = $especialidades; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $esp): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                <option value="<?php echo e($esp->id); ?>"><?php echo e($esp->nombre); ?></option>
-                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                        </select>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label small fw-semibold">Maestro asignado</label>
-                        <select class="form-select" id="alumno_maestro_id">
-                            <option value="">-- Selecciona --</option>
-                            <?php $__currentLoopData = $maestros; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $m): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                <option value="<?php echo e($m->id); ?>"><?php echo e($m->nombre); ?></option>
-                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                        </select>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-6 mb-3">
                         <label class="form-label small fw-semibold">Tutor / Apoderado</label>
                         <input type="text" class="form-control" id="alumno_tutor">
                     </div>
@@ -122,46 +107,6 @@
                         <label class="form-label small fw-semibold">Celular de contacto</label>
                         <input type="text" class="form-control" id="alumno_celular">
                     </div>
-                </div>
-                <hr>
-                <h6 class="fw-semibold small text-uppercase text-muted mb-2">Programar clases (opcional)</h6>
-                <div class="row">
-                    <div class="col-md-12 mb-2">
-                        <label class="form-label small fw-semibold">Periodo</label>
-                        <select class="form-select" id="alumno_periodo_id">
-                            <option value="">-- No programar clases ahora --</option>
-                            <?php $__currentLoopData = $periodos; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $p): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                <option value="<?php echo e($p->id); ?>"
-                                    data-inicio="<?php echo e($p->fecha_inicio->format('d/m/Y')); ?>"
-                                    data-fin="<?php echo e($p->fecha_fin->format('d/m/Y')); ?>"><?php echo e($p->nombre); ?></option>
-                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                        </select>
-                        <small class="text-muted" id="alumno_periodo_duracion"></small>
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label small fw-semibold">Dias y horario de clase</label>
-                    <div class="table-responsive">
-                        <table class="table table-sm align-middle mb-0">
-                            <thead>
-                                <tr><th style="width:36px"></th><th>Dia</th><th>Hora inicio</th><th>Hora fin</th></tr>
-                            </thead>
-                            <tbody>
-                                <?php $__currentLoopData = ['1'=>'Lunes','2'=>'Martes','3'=>'Miercoles','4'=>'Jueves','5'=>'Viernes','6'=>'Sabado','7'=>'Domingo']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $num => $label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                <tr>
-                                    <td>
-                                        <input class="form-check-input alumno-dia" type="checkbox" value="<?php echo e($num); ?>"
-                                               id="alumno_dia_<?php echo e($num); ?>" onchange="toggleDiaHorario(<?php echo e($num); ?>)">
-                                    </td>
-                                    <td><label for="alumno_dia_<?php echo e($num); ?>" class="mb-0"><?php echo e($label); ?></label></td>
-                                    <td><input type="time" class="form-control form-control-sm" id="alumno_dia_<?php echo e($num); ?>_inicio" disabled></td>
-                                    <td><input type="time" class="form-control form-control-sm" id="alumno_dia_<?php echo e($num); ?>_fin" disabled></td>
-                                </tr>
-                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                            </tbody>
-                        </table>
-                    </div>
-                    <small class="text-muted">Cada dia puede tener una hora distinta (ej. Martes 4pm, Miercoles y Jueves 5pm). Al guardar, las clases se crean automaticamente en el calendario para todo el periodo. El salon se asigna desde el modulo de Horarios.</small>
                 </div>
                 <div class="row">
                     <div class="col-md-6 mb-3">
@@ -179,9 +124,169 @@
                     <label class="form-label small fw-semibold">Diagnostico / condicion especial (opcional)</label>
                     <textarea class="form-control" id="alumno_diagnostico" rows="2"></textarea>
                 </div>
-                <div class="mb-1">
+                <div class="mb-3">
                     <label class="form-label small fw-semibold">Observaciones</label>
                     <textarea class="form-control" id="alumno_observaciones" rows="2"></textarea>
+                </div>
+
+                
+                <div id="bloquePrimerTaller">
+                    <hr>
+                    <h6 class="fw-semibold small text-uppercase text-muted mb-1">Primer taller (opcional)</h6>
+                    <small class="text-muted d-block mb-2">
+                        Puedes inscribir al alumno en su primer taller ahora. Luego de guardar, podras
+                        agregarle mas talleres desde el boton "Editar".
+                    </small>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label small fw-semibold">Taller (especialidad)</label>
+                            <select class="form-select" id="alumno_especialidad_id">
+                                <option value="">-- Selecciona --</option>
+                                <?php $__currentLoopData = $especialidades; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $esp): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <option value="<?php echo e($esp->id); ?>"><?php echo e($esp->nombre); ?></option>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label small fw-semibold">Maestro</label>
+                            <select class="form-select" id="alumno_maestro_id">
+                                <option value="">-- Selecciona --</option>
+                                <?php $__currentLoopData = $maestros; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $m): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <option value="<?php echo e($m->id); ?>"><?php echo e($m->nombre); ?></option>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12 mb-2">
+                            <label class="form-label small fw-semibold">Periodo</label>
+                            <select class="form-select" id="alumno_periodo_id">
+                                <option value="">-- No programar clases ahora --</option>
+                                <?php $__currentLoopData = $periodos; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $p): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <option value="<?php echo e($p->id); ?>"
+                                        data-inicio="<?php echo e($p->fecha_inicio->format('d/m/Y')); ?>"
+                                        data-fin="<?php echo e($p->fecha_fin->format('d/m/Y')); ?>"><?php echo e($p->nombre); ?></option>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                            </select>
+                            <small class="text-muted" id="alumno_periodo_duracion"></small>
+                        </div>
+                    </div>
+                    <div class="mb-1">
+                        <label class="form-label small fw-semibold">Dias y horario de clase</label>
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead>
+                                    <tr><th style="width:36px"></th><th>Dia</th><th>Hora inicio</th><th>Hora fin</th></tr>
+                                </thead>
+                                <tbody>
+                                    <?php $__currentLoopData = ['1'=>'Lunes','2'=>'Martes','3'=>'Miercoles','4'=>'Jueves','5'=>'Viernes','6'=>'Sabado','7'=>'Domingo']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $num => $label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <tr>
+                                        <td>
+                                            <input class="form-check-input" type="checkbox" value="<?php echo e($num); ?>"
+                                                   id="alumno_dia_<?php echo e($num); ?>" onchange="toggleDiaHorario('alumno', <?php echo e($num); ?>)">
+                                        </td>
+                                        <td><label for="alumno_dia_<?php echo e($num); ?>" class="mb-0"><?php echo e($label); ?></label></td>
+                                        <td><input type="time" class="form-control form-control-sm" id="alumno_dia_<?php echo e($num); ?>_inicio" disabled></td>
+                                        <td><input type="time" class="form-control form-control-sm" id="alumno_dia_<?php echo e($num); ?>_fin" disabled></td>
+                                    </tr>
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                </tbody>
+                            </table>
+                        </div>
+                        <small class="text-muted">Cada dia puede tener una hora distinta. El salon se asigna desde el modulo de Horarios.</small>
+                    </div>
+                </div>
+
+                
+                <div id="bloqueTalleresExistente" class="d-none">
+                    <hr>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="fw-semibold small text-uppercase text-muted mb-0">Talleres del alumno</h6>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="btnAgregarTaller" onclick="mostrarFormTaller()">
+                            <i class="bi bi-plus-lg"></i> Agregar taller
+                        </button>
+                    </div>
+
+                    <div id="panelListaTalleres">
+                        <div id="listaTalleresAlumno" class="vstack gap-2"></div>
+                    </div>
+
+                    <div id="panelFormTaller" class="d-none border rounded p-3 bg-light">
+                        <input type="hidden" id="taller_id">
+                        <div class="row">
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label small fw-semibold">Taller (especialidad)</label>
+                                <select class="form-select form-select-sm" id="taller_especialidad_id">
+                                    <option value="">-- Selecciona --</option>
+                                    <?php $__currentLoopData = $especialidades; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $esp): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                        <option value="<?php echo e($esp->id); ?>"><?php echo e($esp->nombre); ?></option>
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label small fw-semibold">Maestro</label>
+                                <select class="form-select form-select-sm" id="taller_maestro_id">
+                                    <option value="">-- Selecciona --</option>
+                                    <?php $__currentLoopData = $maestros; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $m): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                        <option value="<?php echo e($m->id); ?>"><?php echo e($m->nombre); ?></option>
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-5 mb-2">
+                                <label class="form-label small fw-semibold">Periodo</label>
+                                <select class="form-select form-select-sm" id="taller_periodo_id">
+                                    <option value="">-- Sin programar clases --</option>
+                                    <?php $__currentLoopData = $periodos; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $p): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                        <option value="<?php echo e($p->id); ?>"
+                                            data-inicio="<?php echo e($p->fecha_inicio->format('d/m/Y')); ?>"
+                                            data-fin="<?php echo e($p->fecha_fin->format('d/m/Y')); ?>"><?php echo e($p->nombre); ?></option>
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                </select>
+                                <small class="text-muted" id="taller_periodo_duracion"></small>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label small fw-semibold">Salon</label>
+                                <input type="text" class="form-control form-control-sm" id="taller_salon">
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label small fw-semibold">Estado</label>
+                                <select class="form-select form-select-sm" id="taller_estado">
+                                    <option value="activo">Activo</option>
+                                    <option value="inactivo">Inactivo</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label small fw-semibold">Dias y horario de este taller</label>
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle mb-0">
+                                    <thead>
+                                        <tr><th style="width:36px"></th><th>Dia</th><th>Hora inicio</th><th>Hora fin</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php $__currentLoopData = ['1'=>'Lunes','2'=>'Martes','3'=>'Miercoles','4'=>'Jueves','5'=>'Viernes','6'=>'Sabado','7'=>'Domingo']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $num => $label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                        <tr>
+                                            <td>
+                                                <input class="form-check-input" type="checkbox" value="<?php echo e($num); ?>"
+                                                       id="taller_dia_<?php echo e($num); ?>" onchange="toggleDiaHorario('taller', <?php echo e($num); ?>)">
+                                            </td>
+                                            <td><label for="taller_dia_<?php echo e($num); ?>" class="mb-0"><?php echo e($label); ?></label></td>
+                                            <td><input type="time" class="form-control form-control-sm" id="taller_dia_<?php echo e($num); ?>_inicio" disabled></td>
+                                            <td><input type="time" class="form-control form-control-sm" id="taller_dia_<?php echo e($num); ?>_fin" disabled></td>
+                                        </tr>
+                                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <small class="text-muted">Deja los dias sin marcar si no quieres (re)programar el calendario de este taller ahora.</small>
+                        </div>
+                        <div class="text-end">
+                            <button type="button" class="btn btn-sm btn-light" onclick="mostrarListaTalleres()">Cancelar</button>
+                            <button type="button" class="btn btn-sm btn-morado" onclick="guardarTaller()">Guardar taller</button>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -196,10 +301,10 @@
 <?php $__env->startPush('scripts'); ?>
 <script>
     const modalAlumno = new bootstrap.Modal('#modalAlumno');
+    let talleresAlumnoActual = [];
 
     /* ---------------------------------------------------------------
-     * 2.1 Edad automatica: se recalcula cada vez que cambia la fecha
-     * de nacimiento. El campo de edad es de solo lectura.
+     * 2.1 Edad automatica
      * ------------------------------------------------------------- */
     function calcularEdadDesdeFecha(fechaTexto) {
         if (!fechaTexto) return '';
@@ -219,6 +324,27 @@
         document.getElementById('alumno_edad').value = calcularEdadDesdeFecha(this.value);
     });
 
+    /* ---------------------------------------------------------------
+     * Helper generico de dias/horas, usado por el bloque "primer
+     * taller" (prefijo alumno_) y por el formulario de talleres
+     * (prefijo taller_).
+     * ------------------------------------------------------------- */
+    function toggleDiaHorario(prefix, diaNum) {
+        const checked = document.getElementById(prefix + '_dia_' + diaNum).checked;
+        const inicio = document.getElementById(prefix + '_dia_' + diaNum + '_inicio');
+        const fin = document.getElementById(prefix + '_dia_' + diaNum + '_fin');
+        inicio.disabled = !checked;
+        fin.disabled = !checked;
+        if (!checked) {
+            inicio.value = '';
+            fin.value = '';
+        }
+    }
+
+    function diaCorto(n) {
+        return ({1: 'Lun', 2: 'Mar', 3: 'Mie', 4: 'Jue', 5: 'Vie', 6: 'Sab', 7: 'Dom'})[n] || '';
+    }
+
     function nuevoAlumno() {
         document.getElementById('formAlumno').reset();
         document.getElementById('alumno_id').value = '';
@@ -230,19 +356,9 @@
             document.getElementById('alumno_dia_' + diaNum + '_fin').disabled = true;
             document.getElementById('alumno_dia_' + diaNum + '_fin').value = '';
         }
+        document.getElementById('bloquePrimerTaller').classList.remove('d-none');
+        document.getElementById('bloqueTalleresExistente').classList.add('d-none');
         document.getElementById('tituloModalAlumno').innerText = 'Nuevo Alumno';
-    }
-
-    function toggleDiaHorario(diaNum) {
-        const checked = document.getElementById('alumno_dia_' + diaNum).checked;
-        const inicio = document.getElementById('alumno_dia_' + diaNum + '_inicio');
-        const fin = document.getElementById('alumno_dia_' + diaNum + '_fin');
-        inicio.disabled = !checked;
-        fin.disabled = !checked;
-        if (!checked) {
-            inicio.value = '';
-            fin.value = '';
-        }
     }
 
     document.getElementById('alumno_periodo_id').addEventListener('change', function () {
@@ -250,6 +366,167 @@
         const txt = document.getElementById('alumno_periodo_duracion');
         txt.innerText = this.value ? `Del ${opt.dataset.inicio} al ${opt.dataset.fin}` : '';
     });
+
+    document.getElementById('taller_periodo_id').addEventListener('change', function () {
+        const opt = this.options[this.selectedIndex];
+        const txt = document.getElementById('taller_periodo_duracion');
+        txt.innerText = this.value ? `Del ${opt.dataset.inicio} al ${opt.dataset.fin}` : '';
+    });
+
+    /* ---------------------------------------------------------------
+     * Seccion 3 y 4: gestion de multiples talleres por alumno.
+     * ------------------------------------------------------------- */
+    function renderListaTalleres(talleres) {
+        talleresAlumnoActual = talleres || [];
+        const cont = document.getElementById('listaTalleresAlumno');
+
+        if (!talleresAlumnoActual.length) {
+            cont.innerHTML = '<div class="text-muted small">Este alumno todavia no tiene talleres. Usa "Agregar taller".</div>';
+            return;
+        }
+
+        cont.innerHTML = talleresAlumnoActual.map(t => {
+            const dias = (t.horarios || [])
+                .map(h => `${diaCorto(h.dia_semana)} ${h.hora_inicio.substring(0, 5)}-${h.hora_fin.substring(0, 5)}`)
+                .join(' · ') || 'Sin horario asignado';
+            const estadoBadge = t.estado === 'activo'
+                ? '<span class="badge bg-success">Activo</span>'
+                : '<span class="badge bg-secondary">Inactivo</span>';
+
+            return `
+            <div class="border rounded p-2 d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="fw-semibold">${t.especialidad?.nombre ?? 'Taller'} ${estadoBadge}</div>
+                    <div class="small text-muted">Maestro: ${t.maestro?.nombre ?? 'Sin asignar'} · Periodo: ${t.periodo?.nombre ?? 'Sin periodo'}</div>
+                    <div class="small text-muted">${dias}</div>
+                </div>
+                <div class="text-end">
+                    <button type="button" class="btn btn-sm btn-light btn-icon" onclick="mostrarFormTaller(${t.id})"><i class="bi bi-pencil"></i></button>
+                    <button type="button" class="btn btn-sm btn-light btn-icon text-danger" onclick="quitarTaller(${t.id})"><i class="bi bi-trash"></i></button>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    function mostrarListaTalleres() {
+        document.getElementById('panelListaTalleres').classList.remove('d-none');
+        document.getElementById('panelFormTaller').classList.add('d-none');
+        document.getElementById('btnAgregarTaller').classList.remove('d-none');
+    }
+
+    function mostrarFormTaller(tallerId = null) {
+        document.getElementById('panelListaTalleres').classList.add('d-none');
+        document.getElementById('panelFormTaller').classList.remove('d-none');
+        document.getElementById('btnAgregarTaller').classList.add('d-none');
+
+        document.getElementById('taller_id').value = '';
+        document.getElementById('taller_especialidad_id').value = '';
+        document.getElementById('taller_maestro_id').value = '';
+        document.getElementById('taller_periodo_id').value = '';
+        document.getElementById('taller_periodo_duracion').innerText = '';
+        document.getElementById('taller_salon').value = '';
+        document.getElementById('taller_estado').value = 'activo';
+        for (let d = 1; d <= 7; d++) {
+            document.getElementById('taller_dia_' + d).checked = false;
+            document.getElementById('taller_dia_' + d + '_inicio').disabled = true;
+            document.getElementById('taller_dia_' + d + '_inicio').value = '';
+            document.getElementById('taller_dia_' + d + '_fin').disabled = true;
+            document.getElementById('taller_dia_' + d + '_fin').value = '';
+        }
+
+        if (!tallerId) return;
+
+        const t = talleresAlumnoActual.find(x => x.id === tallerId);
+        if (!t) return;
+
+        document.getElementById('taller_id').value = t.id;
+        document.getElementById('taller_especialidad_id').value = t.especialidad_id ?? '';
+        document.getElementById('taller_maestro_id').value = t.maestro_id ?? '';
+        document.getElementById('taller_salon').value = t.salon ?? '';
+        document.getElementById('taller_estado').value = t.estado ?? 'activo';
+        if (t.periodo_id) {
+            const sel = document.getElementById('taller_periodo_id');
+            sel.value = t.periodo_id;
+            sel.dispatchEvent(new Event('change'));
+        }
+        (t.horarios || []).forEach(h => {
+            const cb = document.getElementById('taller_dia_' + h.dia_semana);
+            const hi = document.getElementById('taller_dia_' + h.dia_semana + '_inicio');
+            const hf = document.getElementById('taller_dia_' + h.dia_semana + '_fin');
+            if (cb) cb.checked = true;
+            if (hi) { hi.disabled = false; hi.value = h.hora_inicio.substring(0, 5); }
+            if (hf) { hf.disabled = false; hf.value = h.hora_fin.substring(0, 5); }
+        });
+    }
+
+    async function guardarTaller() {
+        const alumnoId = document.getElementById('alumno_id').value;
+        if (!alumnoId) return;
+
+        if (!document.getElementById('taller_especialidad_id').value) {
+            Swal.fire({ icon: 'warning', title: 'Falta el taller', text: 'Selecciona la especialidad del taller.' });
+            return;
+        }
+
+        const horarios = [];
+        for (let d = 1; d <= 7; d++) {
+            const cb = document.getElementById('taller_dia_' + d);
+            if (cb && cb.checked) {
+                horarios.push({
+                    dia_semana: d,
+                    hora_inicio: document.getElementById('taller_dia_' + d + '_inicio').value,
+                    hora_fin: document.getElementById('taller_dia_' + d + '_fin').value,
+                });
+            }
+        }
+        if (horarios.length && !document.getElementById('taller_periodo_id').value) {
+            Swal.fire({ icon: 'warning', title: 'Falta el periodo', text: 'Marcaste dias de clase pero no seleccionaste un periodo para este taller.' });
+            return;
+        }
+        if (horarios.some(h => !h.hora_inicio || !h.hora_fin)) {
+            Swal.fire({ icon: 'warning', title: 'Horario incompleto', text: 'Completa la hora de inicio y fin en cada dia marcado.' });
+            return;
+        }
+
+        const tallerId = document.getElementById('taller_id').value;
+        const payload = {
+            especialidad_id: document.getElementById('taller_especialidad_id').value,
+            maestro_id: document.getElementById('taller_maestro_id').value || null,
+            periodo_id: document.getElementById('taller_periodo_id').value || null,
+            salon: document.getElementById('taller_salon').value,
+            estado: document.getElementById('taller_estado').value,
+        };
+        if (horarios.length) payload.horarios = horarios;
+
+        const url = tallerId ? `/alumnos/talleres/${tallerId}` : `/alumnos/${alumnoId}/talleres`;
+        const res = await maFetch(url, {
+            method: tallerId ? 'PUT' : 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        if (res && res.ok) {
+            maToast('success', res.message);
+            await recargarTalleresDelAlumno(alumnoId);
+            mostrarListaTalleres();
+        }
+    }
+
+    async function quitarTaller(tallerId) {
+        if (!(await maConfirmarEliminar('este taller del alumno'))) return;
+        const res = await maFetch(`/alumnos/talleres/${tallerId}`, { method: 'DELETE' });
+        if (res && res.ok) {
+            maToast('success', res.message);
+            const alumnoId = document.getElementById('alumno_id').value;
+            await recargarTalleresDelAlumno(alumnoId);
+        }
+    }
+
+    async function recargarTalleresDelAlumno(alumnoId) {
+        const res = await maFetch(`/alumnos/${alumnoId}/edit`);
+        if (res && res.ok) {
+            renderListaTalleres(res.data.talleres);
+        }
+    }
 
     async function editarAlumno(id) {
         const res = await maFetch(`/alumnos/${id}/edit`);
@@ -261,8 +538,6 @@
         document.getElementById('alumno_fecha_nacimiento').value = d.fecha_nacimiento ?? '';
         document.getElementById('alumno_edad').value = d.fecha_nacimiento ? calcularEdadDesdeFecha(d.fecha_nacimiento) : (d.edad ?? '');
         document.getElementById('alumno_dni').value = d.dni ?? '';
-        document.getElementById('alumno_especialidad_id').value = d.especialidad_id ?? '';
-        document.getElementById('alumno_maestro_id').value = d.maestro_id ?? '';
         document.getElementById('alumno_tutor').value = d.tutor ?? '';
         document.getElementById('alumno_celular').value = d.celular ?? '';
         document.getElementById('alumno_fecha_ingreso').value = d.fecha_ingreso ?? '';
@@ -270,42 +545,10 @@
         document.getElementById('alumno_diagnostico').value = d.diagnostico ?? '';
         document.getElementById('alumno_observaciones').value = d.observaciones ?? '';
 
-        // Precarga del horario/periodo: envuelto en try/catch para que, si falta
-        // algun campo nuevo en el HTML, el modal se abra igual (no se rompe todo).
-        try {
-            const periodoSel = document.getElementById('alumno_periodo_id');
-            const duracionTxt = document.getElementById('alumno_periodo_duracion');
-
-            for (let diaNum = 1; diaNum <= 7; diaNum++) {
-                const cb = document.getElementById('alumno_dia_' + diaNum);
-                const hi = document.getElementById('alumno_dia_' + diaNum + '_inicio');
-                const hf = document.getElementById('alumno_dia_' + diaNum + '_fin');
-                if (cb) cb.checked = false;
-                if (hi) { hi.disabled = true; hi.value = ''; }
-                if (hf) { hf.disabled = true; hf.value = ''; }
-            }
-            if (periodoSel) periodoSel.value = '';
-            if (duracionTxt) duracionTxt.innerText = '';
-
-            if (d.horarios && d.horarios.length) {
-                d.horarios.forEach(h => {
-                    const cb = document.getElementById('alumno_dia_' + h.dia_semana);
-                    const hi = document.getElementById('alumno_dia_' + h.dia_semana + '_inicio');
-                    const hf = document.getElementById('alumno_dia_' + h.dia_semana + '_fin');
-                    if (cb) cb.checked = true;
-                    if (hi) { hi.disabled = false; hi.value = (h.hora_inicio || '').substring(0, 5); }
-                    if (hf) { hf.disabled = false; hf.value = (h.hora_fin || '').substring(0, 5); }
-                });
-
-                const h0 = d.horarios[0];
-                if (h0.periodo_id && periodoSel) {
-                    periodoSel.value = h0.periodo_id;
-                    periodoSel.dispatchEvent(new Event('change'));
-                }
-            }
-        } catch (err) {
-            console.error('No se pudo precargar el horario del alumno:', err);
-        }
+        document.getElementById('bloquePrimerTaller').classList.add('d-none');
+        document.getElementById('bloqueTalleresExistente').classList.remove('d-none');
+        renderListaTalleres(d.talleres);
+        mostrarListaTalleres();
 
         document.getElementById('tituloModalAlumno').innerText = 'Editar Alumno';
         modalAlumno.show();
@@ -315,43 +558,10 @@
         e.preventDefault();
         const id = document.getElementById('alumno_id').value;
 
-        const periodoId = document.getElementById('alumno_periodo_id').value;
-        const horariosDias = [];
-        for (let dia = 1; dia <= 7; dia++) {
-            const cb = document.getElementById('alumno_dia_' + dia);
-            if (cb && cb.checked) {
-                horariosDias.push({
-                    dia_semana: dia,
-                    hora_inicio: document.getElementById('alumno_dia_' + dia + '_inicio').value,
-                    hora_fin: document.getElementById('alumno_dia_' + dia + '_fin').value,
-                });
-            }
-        }
-
-        if (horariosDias.length && !periodoId) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Falta el periodo',
-                text: 'Marcaste dias de clase pero no seleccionaste un Periodo. Ve al menu "Periodos", crea uno (ej. Agosto 2026) y luego seleccionalo aqui para que las clases se generen en el calendario.',
-            });
-            return;
-        }
-
-        if (horariosDias.some(h => !h.hora_inicio || !h.hora_fin)) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Horario incompleto',
-                text: 'Completa la hora de inicio y de fin en cada dia que marcaste.',
-            });
-            return;
-        }
-
         const payload = {
             nombre: document.getElementById('alumno_nombre').value,
             fecha_nacimiento: document.getElementById('alumno_fecha_nacimiento').value || null,
             dni: document.getElementById('alumno_dni').value,
-            especialidad_id: document.getElementById('alumno_especialidad_id').value || null,
-            maestro_id: document.getElementById('alumno_maestro_id').value || null,
             tutor: document.getElementById('alumno_tutor').value,
             celular: document.getElementById('alumno_celular').value,
             fecha_ingreso: document.getElementById('alumno_fecha_ingreso').value || null,
@@ -360,9 +570,46 @@
             observaciones: document.getElementById('alumno_observaciones').value,
         };
 
-        if (periodoId && horariosDias.length) {
-            payload.periodo_id = periodoId;
-            payload.horarios = horariosDias;
+        // El "primer taller" solo aplica al crear un alumno nuevo.
+        if (!id) {
+            const periodoId = document.getElementById('alumno_periodo_id').value;
+            const horariosDias = [];
+            for (let dia = 1; dia <= 7; dia++) {
+                const cb = document.getElementById('alumno_dia_' + dia);
+                if (cb && cb.checked) {
+                    horariosDias.push({
+                        dia_semana: dia,
+                        hora_inicio: document.getElementById('alumno_dia_' + dia + '_inicio').value,
+                        hora_fin: document.getElementById('alumno_dia_' + dia + '_fin').value,
+                    });
+                }
+            }
+
+            if (horariosDias.length && !periodoId) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Falta el periodo',
+                    text: 'Marcaste dias de clase pero no seleccionaste un Periodo.',
+                });
+                return;
+            }
+            if (horariosDias.some(h => !h.hora_inicio || !h.hora_fin)) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Horario incompleto',
+                    text: 'Completa la hora de inicio y de fin en cada dia que marcaste.',
+                });
+                return;
+            }
+
+            if (document.getElementById('alumno_especialidad_id').value) {
+                payload.especialidad_id = document.getElementById('alumno_especialidad_id').value;
+                payload.maestro_id = document.getElementById('alumno_maestro_id').value || null;
+            }
+            if (periodoId && horariosDias.length) {
+                payload.periodo_id = periodoId;
+                payload.horarios = horariosDias;
+            }
         }
 
         const url = id ? `/alumnos/${id}` : '/alumnos';
@@ -388,9 +635,7 @@
     }
 
     /* ---------------------------------------------------------------
-     * 1.1 / 1.2 / 1.3 Filtros y busqueda reactiva (sin boton "Buscar").
-     * Cada cambio en los filtros, o cada tecla escrita en "buscar" (con
-     * un pequeno debounce), recarga solo la tabla via AJAX.
+     * 1.1 / 1.2 / 1.3 Filtros y busqueda reactiva (Fase 1, sin cambios).
      * ------------------------------------------------------------- */
     let debounceBuscarAlumnos = null;
 
@@ -406,7 +651,6 @@
         const data = await res.json();
         document.getElementById('tablaAlumnosWrap').innerHTML = data.html;
 
-        // URL navegable/compartible con los filtros aplicados, sin recargar.
         window.history.replaceState({}, '', `<?php echo e(route('alumnos.index')); ?>?` + params.toString());
     }
 
@@ -424,8 +668,13 @@
         buscarAlumnosReactivo();
     }
 
-    // Permite que los links de paginacion (dentro de la tabla) tambien
-    // recarguen solo la tabla, sin salir de la busqueda reactiva.
+    /* 18. Imprimir lista de alumnos respetando los filtros actuales. */
+    function imprimirListaAlumnos() {
+        const form = document.getElementById('formFiltrosAlumnos');
+        const params = new URLSearchParams(new FormData(form));
+        window.open(`<?php echo e(route('alumnos.imprimir')); ?>?` + params.toString(), '_blank');
+    }
+
     document.getElementById('tablaAlumnosWrap').addEventListener('click', function (e) {
         const link = e.target.closest('a');
         if (!link || !link.href) return;
@@ -433,6 +682,19 @@
         e.preventDefault();
         buscarAlumnosReactivo(link.href);
     });
+
+    // Si llegamos desde "Ver perfil" con ?editar=ID (boton Editar del
+    // perfil), abrimos el modal de edicion automaticamente.
+    (function () {
+        const params = new URLSearchParams(window.location.search);
+        const editarId = params.get('editar');
+        if (editarId) {
+            editarAlumno(Number(editarId));
+            const url = new URL(window.location.href);
+            url.searchParams.delete('editar');
+            window.history.replaceState({}, '', url);
+        }
+    })();
 </script>
 <?php $__env->stopPush(); ?>
 <?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH D:\XAMPP\htdocs\musicarte\resources\views/alumnos/index.blade.php ENDPATH**/ ?>

@@ -6,6 +6,7 @@
                 <th>Edad</th>
                 <th>Especialidad</th>
                 <th>Maestro</th>
+                <th>Talleres</th>
                 <th>Tutor</th>
                 <th>Celular</th>
                 <th>Estado</th>
@@ -19,6 +20,11 @@
                 <td>{{ $a->edad ?? '—' }}</td>
                 <td>{{ $a->especialidad->nombre ?? '—' }}</td>
                 <td>{{ $a->maestro->nombre ?? '—' }}</td>
+                <td>
+                    <span class="badge bg-light text-dark border">
+                        {{ $a->talleres_activos_count }} {{ Str::plural('taller', $a->talleres_activos_count) }}
+                    </span>
+                </td>
                 <td>{{ $a->tutor ?? '—' }}</td>
                 <td>{{ $a->celular ?? '—' }}</td>
                 <td>
@@ -29,12 +35,13 @@
                     @endif
                 </td>
                 <td class="text-end">
-                    <button class="btn btn-sm btn-light btn-icon" onclick="editarAlumno({{ $a->id }})"><i class="bi bi-pencil"></i></button>
-                    <button class="btn btn-sm btn-light btn-icon text-danger" onclick="eliminarAlumno({{ $a->id }}, '{{ $a->nombre }}')"><i class="bi bi-trash"></i></button>
+                    <a href="{{ route('alumnos.show', $a) }}" class="btn btn-sm btn-light btn-icon" title="Ver perfil e historial"><i class="bi bi-eye"></i></a>
+                    <button class="btn btn-sm btn-light btn-icon" onclick="editarAlumno({{ $a->id }})" title="Editar"><i class="bi bi-pencil"></i></button>
+                    <button class="btn btn-sm btn-light btn-icon text-danger" onclick="eliminarAlumno({{ $a->id }}, '{{ $a->nombre }}')" title="Eliminar"><i class="bi bi-trash"></i></button>
                 </td>
             </tr>
         @empty
-            <tr><td colspan="8" class="text-center text-muted py-4">No se encontraron alumnos con los filtros aplicados.</td></tr>
+            <tr><td colspan="9" class="text-center text-muted py-4">No se encontraron alumnos con los filtros aplicados.</td></tr>
         @endforelse
         </tbody>
     </table>

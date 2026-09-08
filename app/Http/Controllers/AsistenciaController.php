@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Alumno;
 use App\Models\Asistencia;
 use App\Models\Clase;
+use App\Models\Maestro;
 use Illuminate\Http\Request;
 
 class AsistenciaController extends Controller
@@ -14,11 +15,17 @@ class AsistenciaController extends Controller
         $fecha = $request->get('fecha', now()->toDateString());
 
         $clases = Clase::with(['alumno', 'maestro', 'especialidad', 'asistencia'])
-            ->whereDate('fecha', $fecha)
-            ->orderBy('hora_inicio')
-            ->get();
+            ->whereDate('fecha', $fecha);
+
+        // 16. Filtro por maestro: solo mostrar los alumnos/clases de ese maestro.
+        if ($request->filled('maestro_id')) {
+            $clases->where('maestro_id', $request->maestro_id);
+        }
+
+        $clases = $clases->orderBy('hora_inicio')->get();
 
         $alumnos = Alumno::activos()->orderBy('nombre')->get();
+        $maestros = Maestro::where('activo', true)->orderBy('nombre')->get();
 
         // Reporte rapido: % de asistencia del alumno seleccionado (ultimos 30 dias)
         $resumenAlumno = null;
@@ -37,7 +44,7 @@ class AsistenciaController extends Controller
             }
         }
 
-        return view('asistencia.index', compact('clases', 'alumnos', 'fecha', 'resumenAlumno'));
+        return view('asistencia.index', compact('clases', 'alumnos', 'maestros', 'fecha', 'resumenAlumno'));
     }
 
     /** Marcar/actualizar asistencia de una clase puntual (modal rapido). */

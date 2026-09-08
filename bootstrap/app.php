@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'role' => \App\Http\Middleware\EnsureRole::class,
+            'pagos.auth' => \App\Http\Middleware\EnsurePagosAuth::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

@@ -8,6 +8,12 @@
         <small class="text-muted">Marca la asistencia de cada clase del dia</small>
     </div>
     <form method="GET" class="d-flex gap-2">
+        <select name="maestro_id" class="form-select" onchange="this.form.submit()" title="Filtrar por maestro">
+            <option value="">Todos los maestros</option>
+            @foreach($maestros as $m)
+                <option value="{{ $m->id }}" @selected(request('maestro_id')==$m->id)>{{ $m->nombre }}</option>
+            @endforeach
+        </select>
         <input type="date" name="fecha" value="{{ $fecha }}" class="form-control" onchange="this.form.submit()">
     </form>
 </div>
@@ -50,6 +56,7 @@
     <h6 class="fw-semibold mb-3"><i class="bi bi-graph-up me-1"></i> Resumen de asistencia por alumno</h6>
     <form method="GET" class="row g-2 mb-3">
         <input type="hidden" name="fecha" value="{{ $fecha }}">
+        <input type="hidden" name="maestro_id" value="{{ request('maestro_id') }}">
         <div class="col-md-5">
             <select name="alumno_id" class="form-select" onchange="this.form.submit()">
                 <option value="">-- Selecciona un alumno --</option>

@@ -14,63 +14,83 @@
 </div>
 
 <div class="row g-3 mb-3">
-    <div class="col-md-4"><div class="card p-3 card-kpi"><div class="text-muted small">Recaudado del mes</div><div class="fs-4 fw-bold text-success">S/ <?php echo e(number_format($totales['recaudado'], 2)); ?></div></div></div>
+    <div class="col-md-4"><div class="card p-3 card-kpi"><div class="text-muted small">Recaudado (filtro actual)</div><div class="fs-4 fw-bold text-success">S/ <?php echo e(number_format($totales['recaudado'], 2)); ?></div></div></div>
     <div class="col-md-4"><div class="card p-3 card-kpi"><div class="text-muted small">Pendiente de cobro</div><div class="fs-4 fw-bold text-danger">S/ <?php echo e(number_format($totales['pendiente'], 2)); ?></div></div></div>
 </div>
 
 <div class="card p-3 mb-3">
     <form class="row g-2" method="GET">
-        <div class="col-md-3">
+        <div class="col-md-2">
             <select name="mes" class="form-select">
                 <?php $__currentLoopData = \App\Models\Pago::MESES; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $num => $nombre): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                     <option value="<?php echo e($num); ?>" <?php if($mes==$num): echo 'selected'; endif; ?>><?php echo e($nombre); ?></option>
                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </select>
         </div>
-        <div class="col-md-2">
+        <div class="col-md-1">
             <input type="number" name="anio" value="<?php echo e($anio); ?>" class="form-control">
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <input type="text" name="buscar" value="<?php echo e(request('buscar')); ?>" class="form-control" placeholder="Buscar alumno...">
         </div>
-        <div class="col-md-2 d-flex align-items-center">
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="solo_pendientes" value="1" id="solo_pendientes" <?php echo e(request('solo_pendientes') ? 'checked' : ''); ?>>
-                <label class="form-check-label small" for="solo_pendientes">Solo pendientes</label>
-            </div>
+        <div class="col-md-2">
+            <select name="especialidad_id" class="form-select">
+                <option value="">Todos los talleres</option>
+                <?php $__currentLoopData = $especialidades; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $e): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <option value="<?php echo e($e->id); ?>" <?php if(request('especialidad_id')==$e->id): echo 'selected'; endif; ?>><?php echo e($e->nombre); ?></option>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            </select>
         </div>
-        <div class="col-md-2"><button class="btn btn-light w-100">Filtrar</button></div>
+        <div class="col-md-2">
+            <select name="maestro_id" class="form-select">
+                <option value="">Todos los maestros</option>
+                <?php $__currentLoopData = $maestros; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $m): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <option value="<?php echo e($m->id); ?>" <?php if(request('maestro_id')==$m->id): echo 'selected'; endif; ?>><?php echo e($m->nombre); ?></option>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select name="estado" class="form-select">
+                <option value="">Todos los estados</option>
+                <option value="pendiente" <?php if(request('estado')=='pendiente'): echo 'selected'; endif; ?>>Pendiente</option>
+                <option value="a_cuenta" <?php if(request('estado')=='a_cuenta'): echo 'selected'; endif; ?>>A cuenta</option>
+                <option value="pagado" <?php if(request('estado')=='pagado'): echo 'selected'; endif; ?>>Pagado</option>
+            </select>
+        </div>
+        <div class="col-md-1 d-grid"><button class="btn btn-light w-100">Filtrar</button></div>
     </form>
 </div>
 
 <div class="card p-3">
     <div class="table-responsive">
         <table class="table align-middle">
-            <thead><tr><th>Alumno</th><th>Concepto</th><th>Total</th><th>Yape/Transf.</th><th>Efectivo</th><th>Tarjeta</th><th>Saldo</th><th>Fecha pago</th><th class="text-end">Acciones</th></tr></thead>
+            <thead><tr><th>Alumno</th><th>Taller</th><th>Concepto</th><th>Total</th><th>Abonado</th><th>Saldo</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead>
             <tbody>
             <?php $__empty_1 = true; $__currentLoopData = $pagos; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $p): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                 <tr>
                     <td class="fw-semibold"><?php echo e($p->alumno->nombre ?? '—'); ?></td>
+                    <td><?php echo e($p->alumnoTaller->especialidad->nombre ?? '—'); ?></td>
                     <td><?php echo e($p->concepto ?? '—'); ?></td>
                     <td>S/ <?php echo e(number_format($p->monto_total, 2)); ?></td>
-                    <td>S/ <?php echo e(number_format($p->yape_transferencia, 2)); ?></td>
-                    <td>S/ <?php echo e(number_format($p->efectivo, 2)); ?></td>
-                    <td>S/ <?php echo e(number_format($p->tarjeta, 2)); ?></td>
+                    <td>S/ <?php echo e(number_format($p->monto_total - $p->saldo, 2)); ?></td>
+                    <td class="<?php echo e($p->saldo > 0 ? 'text-danger fw-semibold' : 'text-success'); ?>">S/ <?php echo e(number_format($p->saldo, 2)); ?></td>
                     <td>
-                        <?php if($p->saldo > 0): ?><span class="text-danger fw-semibold">S/ <?php echo e(number_format($p->saldo, 2)); ?></span>
-                        <?php else: ?><span class="text-success">Pagado</span><?php endif; ?>
+                        <span class="badge <?php echo e(['pendiente'=>'bg-danger','a_cuenta'=>'bg-warning text-dark','pagado'=>'bg-success'][$p->estado] ?? 'bg-secondary'); ?>">
+                            <?php echo e($p->estadoLabel()); ?>
+
+                        </span>
                     </td>
-                    <td><?php echo e(optional($p->fecha_pago)->format('d/m/Y') ?? '—'); ?></td>
                     <td class="text-end">
-                        <a href="<?php echo e(route('pagos.recibo', $p)); ?>" target="_blank" class="btn btn-sm btn-light btn-icon" title="Recibo PDF"><i class="bi bi-file-earmark-pdf"></i></a>
+                        <button class="btn btn-sm btn-light btn-icon" title="Ver / registrar abonos" onclick="abrirAbonos(<?php echo e($p->id); ?>)"><i class="bi bi-cash-stack"></i></button>
+                        <a href="<?php echo e(route('pagos.recibo', $p)); ?>" target="_blank" class="btn btn-sm btn-light btn-icon" title="Estado de cuenta PDF"><i class="bi bi-file-earmark-pdf"></i></a>
                         <?php if(auth()->guard()->check()): ?> <?php if(auth()->user()->esAdmin()): ?>
-                        <button class="btn btn-sm btn-light btn-icon" onclick="editarPago(<?php echo e($p->id); ?>)"><i class="bi bi-pencil"></i></button>
-                        <button class="btn btn-sm btn-light btn-icon text-danger" onclick="eliminarPago(<?php echo e($p->id); ?>, '<?php echo e($p->alumno->nombre ?? ''); ?>')"><i class="bi bi-trash"></i></button>
+                        <button class="btn btn-sm btn-light btn-icon" onclick="editarPago(<?php echo e($p->id); ?>)" title="Editar"><i class="bi bi-pencil"></i></button>
+                        <button class="btn btn-sm btn-light btn-icon text-danger" onclick="eliminarPago(<?php echo e($p->id); ?>, '<?php echo e($p->alumno->nombre ?? ''); ?>')" title="Eliminar"><i class="bi bi-trash"></i></button>
                         <?php endif; ?> <?php endif; ?>
                     </td>
                 </tr>
             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-                <tr><td colspan="9" class="text-center text-muted py-4">No hay pagos registrados para este periodo.</td></tr>
+                <tr><td colspan="8" class="text-center text-muted py-4">No hay pagos registrados para este filtro.</td></tr>
             <?php endif; ?>
             </tbody>
         </table>
@@ -80,6 +100,7 @@
 </div>
 
 <?php if(auth()->guard()->check()): ?> <?php if(auth()->user()->esAdmin()): ?>
+<!-- MODAL: Registrar / Editar el CARGO (deuda) -->
 <div class="modal fade" id="modalPago" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <form class="modal-content" id="formPago">
@@ -92,57 +113,51 @@
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label small fw-semibold">Alumno</label>
-                        <select class="form-select" id="pago_alumno_id" required>
+                        <select class="form-select" id="pago_alumno_id" required onchange="cargarTalleresDelAlumno()">
                             <option value="">-- Selecciona --</option>
                             <?php $__currentLoopData = $alumnos; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $a): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><option value="<?php echo e($a->id); ?>"><?php echo e($a->nombre); ?></option><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </select>
                     </div>
                     <div class="col-md-6 mb-3">
-                        <label class="form-label small fw-semibold">Concepto</label>
-                        <input type="text" class="form-control" id="pago_concepto" placeholder="Ej. Mensualidad Piano">
+                        <label class="form-label small fw-semibold">Taller</label>
+                        <select class="form-select" id="pago_alumno_taller_id">
+                            <option value="">-- Selecciona un alumno primero --</option>
+                        </select>
+                        <small class="text-muted">Un alumno puede tener varios talleres; elige a cual corresponde este pago.</small>
                     </div>
                 </div>
                 <div class="row">
                     <div class="col-md-4 mb-3">
+                        <label class="form-label small fw-semibold">Concepto</label>
+                        <input type="text" class="form-control" id="pago_concepto" placeholder="Ej. Mensualidad">
+                    </div>
+                    <div class="col-md-3 mb-3">
                         <label class="form-label small fw-semibold">Mes</label>
                         <select class="form-select" id="pago_mes">
                             <?php $__currentLoopData = \App\Models\Pago::MESES; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $num => $nombre): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><option value="<?php echo e($num); ?>" <?php if($mes==$num): echo 'selected'; endif; ?>><?php echo e($nombre); ?></option><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </select>
                     </div>
-                    <div class="col-md-4 mb-3">
+                    <div class="col-md-2 mb-3">
                         <label class="form-label small fw-semibold">Ano</label>
                         <input type="number" class="form-control" id="pago_anio" value="<?php echo e($anio); ?>">
                     </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label small fw-semibold">Fecha de pago</label>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label small fw-semibold">Fecha</label>
                         <input type="date" class="form-control" id="pago_fecha_pago">
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col-md-3 mb-3">
-                        <label class="form-label small fw-semibold">Monto total (S/)</label>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label small fw-semibold">Monto total a cobrar (S/)</label>
                         <input type="number" step="0.01" min="0" class="form-control" id="pago_monto_total" required>
                     </div>
-                    <div class="col-md-3 mb-3">
-                        <label class="form-label small fw-semibold">Yape/Transf.</label>
-                        <input type="number" step="0.01" min="0" class="form-control" id="pago_yape">
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        <label class="form-label small fw-semibold">Efectivo</label>
-                        <input type="number" step="0.01" min="0" class="form-control" id="pago_efectivo">
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        <label class="form-label small fw-semibold">Tarjeta</label>
-                        <input type="number" step="0.01" min="0" class="form-control" id="pago_tarjeta">
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label small fw-semibold">N° de recibo</label>
-                    <input type="text" class="form-control" id="pago_recibo_nro">
                 </div>
                 <div class="mb-1">
                     <label class="form-label small fw-semibold">Observacion</label>
                     <textarea class="form-control" id="pago_observacion" rows="2"></textarea>
+                </div>
+                <div class="alert alert-info small mb-0">
+                    <i class="bi bi-info-circle me-1"></i> Esto registra el monto que el alumno debe. Los pagos/abonos reales se registran despues, desde el boton <i class="bi bi-cash-stack"></i> de la lista.
                 </div>
             </div>
             <div class="modal-footer">
@@ -153,17 +168,175 @@
     </div>
 </div>
 <?php endif; ?> <?php endif; ?>
+
+<!-- MODAL: Ver y registrar ABONOS de un pago (seccion 10) -->
+<div class="modal fade" id="modalAbonos" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#3d2c8d;color:#fff">
+                <h5 class="modal-title">Abonos — <span id="abonos_titulo_alumno"></span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="abonos_pago_id">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4"><div class="card-kpi card p-2 text-center"><div class="text-muted small">Monto total</div><div class="fw-bold" id="abonos_monto_total">S/ 0.00</div></div></div>
+                    <div class="col-md-4"><div class="card-kpi card p-2 text-center"><div class="text-muted small">Abonado</div><div class="fw-bold text-success" id="abonos_abonado">S/ 0.00</div></div></div>
+                    <div class="col-md-4"><div class="card-kpi card p-2 text-center"><div class="text-muted small">Saldo</div><div class="fw-bold text-danger" id="abonos_saldo">S/ 0.00</div></div></div>
+                </div>
+
+                <div class="table-responsive mb-3">
+                    <table class="table table-sm">
+                        <thead><tr><th>Fecha</th><th>Metodo</th><th>N° Recibo</th><th>Monto</th><th class="text-end">Recibo</th></tr></thead>
+                        <tbody id="abonos_tbody">
+                        </tbody>
+                    </table>
+                </div>
+
+                <?php if(auth()->guard()->check()): ?> <?php if(auth()->user()->esAdmin()): ?>
+                <hr>
+                <h6 class="fw-semibold">Registrar nuevo abono</h6>
+                <form id="formAbono" class="row g-2">
+                    <div class="col-md-3">
+                        <label class="form-label small">Monto (S/)</label>
+                        <input type="number" step="0.01" min="0.01" class="form-control" id="abono_monto" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small">Fecha</label>
+                        <input type="date" class="form-control" id="abono_fecha" value="<?php echo e(now()->toDateString()); ?>" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small">Metodo de pago</label>
+                        <select class="form-select" id="abono_metodo" required>
+                            <option value="transferencia">Transferencia</option>
+                            <option value="yape">Yape</option>
+                            <option value="efectivo">Efectivo</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small">N° Recibo</label>
+                        <input type="text" class="form-control" id="abono_recibo_nro">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small">Observacion (opcional)</label>
+                        <input type="text" class="form-control" id="abono_observacion">
+                    </div>
+                    <div class="col-12 d-grid">
+                        <button type="submit" class="btn btn-morado"><i class="bi bi-plus-lg me-1"></i> Registrar abono</button>
+                    </div>
+                </form>
+                <?php endif; ?> <?php endif; ?>
+            </div>
+        </div>
+    </div>
+</div>
 <?php $__env->stopSection(); ?>
 
 <?php $__env->startPush('scripts'); ?>
 <script>
-<?php if(auth()->guard()->check()): ?> <?php if(auth()->user()->esAdmin()): ?>
+    const modalAbonos = new bootstrap.Modal('#modalAbonos');
+    const METODO_LABEL = { transferencia: 'Transferencia', yape: 'Yape', efectivo: 'Efectivo' };
+    const ES_ADMIN = <?php echo json_encode(auth()->check() && auth()->user()->esAdmin(), 15, 512) ?>;
+
+    async function abrirAbonos(pagoId) {
+        const res = await maFetch(`/pagos/${pagoId}/edit`);
+        if (!res) return;
+        pintarAbonos(res.data);
+        modalAbonos.show();
+    }
+
+    function pintarAbonos(pago) {
+        document.getElementById('abonos_pago_id').value = pago.id;
+        document.getElementById('abonos_titulo_alumno').innerText = pago.alumno ? pago.alumno.nombre : '';
+        document.getElementById('abonos_monto_total').innerText = 'S/ ' + Number(pago.monto_total).toFixed(2);
+        const abonado = (pago.abonos || []).reduce((s, a) => s + Number(a.monto), 0);
+        document.getElementById('abonos_abonado').innerText = 'S/ ' + abonado.toFixed(2);
+        document.getElementById('abonos_saldo').innerText = 'S/ ' + Number(pago.saldo).toFixed(2);
+
+        const tbody = document.getElementById('abonos_tbody');
+        tbody.innerHTML = '';
+        (pago.abonos || []).forEach(a => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${new Date(a.fecha).toLocaleDateString('es-PE')}</td>
+                <td>${METODO_LABEL[a.metodo_pago] || a.metodo_pago}</td>
+                <td>${a.recibo_nro ?? '—'}</td>
+                <td>S/ ${Number(a.monto).toFixed(2)}</td>
+                <td class="text-end">
+                    <a href="/pagos/abonos/${a.id}/recibo" target="_blank" class="btn btn-sm btn-light btn-icon" title="Recibo PDF"><i class="bi bi-file-earmark-pdf"></i></a>
+                    ${ES_ADMIN ? `<button class="btn btn-sm btn-light btn-icon text-danger" onclick="eliminarAbono(${a.id}, ${pago.id})" title="Corregir/eliminar"><i class="bi bi-trash"></i></button>` : ''}
+                </td>`;
+            tbody.appendChild(tr);
+        });
+        if (!(pago.abonos || []).length) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-2">Aun no se ha registrado ningun abono.</td></tr>';
+        }
+    }
+
+    <?php if(auth()->guard()->check()): ?> <?php if(auth()->user()->esAdmin()): ?>
+    document.getElementById('formAbono').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const pagoId = document.getElementById('abonos_pago_id').value;
+        const payload = {
+            monto: document.getElementById('abono_monto').value,
+            fecha: document.getElementById('abono_fecha').value,
+            metodo_pago: document.getElementById('abono_metodo').value,
+            recibo_nro: document.getElementById('abono_recibo_nro').value,
+            observacion: document.getElementById('abono_observacion').value,
+        };
+        const res = await maFetch(`/pagos/${pagoId}/abonos`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        if (res && res.ok) {
+            maToast('success', res.message);
+            document.getElementById('formAbono').reset();
+            document.getElementById('abono_fecha').value = '<?php echo e(now()->toDateString()); ?>';
+            pintarAbonos(res.data.pago);
+            setTimeout(() => location.reload(), 900);
+        }
+    });
+
+    async function eliminarAbono(abonoId, pagoId) {
+        if (!(await maConfirmarEliminar('este abono'))) return;
+        const res = await maFetch(`/pagos/abonos/${abonoId}`, { method: 'DELETE' });
+        if (res && res.ok) {
+            maToast('success', res.message);
+            pintarAbonos(res.data);
+            setTimeout(() => location.reload(), 900);
+        }
+    }
+
     const modalPago = new bootstrap.Modal('#modalPago');
 
     function nuevoPago() {
         document.getElementById('formPago').reset();
         document.getElementById('pago_id').value = '';
+        document.getElementById('pago_alumno_taller_id').innerHTML = '<option value="">-- Selecciona un alumno primero --</option>';
         document.getElementById('tituloModalPago').innerText = 'Registrar Pago';
+    }
+
+    async function cargarTalleresDelAlumno(seleccionarId = null) {
+        const alumnoId = document.getElementById('pago_alumno_id').value;
+        const select = document.getElementById('pago_alumno_taller_id');
+        select.innerHTML = '<option value="">Cargando...</option>';
+        if (!alumnoId) {
+            select.innerHTML = '<option value="">-- Selecciona un alumno primero --</option>';
+            return;
+        }
+        const res = await maFetch(`/alumnos/${alumnoId}/talleres-pago`);
+        select.innerHTML = '<option value="">-- Sin taller especifico --</option>';
+        if (res && res.ok) {
+            res.data.forEach(t => {
+                const nombre = (t.especialidad ? t.especialidad.nombre : 'Taller') + (t.maestro ? ' — ' + t.maestro.nombre : '');
+                const opt = document.createElement('option');
+                opt.value = t.id;
+                opt.text = nombre;
+                if (seleccionarId && Number(seleccionarId) === t.id) opt.selected = true;
+                select.appendChild(opt);
+            });
+        }
     }
 
     async function editarPago(id) {
@@ -172,15 +345,12 @@
         const d = res.data;
         document.getElementById('pago_id').value = d.id;
         document.getElementById('pago_alumno_id').value = d.alumno_id;
+        await cargarTalleresDelAlumno(d.alumno_taller_id);
         document.getElementById('pago_concepto').value = d.concepto ?? '';
         document.getElementById('pago_mes').value = d.mes;
         document.getElementById('pago_anio').value = d.anio;
         document.getElementById('pago_fecha_pago').value = d.fecha_pago ? d.fecha_pago.substring(0,10) : '';
         document.getElementById('pago_monto_total').value = d.monto_total;
-        document.getElementById('pago_yape').value = d.yape_transferencia;
-        document.getElementById('pago_efectivo').value = d.efectivo;
-        document.getElementById('pago_tarjeta').value = d.tarjeta;
-        document.getElementById('pago_recibo_nro').value = d.recibo_nro ?? '';
         document.getElementById('pago_observacion').value = d.observacion ?? '';
         document.getElementById('tituloModalPago').innerText = 'Editar Pago';
         modalPago.show();
@@ -191,15 +361,12 @@
         const id = document.getElementById('pago_id').value;
         const payload = {
             alumno_id: document.getElementById('pago_alumno_id').value,
+            alumno_taller_id: document.getElementById('pago_alumno_taller_id').value || null,
             concepto: document.getElementById('pago_concepto').value,
             mes: document.getElementById('pago_mes').value,
             anio: document.getElementById('pago_anio').value,
             fecha_pago: document.getElementById('pago_fecha_pago').value || null,
             monto_total: document.getElementById('pago_monto_total').value || 0,
-            yape_transferencia: document.getElementById('pago_yape').value || 0,
-            efectivo: document.getElementById('pago_efectivo').value || 0,
-            tarjeta: document.getElementById('pago_tarjeta').value || 0,
-            recibo_nro: document.getElementById('pago_recibo_nro').value,
             observacion: document.getElementById('pago_observacion').value,
         };
         const url = id ? `/pagos/${id}` : '/pagos';
@@ -223,7 +390,7 @@
             setTimeout(() => location.reload(), 700);
         }
     }
-<?php endif; ?> <?php endif; ?>
+    <?php endif; ?> <?php endif; ?>
 </script>
 <?php $__env->stopPush(); ?>
 

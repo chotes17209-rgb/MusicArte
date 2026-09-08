@@ -52,4 +52,35 @@ class AuthController extends Controller
 
         return redirect()->route('login');
     }
+
+    /**
+     * Seccion 15: pantalla para reconfirmar la contrasena antes de entrar
+     * al modulo de Pagos (informacion sensible), usando las credenciales
+     * del usuario ya logueado.
+     */
+    public function mostrarConfirmarPagos()
+    {
+        return view('auth.confirmar-pagos');
+    }
+
+    public function confirmarPagos(Request $request)
+    {
+        $request->validate([
+            'password' => ['required'],
+        ], [
+            'password.required' => 'Ingresa tu contrasena para continuar.',
+        ]);
+
+        if (! Auth::guard()->validate([
+            'email' => $request->user()->email,
+            'password' => $request->input('password'),
+        ])) {
+            return back()->withErrors(['password' => 'La contrasena no es correcta.']);
+        }
+
+        $request->session()->put('pagos_confirmado_en', now());
+        $destino = $request->session()->pull('pagos_url_intentada');
+
+        return redirect($destino ?: route('pagos.index'));
+    }
 }
