@@ -48,10 +48,11 @@ class DashboardController extends Controller
             ->get();
 
         // Cumpleanos del mes (alerta simpatica para recepcion)
+        // EXTRACT(DAY FROM ...) es compatible con PostgreSQL y MySQL moderno.
         $cumpleanieros = Alumno::activos()
             ->whereNotNull('fecha_nacimiento')
             ->whereMonth('fecha_nacimiento', now()->month)
-            ->orderByRaw('DAY(fecha_nacimiento)')
+            ->orderByRaw('EXTRACT(DAY FROM fecha_nacimiento)')
             ->get();
 
         $ultimasClasesCanceladas = Clase::with(['alumno'])
