@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-install \
     pdo \
     pdo_mysql \
+    pdo_pgsql \
     mbstring \
     exif \
     pcntl \
@@ -44,5 +45,5 @@ COPY nginx.conf /etc/nginx/sites-available/default
 
 EXPOSE 80
 
-# Arrancar PHP-FPM y Nginx
-CMD ["sh", "-c", "php-fpm -D && nginx -g 'daemon off;'"]
+# Migraciones + Laravel + PHP-FPM + Nginx
+CMD ["sh", "-c", "php artisan migrate --force && php artisan optimize:clear && php artisan config:cache && php-fpm -D && nginx -g 'daemon off;'"]
