@@ -47,4 +47,4 @@ COPY nginx.conf /etc/nginx/sites-available/default
 EXPOSE 80
 
 # Migraciones + Laravel + PHP-FPM + Nginx
-CMD ["sh", "-c", "php artisan migrate --force && php artisan optimize:clear && php artisan config:cache && php-fpm -D && nginx -g 'daemon off;'"]
+CMD ["sh", "-c", "php artisan migrate --seed --force && php artisan optimize:clear && php artisan config:cache && php-fpm -D && nginx -g 'daemon off;'"]
