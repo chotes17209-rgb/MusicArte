@@ -41,7 +41,7 @@ class Aviso extends Model
             ->where(function ($q) use ($hoy) {
                 $q->whereNull('fecha_fin')->orWhere('fecha_fin', '>=', $hoy);
             })
-            ->orderByRaw("FIELD(tipo, 'urgente','advertencia','info')")
+            ->orderByRaw("CASE tipo WHEN 'urgente' THEN 1 WHEN 'advertencia' THEN 2 WHEN 'info' THEN 3 ELSE 4 END")
             ->orderByDesc('created_at');
     }
 }
