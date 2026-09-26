@@ -12,6 +12,7 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             EspecialidadSeeder::class,
             MaestroSeeder::class,
+            PeriodoSeeder::class,
             AlumnoSeeder::class,
             HorarioSeeder::class,
             PagoSeeder::class,
