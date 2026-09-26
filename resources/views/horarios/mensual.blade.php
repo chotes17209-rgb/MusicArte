@@ -15,17 +15,18 @@
 @endpush
 
 @section('contenido')
+@include('horarios._tabs')
+
 <div class="page-head">
     <div>
-        <a href="{{ route('horarios.index') }}" class="btn btn-sm btn-volver mb-2"><i class="bi bi-arrow-left me-1"></i> Volver a Horarios</a>
         <h4 class="mb-1">Horarios de {{ \App\Models\Pago::MESES[$mes] }} {{ $anio }}</h4>
         <p class="text-muted mb-0">Qué días tiene clase cada alumno, semana por semana. {{ count($filas) }} {{ count($filas) === 1 ? 'taller' : 'talleres' }} este mes.</p>
     </div>
-    <form class="d-flex gap-2 flex-wrap" method="GET">
-        <select name="mes" class="form-select" style="width:150px" onchange="this.form.submit()">
+    <form class="d-flex gap-2 flex-wrap" method="GET" data-autofiltro>
+        <select name="mes" class="form-select" style="width:150px">
             @foreach(\App\Models\Pago::MESES as $num => $nombre)<option value="{{ $num }}" @selected($mes==$num)>{{ $nombre }}</option>@endforeach
         </select>
-        <input type="number" name="anio" value="{{ $anio }}" class="form-control" style="width:96px" onchange="this.form.submit()">
+        <input type="number" name="anio" value="{{ $anio }}" class="form-control" style="width:96px">
     </form>
 </div>
 

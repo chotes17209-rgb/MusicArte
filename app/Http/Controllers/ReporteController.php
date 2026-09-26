@@ -13,6 +13,7 @@ use App\Models\Maestro;
 use App\Models\Pago;
 use App\Models\Periodo;
 use App\Models\Planilla;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -47,7 +48,7 @@ class ReporteController extends Controller
 
         $totalAlumnos = $talleres->pluck('alumno_id')->unique()->count();
 
-        return view('reportes.alumnos-especialidad', compact('data', 'periodos', 'periodo', 'totalAlumnos'));
+        return $this->responder($request, 'alumnos-especialidad', compact('data', 'periodos', 'periodo', 'totalAlumnos'), 'alumnos-por-especialidad-'.($periodo->nombre ?? ''));
     }
 
     /**
@@ -95,7 +96,7 @@ class ReporteController extends Controller
 
         $maestros = Maestro::where('activo', true)->orderBy('nombre')->get();
 
-        return view('reportes.asistencia-mensual', compact('data', 'resumen', 'mes', 'anio', 'maestros', 'maestroId'));
+        return $this->responder($request, 'asistencia-mensual', compact('data', 'resumen', 'mes', 'anio', 'maestros', 'maestroId'), "asistencia-{$mes}-{$anio}", 'landscape');
     }
 
     /** Reporte: ingresos vs egresos por mes. */
@@ -118,7 +119,7 @@ class ReporteController extends Controller
             ];
         });
 
-        return view('reportes.ingresos-egresos', compact('data', 'anio'));
+        return $this->responder($request, 'ingresos-egresos', compact('data', 'anio'), "ingresos-egresos-{$anio}");
     }
 
     /**
@@ -157,7 +158,7 @@ class ReporteController extends Controller
         $especialidades = Especialidad::orderBy('nombre')->get();
         $maestros = Maestro::where('activo', true)->orderBy('nombre')->get();
 
-        return view('reportes.pagos-pendientes', compact('data', 'mes', 'anio', 'especialidades', 'maestros'));
+        return $this->responder($request, 'pagos-pendientes', compact('data', 'mes', 'anio', 'especialidades', 'maestros'), "pagos-pendientes-{$mes}-{$anio}", 'landscape');
     }
 
     /**
@@ -193,7 +194,7 @@ class ReporteController extends Controller
             ->map(function ($pagos) {
                 return [
                     'alumno' => optional($pagos->first()->alumno)->nombre,
-                    'meses_pendientes' => $pagos->pluck('mes')->map(fn ($m) => Pago::MESES[$m])->join(', '),
+                    'meses_pendientes' => $pagos->pluck('mes')->unique()->sort()->map(fn ($m) => Pago::MESES[$m])->join(', '),
                     'total_debe' => $pagos->sum('saldo'),
                 ];
             })->sortByDesc('total_debe')->values();
@@ -204,7 +205,7 @@ class ReporteController extends Controller
             'pendiente' => $pagosDelAnio->sum('saldo'),
         ];
 
-        return view('reportes.pagos-anual', compact('porMes', 'deudores', 'totales', 'anio'));
+        return $this->responder($request, 'pagos-anual', compact('porMes', 'deudores', 'totales', 'anio'), "pagos-{$anio}");
     }
 
     /** Reporte: planilla de pago a maestros. */
@@ -217,7 +218,7 @@ class ReporteController extends Controller
         $data = Planilla::with(['maestro', 'alumno', 'especialidad'])
             ->where('mes', $mes)->where('anio', $anio)->orderBy('maestro_id')->get();
 
-        return view('reportes.planilla-maestros', compact('data', 'mes', 'anio'));
+        return $this->responder($request, 'planilla-maestros', compact('data', 'mes', 'anio'), "planilla-{$mes}-{$anio}");
     }
 
     /** Reporte: clases dictadas / canceladas en un rango. */
@@ -236,6 +237,21 @@ class ReporteController extends Controller
             'canceladas' => $data->where('estado', 'cancelada')->count(),
         ];
 
-        return view('reportes.clases', compact('data', 'desde', 'hasta', 'resumen'));
+        return $this->responder($request, 'clases', compact('data', 'desde', 'hasta', 'resumen'), "clases-{$desde}-al-{$hasta}", 'landscape');
+    }
+
+    /**
+     * Cada reporte se ve en pantalla o, con ?pdf=1 (mismos filtros), se
+     * descarga en PDF. La vista PDF vive en reportes/pdf/{nombre}.
+     */
+    private function responder(Request $request, string $vista, array $datos, string $archivo, string $orientacion = 'portrait')
+    {
+        if (! $request->boolean('pdf')) {
+            return view("reportes.{$vista}", $datos);
+        }
+
+        return Pdf::loadView("reportes.pdf.{$vista}", $datos)
+            ->setPaper('a4', $orientacion)
+            ->stream(\Illuminate\Support\Str::slug($archivo).'.pdf');
     }
 }

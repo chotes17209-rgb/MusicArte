@@ -5,14 +5,14 @@
 <x-page-head titulo="Alumnos por especialidad"
              subtitulo="Cuántos alumnos hay en cada taller durante el periodo elegido. Un alumno con dos talleres cuenta en ambos."
              :volver="route('reportes.index')" volver-texto="Reportes">
-    <form method="GET">
-        <select name="periodo_id" class="form-select" onchange="this.form.submit()">
+    <form method="GET" data-autofiltro>
+        <select name="periodo_id" class="form-select">
             @foreach($periodos as $p)
                 <option value="{{ $p->id }}" @selected($periodo && $periodo->id == $p->id)>{{ $p->nombre }}</option>
             @endforeach
         </select>
     </form>
-    <button class="btn btn-light" onclick="window.print()"><i class="bi bi-printer me-1"></i> Imprimir</button>
+    <a href="{{ request()->fullUrlWithQuery(['pdf' => 1]) }}" target="_blank" class="btn btn-light" data-sin-ventana><i class="bi bi-file-earmark-pdf me-1"></i> Descargar PDF</a>
 </x-page-head>
 
 <div class="stats">

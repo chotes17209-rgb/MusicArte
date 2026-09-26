@@ -26,6 +26,7 @@
                     <td>{{ $a->autor->name ?? '—' }}</td>
                     <td>@if($a->activo)<span class="badge bg-success">Activo</span>@else<span class="badge bg-secondary">Inactivo</span>@endif</td>
                     <td class="text-end">
+                        <a href="{{ route('avisos.show', $a) }}" class="btn btn-sm btn-light btn-icon" title="Ver"><i class="bi bi-eye"></i></a>
                         <button class="btn btn-sm btn-light btn-icon" onclick="editarAviso({{ $a->id }})"><i class="bi bi-pencil"></i></button>
                         <button class="btn btn-sm btn-light btn-icon text-danger" onclick="eliminarAviso({{ $a->id }}, '{{ $a->titulo }}')"><i class="bi bi-trash"></i></button>
                     </td>

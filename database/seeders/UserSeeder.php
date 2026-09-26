@@ -8,19 +8,24 @@ use Illuminate\Support\Facades\Hash;
 
 class UserSeeder extends Seeder
 {
+    /**
+     * Usuarios iniciales. firstOrCreate: solo se crean si no existen, asi
+     * cada deploy ("migrate --seed") NO vuelve a poner la contrasena ni el
+     * nombre que se hayan cambiado desde el modulo de Usuarios.
+     */
     public function run(): void
     {
-        User::updateOrCreate(
+        User::firstOrCreate(
             ['email' => 'admin@musicarte.pe'],
             [
-                'name' => 'Administrador',
+                'name' => 'Kris Espinoza',
                 'password' => Hash::make('MusicArte2026'),
                 'role' => 'admin',
                 'activo' => true,
             ]
         );
 
-        User::updateOrCreate(
+        User::firstOrCreate(
             ['email' => 'recepcion@musicarte.pe'],
             [
                 'name' => 'Recepcion',

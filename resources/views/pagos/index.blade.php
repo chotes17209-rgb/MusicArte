@@ -20,7 +20,7 @@
 </div>
 
 <div class="card p-3 mb-3">
-    <form class="row g-2" method="GET">
+    <form class="row g-2" method="GET" data-autofiltro>
         <div class="col-md-2">
             <select name="mes" class="form-select">
                 @foreach(\App\Models\Pago::MESES as $num => $nombre)
@@ -58,7 +58,6 @@
                 <option value="pagado" @selected(request('estado')=='pagado')>Pagado</option>
             </select>
         </div>
-        <div class="col-md-1 d-grid"><button class="btn btn-light w-100">Filtrar</button></div>
     </form>
 </div>
 

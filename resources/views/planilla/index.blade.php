@@ -23,14 +23,13 @@
 </div>
 
 <div class="card p-3 mb-3">
-    <form class="row g-2" method="GET">
+    <form class="row g-2" method="GET" data-autofiltro>
         <div class="col-md-4">
             <select name="mes" class="form-select">
                 @foreach(\App\Models\Pago::MESES as $num => $nombre)<option value="{{ $num }}" @selected($mes==$num)>{{ $nombre }}</option>@endforeach
             </select>
         </div>
         <div class="col-md-3"><input type="number" name="anio" value="{{ $anio }}" class="form-control"></div>
-        <div class="col-md-2"><button class="btn btn-light w-100">Filtrar</button></div>
     </form>
 </div>
 
@@ -62,6 +61,7 @@
                     <td class="small text-muted">{{ $p->observacion ?? '' }}</td>
                     <td class="text-end">
                         @auth @if(auth()->user()->esAdmin())
+                        <a href="{{ route('planilla.show', $p) }}" class="btn btn-sm btn-light btn-icon" title="Ver"><i class="bi bi-eye"></i></a>
                         <button class="btn btn-sm btn-light btn-icon" onclick="editarPlanilla({{ $p->id }})"><i class="bi bi-pencil"></i></button>
                         <button class="btn btn-sm btn-light btn-icon text-danger" onclick="eliminarPlanilla({{ $p->id }}, '{{ $p->alumno->nombre ?? '' }}')"><i class="bi bi-trash"></i></button>
                         @endif @endauth

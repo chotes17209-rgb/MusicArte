@@ -1,58 +1,40 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <style>
-        body { font-family: Helvetica, Arial, sans-serif; font-size: 12px; color: #222; padding: 10px; }
-        .header { text-align: center; margin-bottom: 15px; }
-        .header h2 { color: #3d2c8d; margin: 5px 0 0; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        td, th { padding: 6px 4px; border-bottom: 1px solid #ddd; text-align: left; }
-        .total { font-size: 15px; font-weight: bold; color: #3d2c8d; }
-        .badge { display: inline-block; padding: 2px 8px; border-radius: 8px; font-size: 10px; font-weight: bold; }
-        .badge-pagado { background: #d4edda; color: #155724; }
-        .badge-a_cuenta { background: #fff3cd; color: #7a5b00; }
-        .badge-pendiente { background: #f8d7da; color: #842029; }
-        .footer { margin-top: 30px; text-align: center; font-size: 10px; color: #777; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h2>MUSICARTE - CENTRO CULTURAL</h2>
-        <div>ESTADO DE CUENTA — PAGO N&deg; {{ $pago->id }}</div>
-    </div>
+@extends('layouts.pdf')
+@section('titulo', 'Estado de cuenta')
+@section('subtitulo', 'Pago N° '.$pago->id.' · '.$pago->mesLabel().' '.$pago->anio)
 
-    <table>
-        <tr><th>Alumno</th><td>{{ $pago->alumno->nombre }}</td></tr>
-        <tr><th>Taller</th><td>{{ $pago->alumnoTaller->especialidad->nombre ?? ($pago->alumno->especialidad->nombre ?? '—') }}</td></tr>
-        <tr><th>Concepto</th><td>{{ $pago->concepto ?? 'Mensualidad' }}</td></tr>
-        <tr><th>Periodo</th><td>{{ $pago->mesLabel() }} {{ $pago->anio }}</td></tr>
-        <tr><th>Estado</th><td><span class="badge badge-{{ $pago->estado }}">{{ $pago->estadoLabel() }}</span></td></tr>
-    </table>
+@section('estilos')
+    .ficha td { padding: 5px 0; border-bottom: 1px solid #ecebe7; }
+    .ficha td:first-child { color: #8a8880; width: 34%; }
+    .montos { margin: 14px 0; }
+    .montos td { width: 33.3%; padding: 8px 10px; border: 1px solid #e6e5e0; background: #fafaf8; }
+    .montos .etq { font-size: 8px; color: #8a8880; text-transform: uppercase; }
+    .montos .val { font-size: 14px; font-weight: bold; margin-top: 2px; }
+@endsection
 
-    <table>
-        <tr><th class="total">Monto Total</th><td class="total">S/ {{ number_format($pago->monto_total, 2) }}</td></tr>
-        <tr><th>Total abonado</th><td>S/ {{ number_format($pago->montoAbonado(), 2) }}</td></tr>
-        <tr><th>Saldo pendiente</th><td>S/ {{ number_format($pago->saldo, 2) }}</td></tr>
-    </table>
+@section('contenido')
+<table class="ficha">
+    <tr><td>Alumno</td><td class="fuerte">{{ $pago->alumno->nombre }}</td></tr>
+    <tr><td>Taller</td><td>{{ $pago->alumnoTaller->especialidad->nombre ?? ($pago->alumno->especialidad->nombre ?? '—') }}@if($pago->alumnoTaller?->maestro) <span class="muted">· {{ $pago->alumnoTaller->maestro->nombre }}</span>@endif</td></tr>
+    <tr><td>Concepto</td><td>{{ $pago->concepto ?? 'Mensualidad' }}</td></tr>
+    <tr><td>Periodo</td><td>{{ $pago->mesLabel() }} {{ $pago->anio }}</td></tr>
+    <tr><td>Estado</td><td><span class="estado {{ $pago->estado }}">{{ $pago->estadoLabel() }}</span></td></tr>
+</table>
 
-    <h4 style="color:#3d2c8d">Detalle de abonos</h4>
-    <table>
-        <tr><th>Fecha</th><th>Metodo</th><th>N&deg; Recibo</th><th>Monto</th></tr>
-        @forelse($pago->abonos as $ab)
-            <tr>
-                <td>{{ $ab->fecha->format('d/m/Y') }}</td>
-                <td>{{ $ab->metodoLabel() }}</td>
-                <td>{{ $ab->recibo_nro ?? '—' }}</td>
-                <td>S/ {{ number_format($ab->monto, 2) }}</td>
-            </tr>
-        @empty
-            <tr><td colspan="4">Aun no se ha registrado ningun abono.</td></tr>
-        @endforelse
-    </table>
+<table class="montos"><tr>
+    <td><div class="etq">Monto total</div><div class="val">S/ {{ number_format($pago->monto_total, 2) }}</div></td>
+    <td><div class="etq">Abonado</div><div class="val verde">S/ {{ number_format($pago->montoAbonado(), 2) }}</div></td>
+    <td><div class="etq">Saldo</div><div class="val {{ $pago->saldo > 0 ? 'rojo' : 'verde' }}">S/ {{ number_format($pago->saldo, 2) }}</div></td>
+</tr></table>
 
-    <div class="footer">
-        Documento generado por el sistema de gestion MusicArte &mdash; {{ now()->format('d/m/Y H:i') }}
-    </div>
-</body>
-</html>
+<h2>Detalle de abonos</h2>
+<table class="tabla">
+    <thead><tr><th>Fecha</th><th>Método</th><th>N° recibo</th><th class="der">Monto</th></tr></thead>
+    <tbody>
+    @forelse($pago->abonos as $ab)
+        <tr><td>{{ $ab->fecha->format('d/m/Y') }}</td><td>{{ $ab->metodoLabel() }}</td><td>{{ $ab->recibo_nro ?? '—' }}</td><td class="der">S/ {{ number_format($ab->monto, 2) }}</td></tr>
+    @empty
+        <tr><td colspan="4" class="centro muted">Aún no se ha registrado ningún abono.</td></tr>
+    @endforelse
+    </tbody>
+</table>
+@endsection

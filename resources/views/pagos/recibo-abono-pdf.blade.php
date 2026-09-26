@@ -1,44 +1,36 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <style>
-        body { font-family: Helvetica, Arial, sans-serif; font-size: 12px; color: #222; padding: 10px; }
-        .header { text-align: center; margin-bottom: 15px; }
-        .header h2 { color: #3d2c8d; margin: 5px 0 0; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        td, th { padding: 6px 4px; border-bottom: 1px solid #ddd; text-align: left; }
-        .total { font-size: 15px; font-weight: bold; color: #3d2c8d; }
-        .footer { margin-top: 30px; text-align: center; font-size: 10px; color: #777; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h2>MUSICARTE - CENTRO CULTURAL</h2>
-        <div>RECIBO DE ABONO N&deg; {{ $abono->recibo_nro ?? $abono->id }}</div>
-    </div>
+@extends('layouts.pdf')
+@section('titulo', 'Recibo de abono')
+@section('subtitulo', 'N° '.($abono->recibo_nro ?? $abono->id).' · '.$abono->fecha->format('d/m/Y'))
 
-    <table>
-        <tr><th>Alumno</th><td>{{ $abono->pago->alumno->nombre }}</td></tr>
-        <tr><th>Taller</th><td>{{ $abono->pago->alumnoTaller->especialidad->nombre ?? ($abono->pago->alumno->especialidad->nombre ?? '—') }}</td></tr>
-        <tr><th>Concepto</th><td>{{ $abono->pago->concepto ?? 'Mensualidad' }}</td></tr>
-        <tr><th>Periodo</th><td>{{ $abono->pago->mesLabel() }} {{ $abono->pago->anio }}</td></tr>
-        <tr><th>Fecha del abono</th><td>{{ $abono->fecha->format('d/m/Y') }}</td></tr>
-        <tr><th>Metodo de pago</th><td>{{ $abono->metodoLabel() }}</td></tr>
-    </table>
+@section('estilos')
+    .ficha td { padding: 5px 0; border-bottom: 1px solid #ecebe7; }
+    .ficha td:first-child { color: #8a8880; width: 34%; }
+    .destacado { margin: 14px 0; padding: 12px; border: 1.5px solid #3d2c8d; background: #f5f3fb; text-align: center; }
+    .destacado .etq { font-size: 8.5px; color: #55534d; text-transform: uppercase; letter-spacing: .4px; }
+    .destacado .val { font-size: 22px; font-weight: bold; color: #3d2c8d; margin-top: 2px; }
+    .montos td { width: 50%; padding: 8px 10px; border: 1px solid #e6e5e0; background: #fafaf8; }
+    .montos .etq { font-size: 8px; color: #8a8880; text-transform: uppercase; }
+    .montos .val { font-size: 13px; font-weight: bold; margin-top: 2px; }
+@endsection
 
-    <table>
-        <tr><th class="total">Monto de este abono</th><td class="total">S/ {{ number_format($abono->monto, 2) }}</td></tr>
-        <tr><th>Monto total del pago</th><td>S/ {{ number_format($abono->pago->monto_total, 2) }}</td></tr>
-        <tr><th>Saldo pendiente (despues de este abono)</th><td>S/ {{ number_format($abono->pago->saldo, 2) }}</td></tr>
-    </table>
+@section('contenido')
+<div class="destacado">
+    <div class="etq">Monto recibido</div>
+    <div class="val">S/ {{ number_format($abono->monto, 2) }}</div>
+    <div class="muted">{{ $abono->metodoLabel() }}</div>
+</div>
 
-    @if($abono->observacion)
-        <p><strong>Observacion:</strong> {{ $abono->observacion }}</p>
-    @endif
+<table class="ficha">
+    <tr><td>Alumno</td><td class="fuerte">{{ $abono->pago->alumno->nombre }}</td></tr>
+    <tr><td>Taller</td><td>{{ $abono->pago->alumnoTaller->especialidad->nombre ?? ($abono->pago->alumno->especialidad->nombre ?? '—') }}</td></tr>
+    <tr><td>Concepto</td><td>{{ $abono->pago->concepto ?? 'Mensualidad' }}</td></tr>
+    <tr><td>Periodo</td><td>{{ $abono->pago->mesLabel() }} {{ $abono->pago->anio }}</td></tr>
+    <tr><td>Fecha del abono</td><td>{{ $abono->fecha->format('d/m/Y') }}</td></tr>
+    @if($abono->observacion)<tr><td>Observación</td><td>{{ $abono->observacion }}</td></tr>@endif
+</table>
 
-    <div class="footer">
-        Documento generado por el sistema de gestion MusicArte &mdash; {{ now()->format('d/m/Y H:i') }}
-    </div>
-</body>
-</html>
+<table class="montos" style="margin-top:14px"><tr>
+    <td><div class="etq">Total del mes</div><div class="val">S/ {{ number_format($abono->pago->monto_total, 2) }}</div></td>
+    <td><div class="etq">Saldo después de este abono</div><div class="val {{ $abono->pago->saldo > 0 ? 'rojo' : 'verde' }}">S/ {{ number_format($abono->pago->saldo, 2) }}</div></td>
+</tr></table>
+@endsection

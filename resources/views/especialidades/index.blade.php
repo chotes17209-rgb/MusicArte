@@ -32,6 +32,7 @@
                     <td>{{ $e->maestros_count }}</td>
                     <td>@if($e->activo)<span class="badge bg-success">Activo</span>@else<span class="badge bg-secondary">Inactivo</span>@endif</td>
                     <td class="text-end">
+                        <a href="{{ route('especialidades.show', $e) }}" class="btn btn-sm btn-light btn-icon" title="Ver"><i class="bi bi-eye"></i></a>
                         <button class="btn btn-sm btn-light btn-icon" onclick="editarEspecialidad({{ $e->id }})"><i class="bi bi-pencil"></i></button>
                         @auth @if(auth()->user()->esAdmin())
                         <button class="btn btn-sm btn-light btn-icon text-danger" onclick="eliminarEspecialidad({{ $e->id }}, '{{ $e->nombre }}')"><i class="bi bi-trash"></i></button>

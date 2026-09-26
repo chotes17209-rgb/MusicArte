@@ -14,6 +14,13 @@ class AvisoController extends Controller
         return view('avisos.index', compact('avisos'));
     }
 
+    public function show(Aviso $aviso)
+    {
+        $aviso->load('autor');
+
+        return view('avisos.show', compact('aviso'));
+    }
+
     public function store(Request $request)
     {
         $data = $this->validarDatos($request);

@@ -2,30 +2,20 @@
 @section('titulo', 'Horarios')
 
 @section('contenido')
-<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-    <div>
-        <h5 class="fw-semibold mb-0">Horarios (plantilla semanal)</h5>
-        <small class="text-muted">Define el día y hora fija de cada alumno, por periodo; luego genera las clases en el calendario</small>
-    </div>
-    <div class="d-flex gap-2 flex-wrap">
-        <a href="{{ route('horarios.tablero', ['periodo_id' => $periodoId]) }}" class="btn btn-outline-secondary"><i class="bi bi-grid-3x3-gap me-1"></i> Ver tablero por maestro</a>
-        <a href="{{ route('horarios.mensual') }}" class="btn btn-outline-secondary"><i class="bi bi-calendar-week me-1"></i> Vista mensual</a>
-        <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalGenerar"><i class="bi bi-calendar-plus me-1"></i> Generar clases</button>
-        <button class="btn btn-morado" data-bs-toggle="modal" data-bs-target="#modalHorario" onclick="nuevoHorario()"><i class="bi bi-plus-lg me-1"></i> Nuevo Horario</button>
-    </div>
-</div>
+@include('horarios._tabs')
 
-<div class="card p-3 mb-3">
-    <form method="GET" class="d-flex gap-2 align-items-center flex-wrap">
-        <label class="small fw-semibold mb-0">Periodo:</label>
-        <select name="periodo_id" class="form-select form-select-sm" style="max-width:220px" onchange="this.form.submit()">
+<x-page-head titulo="Lista de horarios" subtitulo="Aquí se crean y editan los horarios fijos de cada alumno por periodo. Luego «Generar clases» los pasa al calendario.">
+    <form method="GET" data-autofiltro>
+        <select name="periodo_id" class="form-select" aria-label="Periodo">
             @foreach($periodos as $p)
                 <option value="{{ $p->id }}" @selected($periodoId == $p->id)>{{ $p->nombre }}</option>
             @endforeach
         </select>
-        <span class="text-muted small">{{ $horarios->count() }} horario(s) en este periodo</span>
     </form>
-</div>
+    <button class="btn btn-light" data-bs-toggle="modal" data-bs-target="#modalGenerar"><i class="bi bi-calendar-plus me-1"></i> Generar clases</button>
+    <button class="btn btn-morado" data-bs-toggle="modal" data-bs-target="#modalHorario" onclick="nuevoHorario()"><i class="bi bi-plus-lg me-1"></i> Nuevo horario</button>
+</x-page-head>
+<p class="small text-muted mb-2">{{ $horarios->count() }} horarios en este periodo.</p>
 
 <div class="card p-3">
     <div class="table-responsive">
@@ -42,6 +32,7 @@
                     <td>{{ $h->salon ?? '—' }}</td>
                     <td>@if($h->activo)<span class="badge bg-success">Activo</span>@else<span class="badge bg-secondary">Inactivo</span>@endif</td>
                     <td class="text-end">
+                        <a href="{{ route('horarios.show', $h) }}" class="btn btn-sm btn-light btn-icon" title="Ver"><i class="bi bi-eye"></i></a>
                         <button class="btn btn-sm btn-light btn-icon" onclick="editarHorario({{ $h->id }})" title="Editar"><i class="bi bi-pencil"></i></button>
                         <button class="btn btn-sm btn-light btn-icon text-danger" onclick="eliminarHorario({{ $h->id }}, '{{ $h->alumno->nombre ?? '' }}')" title="Eliminar"><i class="bi bi-trash"></i></button>
                     </td>

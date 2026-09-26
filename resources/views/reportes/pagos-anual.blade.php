@@ -5,10 +5,10 @@
 <x-page-head titulo="Pagos del año {{ $anio }}"
              subtitulo="Mes a mes: cuánto se cobró de lo que correspondía, y quiénes todavía deben."
              :volver="route('reportes.index')" volver-texto="Reportes">
-    <form method="GET">
-        <input type="number" name="anio" value="{{ $anio }}" class="form-control" style="width:96px" onchange="this.form.submit()">
+    <form method="GET" data-autofiltro>
+        <input type="number" name="anio" value="{{ $anio }}" class="form-control" style="width:96px">
     </form>
-    <button class="btn btn-light" onclick="window.print()"><i class="bi bi-printer me-1"></i> Imprimir</button>
+    <a href="{{ request()->fullUrlWithQuery(['pdf' => 1]) }}" target="_blank" class="btn btn-light" data-sin-ventana><i class="bi bi-file-earmark-pdf me-1"></i> Descargar PDF</a>
 </x-page-head>
 
 @php $cobranza = $totales['facturado'] > 0 ? round($totales['cobrado'] / $totales['facturado'] * 100, 1) : null; @endphp

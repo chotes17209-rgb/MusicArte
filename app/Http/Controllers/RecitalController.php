@@ -14,6 +14,11 @@ class RecitalController extends Controller
         return view('recitales.index', compact('recitales'));
     }
 
+    public function show(Recital $recital)
+    {
+        return view('recitales.show', compact('recital'));
+    }
+
     public function store(Request $request)
     {
         $data = $this->validarDatos($request);

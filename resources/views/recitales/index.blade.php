@@ -22,6 +22,7 @@
                     <td>{{ $r->tema ?? '—' }}</td>
                     <td>{{ $r->pago_por_alumno ? 'S/ '.number_format($r->pago_por_alumno,2) : '—' }}</td>
                     <td class="text-end">
+                        <a href="{{ route('recitales.show', $r) }}" class="btn btn-sm btn-light btn-icon" title="Ver"><i class="bi bi-eye"></i></a>
                         <button class="btn btn-sm btn-light btn-icon" onclick="editarRecital({{ $r->id }})"><i class="bi bi-pencil"></i></button>
                         <button class="btn btn-sm btn-light btn-icon text-danger" onclick="eliminarRecital({{ $r->id }}, '{{ $r->nombre }}')"><i class="bi bi-trash"></i></button>
                     </td>

@@ -5,13 +5,12 @@
 <x-page-head titulo="Clases dictadas y canceladas"
              subtitulo="Todas las clases entre dos fechas y en qué quedó cada una."
              :volver="route('reportes.index')" volver-texto="Reportes">
-    <form method="GET">
+    <form method="GET" data-autofiltro>
         <input type="date" name="desde" value="{{ $desde }}" class="form-control">
         <span class="text-muted">a</span>
         <input type="date" name="hasta" value="{{ $hasta }}" class="form-control">
-        <button class="btn btn-light">Ver</button>
     </form>
-    <button class="btn btn-light" onclick="window.print()"><i class="bi bi-printer me-1"></i> Imprimir</button>
+    <a href="{{ request()->fullUrlWithQuery(['pdf' => 1]) }}" target="_blank" class="btn btn-light" data-sin-ventana><i class="bi bi-file-earmark-pdf me-1"></i> Descargar PDF</a>
 </x-page-head>
 
 <div class="stats">

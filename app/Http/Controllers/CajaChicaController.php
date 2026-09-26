@@ -21,6 +21,11 @@ class CajaChicaController extends Controller
         return view('caja-chica.index', compact('movimientos', 'mes', 'anio', 'totalMes'));
     }
 
+    public function show(CajaChica $caja_chica)
+    {
+        return view('caja-chica.show', ['movimiento' => $caja_chica]);
+    }
+
     public function store(Request $request)
     {
         $data = $this->validarDatos($request);

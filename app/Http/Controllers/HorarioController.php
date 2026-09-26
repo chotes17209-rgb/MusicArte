@@ -38,29 +38,44 @@ class HorarioController extends Controller
      */
     public function tablero(Request $request)
     {
-        $periodoId = $request->get('periodo_id')
-            ?? \App\Models\Periodo::seleccionado()?->id;
+        return view('horarios.tablero', $this->datosTablero($request));
+    }
 
+    /** El mismo cuadro en PDF (A4 horizontal) para imprimir y pegar en el salon. */
+    public function tableroPdf(Request $request)
+    {
+        $datos = $this->datosTablero($request);
+        abort_unless($datos['periodo'], 404);
+
+        return \Barryvdh\DomPDF\Facade\Pdf::loadView('horarios.tablero-pdf', $datos)
+            ->setPaper('a4', 'landscape')
+            ->stream('horarios-'.\Illuminate\Support\Str::slug($datos['periodo']->nombre).'.pdf');
+    }
+
+    /**
+     * Datos del cuadro de horarios: un bloque por maestro con clases en el
+     * periodo (el de la barra superior por defecto), filtrable por maestro.
+     */
+    private function datosTablero(Request $request): array
+    {
+        $periodoId = $request->get('periodo_id') ?: \App\Models\Periodo::seleccionado()?->id;
         $periodo = $periodoId ? \App\Models\Periodo::find($periodoId) : null;
         $periodos = \App\Models\Periodo::orderByDesc('anio')->orderByDesc('mes')->get();
-
         $maestroFiltroId = $request->get('maestro_id');
+        $todosMaestros = Maestro::where('activo', true)->orderBy('nombre')->get();
 
-        $maestros = Maestro::where('activo', true)
-            ->when($maestroFiltroId, fn ($q) => $q->where('id', $maestroFiltroId))
-            ->orderBy('nombre')->get();
+        $horariosPorMaestro = $periodo
+            ? Horario::with(['alumno', 'especialidad'])
+                ->where('periodo_id', $periodo->id)->where('activo', true)
+                ->when($maestroFiltroId, fn ($q) => $q->where('maestro_id', $maestroFiltroId))
+                ->orderBy('dia_semana')->orderBy('hora_inicio')->get()
+                ->groupBy('maestro_id')
+            : collect();
 
-        $horariosPorMaestro = collect();
-        if ($periodo) {
-            $horariosPorMaestro = Horario::with(['alumno', 'especialidad'])
-                ->where('periodo_id', $periodo->id)
-                ->whereIn('maestro_id', $maestros->pluck('id'))
-                ->orderBy('dia_semana')->orderBy('hora_inicio')
-                ->get()
-                ->groupBy('maestro_id');
-        }
+        $maestros = $todosMaestros->filter(fn ($m) => $horariosPorMaestro->has($m->id))->values();
+        $sinHorario = $maestroFiltroId ? collect() : $todosMaestros->reject(fn ($m) => $horariosPorMaestro->has($m->id))->values();
 
-        return view('horarios.tablero', compact('maestros', 'horariosPorMaestro', 'periodo', 'periodos', 'maestroFiltroId'));
+        return compact('maestros', 'todosMaestros', 'horariosPorMaestro', 'periodo', 'periodos', 'maestroFiltroId', 'sinHorario');
     }
 
     /**
@@ -146,6 +161,14 @@ class HorarioController extends Controller
         usort($filas, fn ($a, $b) => strcmp($a['alumno']->nombre ?? '', $b['alumno']->nombre ?? ''));
 
         return view('horarios.mensual', compact('filas', 'mes', 'anio', 'periodo'));
+    }
+
+    public function show(Horario $horario)
+    {
+        $horario->load(['alumno', 'maestro', 'especialidad', 'periodo']);
+        $clases = $horario->clases()->with('asistencia')->orderBy('fecha')->get();
+
+        return view('horarios.show', compact('horario', 'clases'));
     }
 
     public function store(Request $request)

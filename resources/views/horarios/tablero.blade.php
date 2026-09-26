@@ -1,54 +1,41 @@
 @extends('layouts.app')
-@section('titulo', 'Tablero de Horarios')
+@section('titulo', 'Horarios')
 
 @section('contenido')
-<div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
-    <div>
-        <a href="{{ route('horarios.index', ['periodo_id' => $periodo?->id]) }}" class="btn btn-sm btn-volver"><i class="bi bi-arrow-left me-1"></i> Volver a Horarios</a>
-        <h5 class="fw-semibold mb-0 mt-1">Tablero de Horarios por Maestro</h5>
-        <small class="text-muted">Igual que el cuadro físico de salón — cambia el periodo para ver cómo variaron maestros y horarios de un mes a otro</small>
-    </div>
-    <form method="GET" class="d-flex gap-2 flex-wrap">
-        <select name="periodo_id" class="form-select form-select-sm" style="min-width:180px" onchange="this.form.submit()">
+@include('horarios._tabs')
+
+<x-page-head :titulo="'Horarios de '.($periodo->nombre ?? '—')"
+             subtitulo="El cuadro de cada maestro, como la hoja que se pega en el salón. Toca un alumno para ver su perfil.">
+    <form method="GET" data-autofiltro>
+        <select name="periodo_id" class="form-select" aria-label="Periodo">
             @foreach($periodos as $p)
                 <option value="{{ $p->id }}" @selected($periodo?->id == $p->id)>{{ $p->nombre }}</option>
             @endforeach
         </select>
-        <select name="maestro_id" class="form-select form-select-sm" style="min-width:180px" onchange="this.form.submit()">
+        <select name="maestro_id" class="form-select" aria-label="Maestro">
             <option value="">Todos los maestros</option>
-            @foreach(\App\Models\Maestro::where('activo', true)->orderBy('nombre')->get() as $m)
+            @foreach($todosMaestros as $m)
                 <option value="{{ $m->id }}" @selected($maestroFiltroId == $m->id)>{{ $m->nombre }}</option>
             @endforeach
         </select>
-        <button class="btn btn-outline-secondary btn-sm" onclick="window.print()" type="button"><i class="bi bi-printer"></i></button>
     </form>
-</div>
+    @if($periodo)
+        <a href="{{ route('horarios.tablero.pdf', ['periodo_id' => $periodo->id, 'maestro_id' => $maestroFiltroId]) }}" class="btn btn-light" target="_blank" data-sin-ventana><i class="bi bi-file-earmark-pdf me-1"></i> PDF para imprimir</a>
+    @endif
+</x-page-head>
 
 @if(!$periodo)
-    <div class="alert alert-warning">No hay periodos registrados todavía. Crea uno primero en el módulo de Periodos.</div>
+    <div class="alert alert-warning">No hay periodos registrados todavía. Crea uno primero en Alumnos → Periodos.</div>
 @elseif($maestros->isEmpty())
-    <div class="alert alert-info">No hay maestros activos registrados.</div>
+    <div class="card"><div class="vacio"><i class="bi bi-calendar-x"></i>No hay horarios en {{ $periodo->nombre }}.</div></div>
 @else
-    <div class="row g-3">
+    <div class="cuadros">
         @foreach($maestros as $maestro)
-            @php $horarios = $horariosPorMaestro->get($maestro->id, collect()); @endphp
-            <div class="col-12 {{ $maestros->count() > 1 ? 'col-xl-6' : '' }}">
-                @include('horarios._grid-maestro', ['maestro' => $maestro, 'horarios' => $horarios])
-                <div class="text-end mb-2">
-                    <a href="{{ route('maestros.show', ['maestro' => $maestro, 'periodo_id' => $periodo->id]) }}" class="btn btn-sm btn-ir">Ver perfil de {{ $maestro->nombre }} <i class="bi bi-arrow-right ms-1"></i></a>
-                </div>
-            </div>
+            @include('horarios._grid-maestro', ['maestro' => $maestro, 'horarios' => $horariosPorMaestro->get($maestro->id, collect())])
         @endforeach
     </div>
+    @if($sinHorario->isNotEmpty())
+        <p class="small text-muted mt-3 mb-0">Sin clases en {{ $periodo->nombre }}: {{ $sinHorario->pluck('nombre')->implode(', ') }}.</p>
+    @endif
 @endif
 @endsection
-
-@push('estilos')
-<style>
-    @media print {
-        .sidebar, .topbar, form, .btn, a.small { display: none !important; }
-        .content-wrap { margin-left: 0 !important; }
-        .tablero-maestro { break-inside: avoid; }
-    }
-</style>
-@endpush

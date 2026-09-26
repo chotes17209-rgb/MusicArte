@@ -16,14 +16,13 @@
 </div>
 
 <div class="card p-3 mb-3">
-    <form class="row g-2" method="GET">
+    <form class="row g-2" method="GET" data-autofiltro>
         <div class="col-md-4">
             <select name="mes" class="form-select">
                 @foreach(\App\Models\Pago::MESES as $num => $nombre)<option value="{{ $num }}" @selected($mes==$num)>{{ $nombre }}</option>@endforeach
             </select>
         </div>
         <div class="col-md-3"><input type="number" name="anio" value="{{ $anio }}" class="form-control"></div>
-        <div class="col-md-2"><button class="btn btn-light w-100">Filtrar</button></div>
     </form>
 </div>
 
@@ -42,6 +41,7 @@
                     <td>S/ {{ number_format($e->efectivo, 2) }}</td>
                     <td class="fw-semibold">S/ {{ number_format($e->total, 2) }}</td>
                     <td class="text-end">
+                        <a href="{{ route('egresos.show', $e) }}" class="btn btn-sm btn-light btn-icon" title="Ver"><i class="bi bi-eye"></i></a>
                         <button class="btn btn-sm btn-light btn-icon" onclick="editarEgreso({{ $e->id }})"><i class="bi bi-pencil"></i></button>
                         <button class="btn btn-sm btn-light btn-icon text-danger" onclick="eliminarEgreso({{ $e->id }}, '{{ $e->detalle }}')"><i class="bi bi-trash"></i></button>
                     </td>

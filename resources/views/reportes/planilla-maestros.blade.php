@@ -5,13 +5,13 @@
 <x-page-head titulo="Planilla de maestros — {{ \App\Models\Pago::MESES[$mes] }} {{ $anio }}"
              subtitulo="Lo pagado a cada maestro en el mes, con el detalle por alumno."
              :volver="route('reportes.index')" volver-texto="Reportes">
-    <form method="GET">
-        <select name="mes" class="form-select" onchange="this.form.submit()">
+    <form method="GET" data-autofiltro>
+        <select name="mes" class="form-select">
             @foreach(\App\Models\Pago::MESES as $num => $nombre)<option value="{{ $num }}" @selected($mes==$num)>{{ $nombre }}</option>@endforeach
         </select>
-        <input type="number" name="anio" value="{{ $anio }}" class="form-control" style="width:96px" onchange="this.form.submit()">
+        <input type="number" name="anio" value="{{ $anio }}" class="form-control" style="width:96px">
     </form>
-    <button class="btn btn-light" onclick="window.print()"><i class="bi bi-printer me-1"></i> Imprimir</button>
+    <a href="{{ request()->fullUrlWithQuery(['pdf' => 1]) }}" target="_blank" class="btn btn-light" data-sin-ventana><i class="bi bi-file-earmark-pdf me-1"></i> Descargar PDF</a>
 </x-page-head>
 
 @php $porMaestro = $data->groupBy(fn ($p) => $p->maestro->nombre ?? 'Sin maestro')->sortKeys(); @endphp

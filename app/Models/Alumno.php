@@ -83,6 +83,23 @@ class Alumno extends Model
         return $this->hasMany(Asistencia::class);
     }
 
+    /**
+     * Nombre corto para cuadros de horario: primer nombre + inicial del
+     * segundo ("Jose Leandro Aliaga" -> "Jose L."), como en la hoja impresa.
+     */
+    public function nombreCorto(): string
+    {
+        $partes = preg_split('/\s+/', trim($this->nombre));
+
+        return isset($partes[1]) ? $partes[0].' '.mb_substr($partes[1], 0, 1).'.' : ($partes[0] ?? '');
+    }
+
+    /** Edad solo con el numero ("09 AÑOS" -> "9"), o null si no hay. */
+    public function edadNumero(): ?string
+    {
+        return preg_match('/\d+/', (string) $this->edad, $m) ? (string) (int) $m[0] : null;
+    }
+
     public function scopeActivos($query)
     {
         return $query->where('activo', true);

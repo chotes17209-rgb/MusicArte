@@ -114,6 +114,13 @@ class PlanillaController extends Controller
         return response()->json(['ok' => true, 'message' => "Planilla generada: {$generados} registros (maestro + alumno) calculados desde la asistencia."]);
     }
 
+    public function show(Planilla $planilla)
+    {
+        $planilla->load(['maestro', 'alumno', 'especialidad']);
+
+        return view('planilla.show', compact('planilla'));
+    }
+
     public function store(Request $request)
     {
         $data = $this->validarDatos($request);

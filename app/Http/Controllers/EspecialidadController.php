@@ -14,6 +14,28 @@ class EspecialidadController extends Controller
         return view('especialidades.index', compact('especialidades'));
     }
 
+    /** Ver: detalle de la especialidad con sus maestros y los alumnos del periodo de trabajo. */
+    public function show(Especialidad $especialidad)
+    {
+        $especialidad->load(['maestros' => fn ($q) => $q->orderBy('nombre')]);
+        $periodo = \App\Models\Periodo::seleccionado();
+
+        $talleres = $periodo
+            ? \App\Models\AlumnoTaller::with(['alumno', 'maestro'])
+                ->where('especialidad_id', $especialidad->id)->where('periodo_id', $periodo->id)
+                ->get()->sortBy(fn ($t) => $t->alumno->nombre ?? '')
+            : collect();
+
+        // Alumnos por mes en los ultimos 6 periodos, para ver la tendencia.
+        $historial = \App\Models\Periodo::orderByDesc('anio')->orderByDesc('mes')->limit(6)->get()->reverse()
+            ->map(fn ($p) => [
+                'periodo' => $p->nombre,
+                'alumnos' => \App\Models\AlumnoTaller::where('especialidad_id', $especialidad->id)->where('periodo_id', $p->id)->distinct()->count('alumno_id'),
+            ])->values();
+
+        return view('especialidades.show', compact('especialidad', 'periodo', 'talleres', 'historial'));
+    }
+
     public function store(Request $request)
     {
         $data = $this->validarDatos($request);

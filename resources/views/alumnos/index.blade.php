@@ -384,6 +384,7 @@
                         @endif
                     </td>
                     <td class="text-end">
+                        <a href="{{ route('periodos.show', $p) }}" class="btn btn-sm btn-light btn-icon" title="Ver"><i class="bi bi-eye"></i></a>
                         <button class="btn btn-sm btn-light btn-icon" onclick="editarPeriodo({{ $p->id }})"><i class="bi bi-pencil"></i></button>
                         <button class="btn btn-sm btn-light btn-icon text-danger" onclick="eliminarPeriodo({{ $p->id }}, '{{ $p->nombre }}')"><i class="bi bi-trash"></i></button>
                     </td>

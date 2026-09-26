@@ -13,8 +13,8 @@
             @endforeach
         </div>
     </div>
-    <form method="GET" class="d-flex gap-2">
-        <select name="periodo_id" class="form-select form-select-sm" style="min-width:180px" onchange="this.form.submit()">
+    <form method="GET" class="d-flex gap-2" data-autofiltro>
+        <select name="periodo_id" class="form-select form-select-sm" style="min-width:180px">
             @foreach($periodos as $p)
                 <option value="{{ $p->id }}" @selected($periodo?->id == $p->id)>{{ $p->nombre }}</option>
             @endforeach

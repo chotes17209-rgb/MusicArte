@@ -5,11 +5,11 @@
 <x-page-head titulo="Pagos pendientes de {{ \App\Models\Pago::MESES[$mes] }} {{ $anio }}"
              subtitulo="Alumnos que todavía deben algo del mes. Ordenado de mayor a menor deuda."
              :volver="route('reportes.index')" volver-texto="Reportes">
-    <button class="btn btn-light" onclick="window.print()"><i class="bi bi-printer me-1"></i> Imprimir</button>
+    <a href="{{ request()->fullUrlWithQuery(['pdf' => 1]) }}" target="_blank" class="btn btn-light" data-sin-ventana><i class="bi bi-file-earmark-pdf me-1"></i> Descargar PDF</a>
 </x-page-head>
 
 <div class="card p-3 mb-3">
-    <form class="row g-2" method="GET">
+    <form class="row g-2" method="GET" data-autofiltro>
         <div class="col-6 col-md-2">
             <label class="form-label">Mes</label>
             <select name="mes" class="form-select">
@@ -46,9 +46,6 @@
                 <option value="a_cuenta" @selected(request('estado')=='a_cuenta')>Solo a cuenta</option>
                 <option value="pagado" @selected(request('estado')=='pagado')>Solo pagados</option>
             </select>
-        </div>
-        <div class="col-6 col-md-2 d-flex align-items-end">
-            <button class="btn btn-morado w-100">Aplicar filtros</button>
         </div>
     </form>
 </div>

@@ -103,10 +103,10 @@
             background: #1c1a26; border-right: 1px solid #1c1a26;
             transition: transform .2s ease, width .2s ease;
         }
-        .sidebar .logo-box { display: flex; align-items: center; gap: .65rem; padding: 0 1rem; height: 56px; border-bottom: 1px solid rgba(255,255,255,.07); flex: 0 0 auto; }
-        .sidebar .logo-box img { width: 30px; height: 30px; border-radius: 7px; object-fit: cover; background: #fff; }
+        .sidebar .logo-box { display: flex; align-items: center; gap: .75rem; padding: 0 1rem; height: 64px; border-bottom: 1px solid rgba(255,255,255,.07); flex: 0 0 auto; text-decoration: none; }
+        .sidebar .logo-box img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: #fff; box-shadow: 0 0 0 3px rgba(255,255,255,.12), 0 4px 14px rgba(0,0,0,.35); flex-shrink: 0; transition: width .2s ease, height .2s ease; }
         .sidebar .logo-box .marca { line-height: 1.15; min-width: 0; }
-        .sidebar .logo-box .marca strong { display: block; font-size: .9rem; font-weight: 600; color: #fff; }
+        .sidebar .logo-box .marca strong { display: block; font-size: 1.1rem; font-weight: 600; color: #fff; letter-spacing: -.01em; }
         .sidebar .logo-box .marca span { display: block; font-size: .72rem; color: rgba(255,255,255,.45); }
         .sidebar nav { flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; flex-wrap: nowrap; padding: .5rem .6rem 1rem; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.15) transparent; }
         .sidebar .nav-section { font-size: .68rem; font-weight: 600; color: rgba(255,255,255,.35); padding: 1.1rem .65rem .35rem; text-transform: uppercase; letter-spacing: .06em; }
@@ -132,6 +132,7 @@
 
         .sidebar.collapsed { width: 60px; }
         .sidebar.collapsed .logo-box { justify-content: center; padding: 0; }
+        .sidebar.collapsed .logo-box img { width: 36px; height: 36px; }
         .sidebar.collapsed .logo-box .marca,
         .sidebar.collapsed .nav-section,
         .sidebar.collapsed .nav-text { display: none; }
@@ -143,9 +144,11 @@
 
         /* ---------------- Barra superior ---------------- */
         .topbar {
-            height: 56px; padding: 0 1.5rem; background: var(--superficie); border-bottom: 1px solid var(--borde);
+            height: 64px; padding: 0 1.5rem; background: var(--superficie); border-bottom: 1px solid var(--borde);
             display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 1020;
         }
+        .logo-movil { display: none; flex-shrink: 0; }
+        .logo-movil img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 1px var(--borde); }
         .topbar-titulo { font-size: 1rem; font-weight: 600; margin: 0; color: var(--texto); }
         .topbar-fecha { color: var(--texto-3); font-size: .8125rem; }
         .btn-topbar { width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid transparent; background: transparent; border-radius: var(--radio-sm); color: var(--texto-2); position: relative; }
@@ -442,20 +445,30 @@
         #modalVista .page-head { margin-bottom: 1rem; }
         .cargando { display: flex; align-items: center; justify-content: center; gap: .5rem; padding: 3rem 1rem; color: var(--texto-3); }
 
-        /* ---------------- Tablero de horarios (cuadro por maestro) ---------------- */
-        .tablero-maestro { border: 1px solid var(--borde); border-radius: var(--radio); overflow: hidden; margin-bottom: 1rem; background: var(--superficie); }
-        .tablero-header { background: var(--superficie); color: var(--texto); padding: .7rem 1rem; display: flex; align-items: baseline; gap: .6rem; flex-wrap: wrap; border-bottom: 1px solid var(--borde); }
-        .tablero-titulo { font-weight: 600; font-size: .875rem; }
-        .tablero-sub { font-size: .75rem; color: var(--texto-3); }
-        table.tablero-tabla { margin-bottom: 0; border-collapse: separate; border-spacing: 0; }
-        table.tablero-tabla th { background: var(--superficie-2); color: var(--texto-3); font-size: .72rem; font-weight: 500; text-transform: none; text-align: center; padding: .45rem .35rem; border-bottom: 1px solid var(--borde); white-space: nowrap; }
-        table.tablero-tabla td { border: 0; border-bottom: 1px solid #efeeea; border-left: 1px solid #efeeea; padding: .4rem .45rem; font-size: .78rem; vertical-align: top; }
-        table.tablero-tabla td.col-hora { background: var(--superficie-2); font-weight: 500; color: var(--texto-2); text-align: center; white-space: nowrap; width: 84px; border-left: 0; }
-        table.tablero-tabla td.celda-ocupada { background: var(--acento-suave); }
-        .alumno-celda { line-height: 1.3; }
-        .alumno-celda + .alumno-celda { margin-top: 4px; padding-top: 4px; border-top: 1px dashed #d9d5ea; }
-        .alumno-celda.inactivo { color: var(--rojo); text-decoration: line-through; opacity: .75; }
-        .edad-celda { color: var(--texto-3); font-size: .9em; margin-left: 2px; }
+        /* Ficha de datos (pantallas "Ver") */
+        .ficha { display: grid; grid-template-columns: minmax(120px, 34%) 1fr; gap: .55rem 1rem; margin: 0; font-size: .8125rem; }
+        .ficha dt { color: var(--texto-3); font-weight: 500; }
+        .ficha dd { margin: 0; color: var(--texto); min-width: 0; overflow-wrap: anywhere; }
+
+        /* ---------------- Cuadro de horarios por maestro (como la hoja del salon) ---------------- */
+        .cuadros { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 540px), 1fr)); gap: 1rem; align-items: start; }
+        .cuadro { background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio); overflow: hidden; box-shadow: 0 1px 2px rgba(20,20,18,.04); }
+        .cuadro-cab { display: flex; align-items: baseline; gap: .6rem; flex-wrap: wrap; padding: .7rem 1rem; border-bottom: 1px solid var(--borde); border-left: 3px solid var(--acento); }
+        .cuadro-titulo { font-weight: 600; font-size: .95rem; }
+        .cuadro-sub { font-size: .78rem; color: var(--texto-3); }
+        .cuadro-cuenta { margin-left: auto; font-size: .75rem; color: var(--texto-3); }
+        .cuadro-tabla { width: 100%; border-collapse: collapse; font-size: .78rem; }
+        .cuadro-tabla th { background: var(--superficie-2); color: var(--texto-2); font-weight: 600; font-size: .72rem; text-align: center; padding: .45rem .35rem; border-bottom: 1px solid var(--borde); border-left: 1px solid #efeeea; white-space: nowrap; }
+        .cuadro-tabla td { vertical-align: top; padding: .35rem .4rem; border-top: 1px solid #efeeea; border-left: 1px solid #efeeea; min-width: 96px; }
+        .cuadro-tabla td.vacia { background: #fcfcfa; }
+        .cuadro-tabla .cuadro-hora { width: 70px; min-width: 70px; text-align: center; font-weight: 600; color: var(--texto-2); background: var(--superficie-2); border-left: 0; white-space: nowrap; font-variant-numeric: tabular-nums; }
+        .cuadro-alumno { display: flex; align-items: baseline; gap: .25rem; flex-wrap: wrap; padding: .12rem .2rem; margin: 0 -.2rem; border-radius: 4px; color: var(--texto); line-height: 1.3; }
+        .cuadro-alumno:hover { background: var(--acento-suave); color: var(--texto); }
+        .cuadro-alumno .punto { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; align-self: center; }
+        .cuadro-alumno .nombre { font-weight: 500; }
+        .cuadro-alumno .edad { color: var(--texto-3); }
+        .cuadro-alumno .inst { color: var(--texto-3); font-size: .9em; font-style: italic; }
+        .cuadro-alumno.inactivo { text-decoration: line-through; opacity: .6; }
 
         /* ---------------- Celular ---------------- */
         @media (max-width: 991px) {
@@ -468,7 +481,7 @@
             .sidebar-pie { display: none; }
             .sidebar-backdrop.show { display: block; position: fixed; inset: 0; background: rgba(20,20,18,.3); z-index: 1025; }
             .content-wrap, .content-wrap.collapsed { margin-left: 0; }
-            .toggler-mobile { display: inline-flex; }
+            .toggler-mobile, .logo-movil { display: inline-flex; }
             .topbar { padding: 0 .75rem; }
             .topbar-fecha { display: none; }
             .main-content { padding: 1rem; }
@@ -508,13 +521,13 @@
 @endphp
 
 <aside class="sidebar" id="sidebar">
-    <div class="logo-box">
-        <img src="{{ asset('images/logo.png') }}" alt="">
+    <a class="logo-box" href="{{ route('dashboard') }}" title="Ir al inicio">
+        <img src="{{ asset('images/logo.png') }}" alt="MusicArte">
         <div class="marca">
             <strong>MusicArte</strong>
             <span>Centro Cultural</span>
         </div>
-    </div>
+    </a>
     <nav class="nav flex-column">
         <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}" title="Inicio"><i class="bi bi-house"></i> <span class="nav-text">Inicio</span></a>
 
@@ -525,7 +538,7 @@
 
         <div class="nav-section">Clases</div>
         <a class="nav-link {{ request()->routeIs('calendario.*') ? 'active' : '' }}" href="{{ route('calendario.index') }}" title="Calendario"><i class="bi bi-calendar3"></i> <span class="nav-text">Calendario</span></a>
-        <a class="nav-link {{ request()->routeIs('horarios.*') ? 'active' : '' }}" href="{{ route('horarios.index') }}" title="Horarios"><i class="bi bi-clock"></i> <span class="nav-text">Horarios</span></a>
+        <a class="nav-link {{ request()->routeIs('horarios.*') ? 'active' : '' }}" href="{{ route('horarios.tablero') }}" title="Horarios"><i class="bi bi-clock"></i> <span class="nav-text">Horarios</span></a>
         <a class="nav-link {{ request()->routeIs('asistencia.*') ? 'active' : '' }}" href="{{ route('asistencia.index') }}" title="Asistencia"><i class="bi bi-check2-square"></i> <span class="nav-text">Asistencia</span></a>
         <a class="nav-link {{ request()->routeIs('recitales.*') ? 'active' : '' }}" href="{{ route('recitales.index') }}" title="Recitales y eventos"><i class="bi bi-mic"></i> <span class="nav-text">Recitales y eventos</span></a>
 
@@ -538,6 +551,9 @@
         <div class="nav-section">General</div>
         <a class="nav-link {{ request()->routeIs('avisos.*') ? 'active' : '' }}" href="{{ route('avisos.index') }}" title="Avisos"><i class="bi bi-megaphone"></i> <span class="nav-text">Avisos</span></a>
         <a class="nav-link {{ request()->routeIs('reportes.*') ? 'active' : '' }}" href="{{ route('reportes.index') }}" title="Reportes"><i class="bi bi-bar-chart"></i> <span class="nav-text">Reportes</span></a>
+        @if($usuarioActual->esAdmin())
+        <a class="nav-link {{ request()->routeIs('usuarios.*') ? 'active' : '' }}" href="{{ route('usuarios.index') }}" title="Usuarios"><i class="bi bi-person-gear"></i> <span class="nav-text">Usuarios</span></a>
+        @endif
     </nav>
     <div class="sidebar-pie">
         <button class="btn-collapse-sidebar" id="btnCollapseSidebar" title="Contraer menú">
@@ -551,6 +567,7 @@
     <header class="topbar">
         <div class="d-flex align-items-center gap-2 min-w-0">
             <button class="btn-topbar toggler-mobile" id="btnToggleSidebar" aria-label="Abrir menú"><i class="bi bi-list fs-5"></i></button>
+            <a href="{{ route('dashboard') }}" class="logo-movil"><img src="{{ asset('images/logo.png') }}" alt="MusicArte"></a>
             <h1 class="topbar-titulo text-truncate">@yield('titulo', 'Panel')</h1>
         </div>
 
@@ -833,7 +850,7 @@
 
     // ---------- Ventana "Ver": perfiles y detalles sin salir de la pantalla ----------
     // Cualquier enlace a /alumnos/{id} o /maestros/{id} se abre en la ventana.
-    const _VISTA_RUTAS = /^\/(alumnos|maestros)\/\d+\/?$/;
+    const _VISTA_RUTAS = /^\/(alumnos|maestros|especialidades|egresos|caja-chica|recitales|avisos|planilla|periodos|horarios|usuarios)\/\d+\/?$/;
     let _vistaModal = null, _vistaHistorial = [];
 
     function _esRutaVista(href) {
@@ -883,9 +900,41 @@
         maAbrirVista(url.toString(), { agregarHistorial: false });
     });
     document.getElementById('vistaCuerpo').addEventListener('change', (e) => {
-        // Los <select onchange="this.form.submit()"> no disparan "submit": se reenvia a mano.
-        if (e.target.matches('select[onchange*="submit"]')) { e.stopImmediatePropagation(); e.target.form.requestSubmit(); }
+        // Filtros dentro de la ventana: se recarga solo la ventana.
+        if (e.target.form?.matches('[data-autofiltro]')) { e.stopImmediatePropagation(); e.target.form.requestSubmit(); }
     }, true);
+
+    // ---------- Filtros automaticos ----------
+    // Todo <form method="GET" data-autofiltro> se aplica solo: al cambiar un
+    // select, fecha o numero, y 600 ms despues de dejar de escribir en un
+    // texto. No hace falta boton "Filtrar". Al recargar, el cursor vuelve al
+    // campo donde se estaba escribiendo.
+    (function () {
+        const CLAVE = 'ma_autofiltro_foco';
+        document.querySelectorAll('.main-content form[data-autofiltro]').forEach(form => {
+            let timer = null;
+            const enviar = (campo) => {
+                try { if (campo?.name) sessionStorage.setItem(CLAVE, JSON.stringify({ name: campo.name, pos: campo.selectionStart ?? null })); } catch (e) {}
+                form.requestSubmit ? form.requestSubmit() : form.submit();
+            };
+            form.addEventListener('change', (e) => {
+                if (e.target.matches('input[type=text], input[type=search]')) return;
+                if (e.target.matches('input[type=number]') && !e.target.value) return;
+                enviar();
+            });
+            form.addEventListener('input', (e) => {
+                if (!e.target.matches('input[type=text], input[type=search]')) return;
+                clearTimeout(timer);
+                timer = setTimeout(() => enviar(e.target), 600);
+            });
+        });
+        try {
+            const foco = JSON.parse(sessionStorage.getItem(CLAVE) || 'null');
+            sessionStorage.removeItem(CLAVE);
+            const campo = foco && document.querySelector(`.main-content form[data-autofiltro] [name="${foco.name}"]`);
+            if (campo) { campo.focus(); if (foco.pos !== null) campo.setSelectionRange(foco.pos, foco.pos); }
+        } catch (e) {}
+    })();
     document.getElementById('vistaAtras').addEventListener('click', () => {
         _vistaHistorial.pop();
         maAbrirVista(_vistaHistorial[_vistaHistorial.length - 1], { agregarHistorial: false });
@@ -969,7 +1018,7 @@
     // el nombre de su columna (data-label) para mostrar "Campo: valor".
     // Tambien corre sobre tablas que se recargan por AJAX (filtros).
     function maTablasTarjetas() {
-        document.querySelectorAll('table.table:not(.tablero-tabla):not(.historial)').forEach(tabla => {
+        document.querySelectorAll('table.table:not(.historial)').forEach(tabla => {
             const columnas = [...tabla.querySelectorAll('thead tr:last-child th')].map(th => th.textContent.replace(/\s+/g, ' ').trim());
             if (!columnas.length) return;
             tabla.classList.add('tabla-tarjetas');

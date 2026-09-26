@@ -5,19 +5,19 @@
 <x-page-head titulo="Asistencia de {{ \App\Models\Pago::MESES[$mes] }} {{ $anio }}"
              subtitulo="Cuántas clases tuvo cada alumno en el mes y a cuántas asistió. El porcentaje se calcula sobre las clases ya marcadas."
              :volver="route('reportes.index')" volver-texto="Reportes">
-    <form method="GET">
-        <select name="maestro_id" class="form-select" onchange="this.form.submit()">
+    <form method="GET" data-autofiltro>
+        <select name="maestro_id" class="form-select">
             <option value="">Todos los maestros</option>
             @foreach($maestros as $m)
                 <option value="{{ $m->id }}" @selected($maestroId==$m->id)>{{ $m->nombre }}</option>
             @endforeach
         </select>
-        <select name="mes" class="form-select" onchange="this.form.submit()">
+        <select name="mes" class="form-select">
             @foreach(\App\Models\Pago::MESES as $num => $nombre)<option value="{{ $num }}" @selected($mes==$num)>{{ $nombre }}</option>@endforeach
         </select>
-        <input type="number" name="anio" value="{{ $anio }}" class="form-control" style="width:90px" onchange="this.form.submit()">
+        <input type="number" name="anio" value="{{ $anio }}" class="form-control" style="width:90px">
     </form>
-    <button class="btn btn-light" onclick="window.print()"><i class="bi bi-printer me-1"></i> Imprimir</button>
+    <a href="{{ request()->fullUrlWithQuery(['pdf' => 1]) }}" target="_blank" class="btn btn-light" data-sin-ventana><i class="bi bi-file-earmark-pdf me-1"></i> Descargar PDF</a>
 </x-page-head>
 
 <div class="stats">

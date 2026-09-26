@@ -4,14 +4,14 @@
 @section('contenido')
 @php $nombresEstado = ['asistio' => 'Asistió', 'falto' => 'Faltó', 'justificado' => 'Faltó con aviso', 'tardanza' => 'Tardanza']; @endphp
 <x-page-head titulo="Asistencia" subtitulo="Marca con un toque si cada alumno asistió o faltó. Usa «Más» para faltas con aviso, tardanzas u observaciones.">
-    <form method="GET">
-        <select name="maestro_id" class="form-select" onchange="this.form.submit()" title="Filtrar por maestro">
+    <form method="GET" data-autofiltro>
+        <select name="maestro_id" class="form-select" title="Filtrar por maestro">
             <option value="">Todos los maestros</option>
             @foreach($maestros as $m)
                 <option value="{{ $m->id }}" @selected(request('maestro_id')==$m->id)>{{ $m->nombre }}</option>
             @endforeach
         </select>
-        <input type="date" name="fecha" value="{{ $fecha }}" class="form-control" onchange="this.form.submit()">
+        <input type="date" name="fecha" value="{{ $fecha }}" class="form-control">
     </form>
 </x-page-head>
 
@@ -56,11 +56,11 @@
 
 <div class="card p-3">
     <h6 class="fw-semibold mb-3">Resumen de asistencia por alumno</h6>
-    <form method="GET" class="row g-2 mb-3">
+    <form method="GET" class="row g-2 mb-3" data-autofiltro>
         <input type="hidden" name="fecha" value="{{ $fecha }}">
         <input type="hidden" name="maestro_id" value="{{ request('maestro_id') }}">
         <div class="col-md-5">
-            <select name="alumno_id" class="form-select" onchange="this.form.submit()">
+            <select name="alumno_id" class="form-select">
                 <option value="">-- Selecciona un alumno --</option>
                 @foreach($alumnos as $a)
                     <option value="{{ $a->id }}" @selected(request('alumno_id')==$a->id)>{{ $a->nombre }}</option>

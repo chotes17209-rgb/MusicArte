@@ -23,10 +23,10 @@
             min-height: 100vh; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem 1rem;
             -webkit-font-smoothing: antialiased;
         }
-        .marca { display: flex; align-items: center; gap: .6rem; margin-bottom: 1.5rem; }
-        .marca img { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; }
-        .marca strong { display: block; font-size: 1rem; font-weight: 600; line-height: 1.1; }
-        .marca span { display: block; font-size: .75rem; color: var(--texto-3); }
+        .marca { display: flex; flex-direction: column; align-items: center; text-align: center; gap: .7rem; margin-bottom: 1.5rem; }
+        .marca img { width: 104px; height: 104px; border-radius: 50%; object-fit: cover; background: #fff; box-shadow: 0 0 0 5px #fff, 0 0 0 6px var(--borde), 0 12px 30px rgba(61,44,141,.18); }
+        .marca strong { display: block; font-size: 1.35rem; font-weight: 600; line-height: 1.1; color: var(--acento); letter-spacing: -.01em; }
+        .marca span { display: block; font-size: .8rem; color: var(--texto-3); margin-top: .15rem; }
         .panel { width: 100%; max-width: 380px; background: #fff; border: 1px solid var(--borde); border-radius: 10px; padding: 1.75rem; }
         .panel h1 { font-size: 1.125rem; font-weight: 600; margin: 0 0 .25rem; letter-spacing: -.01em; }
         .panel p.sub { color: var(--texto-3); margin: 0 0 1.25rem; }
@@ -43,7 +43,7 @@
 </head>
 <body>
     <div class="marca">
-        <img src="{{ asset('images/logo.png') }}" alt="">
+        <img src="{{ asset('images/logo.png') }}" alt="MusicArte">
         <div>
             <strong>MusicArte</strong>
             <span>Centro Cultural</span>

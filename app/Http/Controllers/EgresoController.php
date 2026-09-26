@@ -21,6 +21,11 @@ class EgresoController extends Controller
         return view('egresos.index', compact('egresos', 'mes', 'anio', 'totalMes'));
     }
 
+    public function show(Egreso $egreso)
+    {
+        return view('egresos.show', compact('egreso'));
+    }
+
     public function store(Request $request)
     {
         $data = $this->validarDatos($request);

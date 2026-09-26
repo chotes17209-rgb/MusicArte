@@ -47,6 +47,6 @@ class User extends Authenticatable
 
     public function rolLabel(): string
     {
-        return $this->role === 'admin' ? 'Administrador' : 'Recepcion';
+        return $this->role === 'admin' ? 'Administrador' : 'Recepción';
     }
 }

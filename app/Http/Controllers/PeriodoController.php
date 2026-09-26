@@ -46,6 +46,31 @@ class PeriodoController extends Controller
         return redirect($destino);
     }
 
+    /** Ver: resumen del periodo (inscritos, clases, asistencia y pagos). */
+    public function show(Periodo $periodo)
+    {
+        $talleres = \App\Models\AlumnoTaller::with(['especialidad', 'maestro'])->where('periodo_id', $periodo->id)->get();
+        $clases = \App\Models\Clase::where('periodo_id', $periodo->id)->selectRaw('estado, count(*) as total')->groupBy('estado')->pluck('total', 'estado');
+        $asistencias = \App\Models\Asistencia::whereHas('clase', fn ($q) => $q->where('periodo_id', $periodo->id))
+            ->selectRaw('estado, count(*) as total')->groupBy('estado')->pluck('total', 'estado');
+        $pagos = \App\Models\Pago::where('mes', $periodo->mes)->where('anio', $periodo->anio)->get();
+
+        $resumen = [
+            'alumnos' => $talleres->pluck('alumno_id')->unique()->count(),
+            'talleres' => $talleres->count(),
+            'clases' => $clases->sum(),
+            'dictadas' => $clases['realizada'] ?? 0,
+            'asistencia' => $asistencias->sum() > 0 ? round((($asistencias['asistio'] ?? 0) + ($asistencias['tardanza'] ?? 0)) / $asistencias->sum() * 100) : null,
+            'pagos_total' => $pagos->count(),
+            'pagos_pagados' => $pagos->where('estado', 'pagado')->count(),
+        ];
+        $porEspecialidad = $talleres->groupBy(fn ($t) => $t->especialidad->nombre ?? '—')
+            ->map(fn ($ts) => ['alumnos' => $ts->pluck('alumno_id')->unique()->count(), 'maestros' => $ts->pluck('maestro.nombre')->filter()->unique()->sort()->implode(', '), 'color' => $ts->first()->especialidad->color ?? '#999'])
+            ->sortByDesc('alumnos');
+
+        return view('periodos.show', compact('periodo', 'resumen', 'porEspecialidad'));
+    }
+
     public function store(Request $request)
     {
         $data = $this->validarDatos($request);

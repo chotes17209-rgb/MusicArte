@@ -17,6 +17,7 @@ use App\Http\Controllers\PlanillaController;
 use App\Http\Controllers\ReciboController;
 use App\Http\Controllers\RecitalController;
 use App\Http\Controllers\ReporteController;
+use App\Http\Controllers\UsuarioController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AlumnoTallerController;
 use App\Http\Controllers\HistorialController;
@@ -47,7 +48,7 @@ Route::middleware('auth')->group(function () {
     // pueden publicarlos (se usa para comunicados internos).
     // ---------------------------------------------------------------
     Route::post('/avisos/{aviso}/descartar', [AvisoController::class, 'descartar'])->name('avisos.descartar');
-    Route::resource('avisos', AvisoController::class)->except(['show', 'create']);
+    Route::resource('avisos', AvisoController::class)->except(['create']);
 
     // ---------------------------------------------------------------
     // Catalogos y operacion diaria (ambos roles, con reglas internas
@@ -55,11 +56,13 @@ Route::middleware('auth')->group(function () {
     // ---------------------------------------------------------------
     Route::post('/periodo-de-trabajo', [PeriodoController::class, 'seleccionar'])->name('periodos.seleccionar');
     Route::get('/buscar', [DashboardController::class, 'buscar'])->name('buscar');
-    Route::resource('periodos', PeriodoController::class)->except(['show', 'create']);
+    Route::resource('periodos', PeriodoController::class)->except(['create']);
     Route::get('/periodos/{periodo}/candidatos', [PeriodoController::class, 'candidatos'])->name('periodos.candidatos');
     Route::post('/periodos/{periodo}/pasar-alumnos', [PeriodoController::class, 'pasarAlumnos'])->name('periodos.pasarAlumnos');
     Route::get('/alumnos/historial', [HistorialController::class, 'index'])->name('alumnos.historial');
-    Route::resource('especialidades', EspecialidadController::class)->except(['show', 'create']);
+    // parameters(): sin esto Laravel nombra el parametro {especialidade} y el
+    // controlador (Especialidad $especialidad) recibia un modelo vacio.
+    Route::resource('especialidades', EspecialidadController::class)->except(['create'])->parameters(['especialidades' => 'especialidad']);
     Route::resource('maestros', MaestroController::class)->except(['create']);
     Route::resource('alumnos', AlumnoController::class)->except(['create']);
     Route::post('/alumnos/{alumno}/talleres', [AlumnoTallerController::class, 'store'])->name('alumnos.talleres.store');
@@ -67,7 +70,8 @@ Route::middleware('auth')->group(function () {
     Route::delete('/alumnos/talleres/{alumnoTaller}', [AlumnoTallerController::class, 'destroy'])->name('alumnos.talleres.destroy');
     Route::get('/horarios/mensual', [HorarioController::class, 'vistaMensual'])->name('horarios.mensual');
     Route::get('/horarios/tablero', [HorarioController::class, 'tablero'])->name('horarios.tablero');
-    Route::resource('horarios', HorarioController::class)->except(['show', 'create']);
+    Route::get('/horarios/tablero/pdf', [HorarioController::class, 'tableroPdf'])->name('horarios.tablero.pdf');
+    Route::resource('horarios', HorarioController::class)->except(['create']);
     Route::post('/horarios-generar-clases', [HorarioController::class, 'generarClases'])->name('horarios.generar');
 
     // ---------------------------------------------------------------
@@ -96,7 +100,7 @@ Route::middleware('auth')->group(function () {
     // ---------------------------------------------------------------
     // Recitales / eventos
     // ---------------------------------------------------------------
-    Route::resource('recitales', RecitalController::class)->except(['show', 'create']);
+    Route::resource('recitales', RecitalController::class)->except(['create'])->parameters(['recitales' => 'recital']);
 
     // ---------------------------------------------------------------
     // Modulos SENSIBLES (precios): solo administrador puede escribir.
@@ -117,6 +121,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/pagos/{pago}/recibo', [ReciboController::class, 'pdf'])->name('pagos.recibo');
         Route::get('/pagos/abonos/{abono}/recibo', [ReciboController::class, 'pdfAbono'])->name('pagos.abonos.recibo');
         Route::get('/planilla', [PlanillaController::class, 'index'])->name('planilla.index');
+        Route::get('/planilla/{planilla}', [PlanillaController::class, 'show'])->whereNumber('planilla')->name('planilla.show');
 
         Route::middleware('role:admin')->group(function () {
             Route::post('/pagos', [PagoController::class, 'store'])->name('pagos.store');
@@ -136,8 +141,13 @@ Route::middleware('auth')->group(function () {
     // ---------------------------------------------------------------
     // Egresos y Caja Chica (operativo, ambos roles)
     // ---------------------------------------------------------------
-    Route::resource('egresos', EgresoController::class)->except(['show', 'create']);
-    Route::resource('caja-chica', CajaChicaController::class)->except(['show', 'create']);
+    // ---------------------------------------------------------------
+    // Usuarios del sistema: solo el administrador.
+    // ---------------------------------------------------------------
+    Route::resource('usuarios', UsuarioController::class)->except(['create'])->middleware('role:admin');
+
+    Route::resource('egresos', EgresoController::class)->except(['create']);
+    Route::resource('caja-chica', CajaChicaController::class)->except(['create']);
 
     // ---------------------------------------------------------------
     // Reportes
