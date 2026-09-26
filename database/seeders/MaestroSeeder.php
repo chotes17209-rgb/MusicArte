@@ -43,7 +43,9 @@ class MaestroSeeder extends Seeder
                 $pivotData[$esp->id] = ['tarifa_hora' => $tarifasPorEspecialidad[$esp->nombre] ?? 10];
             }
 
-            $maestro->especialidades()->sync($pivotData);
+            // syncWithoutDetaching: no quitar especialidades agregadas despues
+            // (desde el modulo de Maestros o por la importacion del Excel).
+            $maestro->especialidades()->syncWithoutDetaching($pivotData);
         }
     }
 }

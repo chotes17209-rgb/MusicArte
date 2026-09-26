@@ -11,6 +11,7 @@ use App\Services\HorarioService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class AlumnoController extends Controller
 {
@@ -106,14 +107,24 @@ class AlumnoController extends Controller
         $query = Alumno::with(['especialidad', 'maestro'])
             ->withCount(['talleres as talleres_activos_count' => fn ($q) => $q->where('estado', 'activo')]);
 
-        // 1.3 Busqueda automatica/reactiva: nombre, dni o tutor.
+        // 1.3 Busqueda automatica/reactiva: nombre, dni o tutor. Sin
+        // distinguir mayusculas ni tildes ("aless" encuentra "Alessandro",
+        // "jose" encuentra "José"), y cada palabra se busca por separado
+        // ("aless aliaga" encuentra "Alessandro Aliaga Palomino").
         if ($request->filled('buscar')) {
-            $buscar = $request->buscar;
-            $query->where(function ($q) use ($buscar) {
-                $q->where('nombre', 'like', "%{$buscar}%")
-                    ->orWhere('dni', 'like', "%{$buscar}%")
-                    ->orWhere('tutor', 'like', "%{$buscar}%");
-            });
+            $normalizar = fn (string $col) => DB::getDriverName() === 'pgsql'
+                ? "translate(lower($col), 'áéíóúüñàèìòù', 'aeiouunaeiou')"
+                : "lower($col)";
+
+            $palabras = preg_split('/\s+/', mb_strtolower(Str::ascii(trim($request->buscar))), -1, PREG_SPLIT_NO_EMPTY);
+            foreach ($palabras as $palabra) {
+                $like = '%'.addcslashes($palabra, '%_\\').'%';
+                $query->where(function ($q) use ($normalizar, $like) {
+                    $q->whereRaw($normalizar('nombre').' LIKE ?', [$like])
+                        ->orWhereRaw($normalizar("coalesce(dni, '')").' LIKE ?', [$like])
+                        ->orWhereRaw($normalizar("coalesce(tutor, '')").' LIKE ?', [$like]);
+                });
+            }
         }
 
         if ($request->filled('especialidad_id')) {

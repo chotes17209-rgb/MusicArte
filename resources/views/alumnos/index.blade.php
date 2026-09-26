@@ -834,17 +834,31 @@
      * 1.1 / 1.2 / 1.3 Filtros y busqueda reactiva (Fase 1, sin cambios).
      * ------------------------------------------------------------- */
     let debounceBuscarAlumnos = null;
+    let busquedaAlumnosEnCurso = null;
 
     async function buscarAlumnosReactivo(url = null) {
         const form = document.getElementById('formFiltrosAlumnos');
         const params = new URLSearchParams(new FormData(form));
         const target = url || (`{{ route('alumnos.index') }}?` + params.toString());
 
-        const res = await fetch(target, {
-            headers: { 'X-Requested-With': 'XMLHttpRequest' },
-        });
-        if (!res.ok) return;
+        // Si llega una respuesta vieja (ej. de "ale") despues de la nueva
+        // (ej. de "aless"), pisaba los resultados: se cancela la anterior.
+        if (busquedaAlumnosEnCurso) busquedaAlumnosEnCurso.abort();
+        const controller = new AbortController();
+        busquedaAlumnosEnCurso = controller;
+
+        let res;
+        try {
+            res = await fetch(target, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                signal: controller.signal,
+            });
+        } catch (e) {
+            return;
+        }
+        if (!res.ok || busquedaAlumnosEnCurso !== controller) return;
         const data = await res.json();
+        if (busquedaAlumnosEnCurso !== controller) return;
         document.getElementById('tablaAlumnosWrap').innerHTML = data.html;
 
         window.history.replaceState({}, '', `{{ route('alumnos.index') }}?` + params.toString());
