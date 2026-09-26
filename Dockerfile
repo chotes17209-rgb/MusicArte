@@ -32,7 +32,14 @@ WORKDIR /var/www/html
 COPY . .
 
 # Dependencias Laravel
+# (composer.lock no incluye todavia phpoffice/phpspreadsheet -nueva
+# dependencia para el importador de pagos del Excel-, asi que se resuelve
+# aparte con "composer update" de ese paquete puntual en cada build)
 RUN composer install \
+    --no-dev \
+    --optimize-autoloader \
+    --no-interaction \
+    && composer update phpoffice/phpspreadsheet \
     --no-dev \
     --optimize-autoloader \
     --no-interaction
