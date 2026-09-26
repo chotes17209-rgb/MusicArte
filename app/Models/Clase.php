@@ -76,6 +76,7 @@ class Clase extends Model
                 'estado' => $this->estado,
                 'notas' => $this->notas,
                 'asistencia' => $this->asistencia->estado ?? null,
+                'color' => $this->especialidad->color ?? '#3d2c8d',
             ],
         ];
     }

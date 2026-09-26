@@ -74,60 +74,77 @@ class HorarioController extends Controller
         $mes = (int) $request->get('mes', now()->month);
         $anio = (int) $request->get('anio', now()->year);
 
-        $horariosPorAlumno = Horario::with(['alumno', 'maestro', 'especialidad'])
-            ->where('activo', true)
-            ->get()
-            ->groupBy('alumno_id');
+        // Solo los horarios del periodo de ese mes (antes se mezclaban los
+        // de todos los periodos y un alumno aparecia con sus dias repetidos).
+        $periodo = \App\Models\Periodo::where('mes', $mes)->where('anio', $anio)->first();
 
-        $clasesPorAlumno = Clase::whereMonth('fecha', $mes)->whereYear('fecha', $anio)
-            ->get()->groupBy('alumno_id');
+        $horarios = Horario::with(['alumno', 'maestro', 'especialidad'])
+            ->where('activo', true)
+            ->when($periodo, fn ($q) => $q->where('periodo_id', $periodo->id), fn ($q) => $q->whereNull('periodo_id'))
+            ->orderBy('dia_semana')->orderBy('hora_inicio')
+            ->get();
+
+        // Una fila por taller (alumno + especialidad + maestro).
+        $grupos = $horarios->groupBy(fn ($h) => $h->alumno_taller_id
+            ? 't'.$h->alumno_taller_id
+            : 'a'.$h->alumno_id.'-'.$h->especialidad_id.'-'.$h->maestro_id);
+
+        $clasesPorHorario = Clase::whereMonth('fecha', $mes)->whereYear('fecha', $anio)
+            ->whereIn('horario_id', $horarios->pluck('id'))
+            ->get()->groupBy('horario_id');
 
         $inicioMes = Carbon::create($anio, $mes, 1);
         $finMes = $inicioMes->copy()->endOfMonth();
+        $diasCortos = [1 => 'Lun', 2 => 'Mar', 3 => 'Mié', 4 => 'Jue', 5 => 'Vie', 6 => 'Sáb', 7 => 'Dom'];
 
         $filas = [];
-
-        foreach ($horariosPorAlumno as $alumnoId => $horariosAlumno) {
-            $clasesAlumno = $clasesPorAlumno->get($alumnoId, collect());
+        foreach ($grupos as $horariosTaller) {
             $semanas = [1 => [], 2 => [], 3 => [], 4 => []];
+            $clases = $horariosTaller->flatMap(fn ($h) => $clasesPorHorario->get($h->id, collect()));
 
-            if ($clasesAlumno->isNotEmpty()) {
-                foreach ($clasesAlumno as $clase) {
+            if ($clases->isNotEmpty()) {
+                foreach ($clases as $clase) {
                     $dia = (int) $clase->fecha->format('j');
-                    $semana = min(4, intdiv($dia - 1, 7) + 1);
-                    $semanas[$semana][] = ['dia' => $dia, 'estado' => $clase->estado];
+                    $semanas[min(4, intdiv($dia - 1, 7) + 1)][$dia] = ['dia' => $dia, 'estado' => $clase->estado];
                 }
             } else {
-                // Aun no se generaron clases este mes: proyectamos las fechas
-                // esperadas segun el dia de la semana de cada horario activo.
-                foreach ($horariosAlumno as $h) {
+                // Aun no se generaron clases este mes: se proyectan segun el dia de la semana.
+                foreach ($horariosTaller as $h) {
                     for ($f = $inicioMes->copy(); $f->lte($finMes); $f->addDay()) {
                         if ($f->isoWeekday() == $h->dia_semana) {
                             $dia = (int) $f->format('j');
-                            $semana = min(4, intdiv($dia - 1, 7) + 1);
-                            $semanas[$semana][] = ['dia' => $dia, 'estado' => 'proyectada'];
+                            $semanas[min(4, intdiv($dia - 1, 7) + 1)][$dia] = ['dia' => $dia, 'estado' => 'proyectada'];
                         }
                     }
                 }
             }
-
             foreach ($semanas as $s => $arr) {
-                usort($semanas[$s], fn ($a, $b) => $a['dia'] <=> $b['dia']);
+                ksort($arr);
+                $semanas[$s] = array_values($arr);
             }
 
-            $primero = $horariosAlumno->first();
+            // "Lun · Mié · Vie  17:00" (agrupando los dias que comparten hora).
+            $horarioTexto = $horariosTaller
+                ->groupBy(fn ($h) => Carbon::parse($h->hora_inicio)->format('H:i').'-'.Carbon::parse($h->hora_fin)->format('H:i'))
+                ->map(fn ($hs, $rango) => [
+                    'dias' => $hs->pluck('dia_semana')->unique()->sort()->map(fn ($d) => $diasCortos[$d] ?? '')->implode(' · '),
+                    'hora' => str_replace('-', ' – ', $rango),
+                ])->values();
+
+            $primero = $horariosTaller->first();
             $filas[] = [
                 'alumno' => $primero->alumno,
                 'maestro' => $primero->maestro,
                 'especialidad' => $primero->especialidad,
-                'horario_texto' => $horariosAlumno->map(fn ($h) => $h->diaLabel().' '.Carbon::parse($h->hora_inicio)->format('H:i'))->implode(' / '),
+                'horario' => $horarioTexto,
                 'semanas' => $semanas,
+                'total' => collect($semanas)->flatten(1)->count(),
             ];
         }
 
         usort($filas, fn ($a, $b) => strcmp($a['alumno']->nombre ?? '', $b['alumno']->nombre ?? ''));
 
-        return view('horarios.mensual', compact('filas', 'mes', 'anio'));
+        return view('horarios.mensual', compact('filas', 'mes', 'anio', 'periodo'));
     }
 
     public function store(Request $request)

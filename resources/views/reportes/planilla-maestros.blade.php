@@ -1,43 +1,49 @@
 @extends('layouts.app')
-@section('titulo', 'Reporte: Planilla de Maestros')
+@section('titulo', 'Planilla de maestros')
 
 @section('contenido')
-<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-    <div>
-        <a href="{{ route('reportes.index') }}" class="btn btn-sm btn-volver"><i class="bi bi-arrow-left me-1"></i> Volver a Reportes</a>
-        <h5 class="fw-semibold mb-0 mt-1">Planilla de Maestros — {{ \App\Models\Pago::MESES[$mes] }} {{ $anio }}</h5>
-    </div>
-    <div class="d-flex gap-2">
-        <form class="d-flex gap-2" method="GET">
-            <select name="mes" class="form-select form-select-sm">
-                @foreach(\App\Models\Pago::MESES as $num => $nombre)<option value="{{ $num }}" @selected($mes==$num)>{{ $nombre }}</option>@endforeach
-            </select>
-            <input type="number" name="anio" value="{{ $anio }}" class="form-control form-control-sm" style="width:90px">
-            <button class="btn btn-sm btn-light">Filtrar</button>
-        </form>
-        <button class="btn btn-outline-secondary btn-sm" onclick="window.print()"><i class="bi bi-printer me-1"></i> Imprimir</button>
-    </div>
+<x-page-head titulo="Planilla de maestros — {{ \App\Models\Pago::MESES[$mes] }} {{ $anio }}"
+             subtitulo="Lo pagado a cada maestro en el mes, con el detalle por alumno."
+             :volver="route('reportes.index')" volver-texto="Reportes">
+    <form method="GET">
+        <select name="mes" class="form-select" onchange="this.form.submit()">
+            @foreach(\App\Models\Pago::MESES as $num => $nombre)<option value="{{ $num }}" @selected($mes==$num)>{{ $nombre }}</option>@endforeach
+        </select>
+        <input type="number" name="anio" value="{{ $anio }}" class="form-control" style="width:96px" onchange="this.form.submit()">
+    </form>
+    <button class="btn btn-light" onclick="window.print()"><i class="bi bi-printer me-1"></i> Imprimir</button>
+</x-page-head>
+
+@php $porMaestro = $data->groupBy(fn ($p) => $p->maestro->nombre ?? 'Sin maestro')->sortKeys(); @endphp
+<div class="stats">
+    <x-stat label="Total pagado" :valor="'S/ '.number_format($data->sum('monto'), 2)" />
+    <x-stat label="Maestros" :valor="$porMaestro->count()" />
+    <x-stat label="Horas" :valor="rtrim(rtrim(number_format($data->sum('horas'), 1), '0'), '.')" />
 </div>
 
-<div class="card p-3">
-    <div class="table-responsive">
-        <table class="table align-middle">
-            <thead><tr><th>Maestro</th><th>Alumno</th><th>Especialidad</th><th>Horas</th><th>Monto pagado</th></tr></thead>
-            <tbody>
-            @forelse($data as $p)
-                <tr>
-                    <td class="fw-semibold">{{ $p->maestro->nombre ?? '—' }}</td>
-                    <td>{{ $p->alumno->nombre ?? '—' }}</td>
-                    <td>{{ $p->especialidad->nombre ?? '—' }}</td>
-                    <td>{{ $p->horas }}</td>
-                    <td>S/ {{ number_format($p->monto, 2) }}</td>
-                </tr>
-            @empty
-                <tr><td colspan="5" class="text-center text-muted py-4">Sin datos.</td></tr>
-            @endforelse
-            </tbody>
-            <tfoot><tr class="fw-bold"><td colspan="4">Total</td><td>S/ {{ number_format($data->sum('monto'), 2) }}</td></tr></tfoot>
-        </table>
+@forelse($porMaestro as $maestro => $filas)
+    <div class="card p-3 mb-3">
+        <div class="d-flex justify-content-between align-items-baseline mb-2">
+            <h6 class="seccion-titulo mb-0">{{ $maestro }}</h6>
+            <span class="fw-semibold">S/ {{ number_format($filas->sum('monto'), 2) }}</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead><tr><th>Alumno</th><th>Especialidad</th><th class="text-end">Horas</th><th class="text-end">Monto</th></tr></thead>
+                <tbody>
+                @foreach($filas as $p)
+                    <tr>
+                        <td class="fw-semibold">{{ $p->alumno->nombre ?? '—' }}</td>
+                        <td>{{ $p->especialidad->nombre ?? '—' }}</td>
+                        <td class="text-end">{{ $p->horas }}</td>
+                        <td class="text-end">S/ {{ number_format($p->monto, 2) }}</td>
+                    </tr>
+                @endforeach
+                </tbody>
+            </table>
+        </div>
     </div>
-</div>
+@empty
+    <div class="card"><div class="vacio"><i class="bi bi-file-earmark-text"></i>No hay planilla registrada para {{ \App\Models\Pago::MESES[$mes] }} {{ $anio }}.</div></div>
+@endforelse
 @endsection

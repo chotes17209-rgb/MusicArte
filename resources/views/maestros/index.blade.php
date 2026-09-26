@@ -19,21 +19,27 @@
 <div class="card p-3">
     <div class="table-responsive">
         <table class="table align-middle">
-            <thead><tr><th>Nombre</th><th>Especialidades</th><th>Teléfono</th><th>Email</th><th>Alumnos</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead>
+            <thead><tr><th>Maestro</th><th>Enseña (tarifa por hora)</th><th>Contacto</th><th class="text-end">Alumnos</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead>
             <tbody>
             @forelse($maestros as $m)
                 <tr>
                     <td class="fw-semibold">{{ $m->nombre }}</td>
                     <td>
                         @forelse($m->especialidades as $esp)
-                            <span class="badge mb-1" style="background:{{ $esp->color }}" title="S/ {{ number_format($esp->pivot->tarifa_hora, 2) }} por hora">{{ $esp->nombre }} · S/{{ number_format($esp->pivot->tarifa_hora, 0) }}/h</span>
+                            <span class="chip" title="S/ {{ number_format($esp->pivot->tarifa_hora, 2) }} por hora"><span class="chip-punto" style="background:{{ $esp->color }}"></span>{{ $esp->nombre }} <span class="text-muted">S/ {{ number_format($esp->pivot->tarifa_hora, 0) }}</span></span>
                         @empty
                             <span class="text-muted">—</span>
                         @endforelse
                     </td>
-                    <td>{{ $m->telefono ?? '—' }}</td>
-                    <td>{{ $m->email ?? '—' }}</td>
-                    <td>{{ $m->alumnos_count }}</td>
+                    <td>
+                        @if($m->telefono || $m->email)
+                            @if($m->telefono)<div><i class="bi bi-telephone me-1 text-muted"></i>{{ $m->telefono }}</div>@endif
+                            @if($m->email)<div class="small text-muted">{{ $m->email }}</div>@endif
+                        @else
+                            <span class="text-muted">Sin datos</span>
+                        @endif
+                    </td>
+                    <td class="text-end fw-semibold">{{ $m->alumnos_count }}</td>
                     <td>@if($m->activo)<span class="badge bg-success">Activo</span>@else<span class="badge bg-secondary">Inactivo</span>@endif</td>
                     <td class="text-end">
                         <a href="{{ route('maestros.show', $m) }}" class="btn btn-sm btn-light btn-icon" title="Ver horario"><i class="bi bi-eye"></i></a>
@@ -42,7 +48,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="7" class="text-center text-muted py-4">Aún no hay maestros registrados.</td></tr>
+                <tr><td colspan="6" class="text-center text-muted py-4">Aún no hay maestros registrados.</td></tr>
             @endforelse
             </tbody>
         </table>

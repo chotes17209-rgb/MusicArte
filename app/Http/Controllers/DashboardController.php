@@ -24,6 +24,16 @@ class DashboardController extends Controller
             'clases_hoy_realizadas' => Clase::whereDate('fecha', $hoy)->where('estado', 'realizada')->count(),
         ];
 
+        // Asistencia del mes (sobre las clases ya marcadas) y cuantos alumnos
+        // tienen algo pendiente de pago: solo cantidades, sin montos (19.2).
+        $asistenciasMes = \App\Models\Asistencia::whereHas('clase', fn ($q) => $q->whereMonth('fecha', now()->month)->whereYear('fecha', now()->year))
+            ->selectRaw('estado, count(*) as total')->groupBy('estado')->pluck('total', 'estado');
+        $marcadas = $asistenciasMes->sum();
+        $kpis['asistencia_mes'] = $marcadas > 0 ? round((($asistenciasMes['asistio'] ?? 0) + ($asistenciasMes['tardanza'] ?? 0)) / $marcadas * 100) : null;
+        $kpis['alumnos_con_saldo'] = Alumno::activos()->whereHas('pagos', fn ($q) => $q->where('mes', now()->month)->where('anio', now()->year)->where('saldo', '>', 0))->count();
+        $periodoActual = Periodo::whereDate('fecha_inicio', '<=', $hoy)->whereDate('fecha_fin', '>=', $hoy)->first()
+            ?? Periodo::where('activo', true)->orderByDesc('anio')->orderByDesc('mes')->first();
+
         $clasesHoy = Clase::with(['alumno', 'maestro', 'especialidad'])
             ->whereDate('fecha', $hoy)
             ->orderBy('hora_inicio')
@@ -44,7 +54,8 @@ class DashboardController extends Controller
             ->with(['pagos' => function ($q) {
                 $q->where('mes', now()->month)->where('anio', now()->year);
             }])
-            ->limit(8)
+            ->orderBy('nombre')
+            ->limit(10)
             ->get();
 
         // Cumpleanos del mes (alerta simpatica para recepcion)
@@ -79,7 +90,7 @@ class DashboardController extends Controller
         ];
 
         return view('dashboard', compact(
-            'kpis', 'clasesHoy', 'alumnosPorMes', 'alumnosConSaldo', 'cumpleanieros', 'ultimasClasesCanceladas', 'alertaSunat'
+            'kpis', 'periodoActual', 'clasesHoy', 'alumnosPorMes', 'alumnosConSaldo', 'cumpleanieros', 'ultimasClasesCanceladas', 'alertaSunat'
         ));
     }
 }

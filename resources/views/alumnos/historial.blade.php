@@ -19,12 +19,12 @@
         <div class="text-center text-muted py-5">Aún no hay periodos creados. Ve al módulo "Periodos" para crear el primero.</div>
     @else
     <div class="table-responsive">
-        <table class="table table-bordered align-middle table-sm" id="tablaHistorial">
-            <thead class="table-light">
+        <table class="table align-middle table-sm historial" id="tablaHistorial">
+            <thead>
                 <tr>
                     <th style="min-width:180px">Alumno</th>
                     @foreach($periodos as $p)
-                        <th class="text-center" style="min-width:110px">{{ $p->nombre }}</th>
+                        <th class="text-center" style="min-width:64px" title="{{ $p->nombre }}">{{ \Illuminate\Support\Str::limit(\Illuminate\Support\Str::before($p->nombre, ' '), 3, '') }}<div class="fw-normal small">{{ $p->anio }}</div></th>
                     @endforeach
                 </tr>
             </thead>
@@ -36,11 +36,11 @@
                         @php $registro = $registros[$a->id][$p->id] ?? null; @endphp
                         <td class="text-center">
                             @if(!$registro)
-                                <span class="text-muted">—</span>
+                                <span class="celda-mes vacia" title="No estuvo matriculado"></span>
                             @elseif($registro->estado === 'activo')
-                                <span class="badge bg-success">Activo</span>
+                                <span class="celda-mes activa" title="Activo en {{ $p->nombre }}"><i class="bi bi-check-lg"></i></span>
                             @else
-                                <span class="badge bg-secondary">Inactivo</span>
+                                <span class="celda-mes inactiva" title="Inactivo en {{ $p->nombre }}">–</span>
                             @endif
                         </td>
                     @endforeach
@@ -51,7 +51,11 @@
             </tbody>
         </table>
     </div>
-    <small class="text-muted">"—" significa que el alumno no tenia ningun taller registrado ese periodo (nunca estuvo matriculado ese mes).</small>
+    <div class="d-flex flex-wrap gap-3 small text-muted mt-3">
+        <span><span class="celda-mes activa"><i class="bi bi-check-lg"></i></span> Activo ese mes</span>
+        <span><span class="celda-mes inactiva">–</span> Inscrito pero inactivo</span>
+        <span><span class="celda-mes vacia"></span> No estuvo matriculado</span>
+    </div>
     @endif
 </div>
 @endsection
@@ -63,7 +67,7 @@
     document.getElementById('filtroHistorial')?.addEventListener('input', function () {
         const texto = this.value.trim().toLowerCase();
         document.querySelectorAll('#tablaHistorial .fila-historial').forEach(fila => {
-            fila.style.display = fila.dataset.nombre.includes(texto) ? '' : 'none';
+            fila.style.display = fila.dataset.nombre.normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '')) ? '' : 'none';
         });
     });
 </script>

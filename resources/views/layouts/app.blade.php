@@ -7,7 +7,7 @@
     <title>@yield('titulo', 'Panel') · MusicArte</title>
     <link rel="icon" href="{{ asset('images/logo.png') }}">
     <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
-    <meta name="theme-color" content="#ffffff">
+    <meta name="theme-color" content="#1c1a26">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="MusicArte">
@@ -89,34 +89,36 @@
         .text-warning { color: var(--ambar) !important; }
         .bi { vertical-align: -.125em; }
 
-        /* ---------------- Barra lateral ---------------- */
+        /* ---------------- Barra lateral (oscura, plana) ---------------- */
         .sidebar {
             width: var(--sidebar-ancho); height: 100vh; position: fixed; top: 0; left: 0; z-index: 1030;
             display: flex; flex-direction: column;
-            background: var(--superficie); border-right: 1px solid var(--borde);
+            background: #1c1a26; border-right: 1px solid #1c1a26;
             transition: transform .2s ease, width .2s ease;
         }
-        .sidebar .logo-box { display: flex; align-items: center; gap: .65rem; padding: 0 1rem; height: 56px; border-bottom: 1px solid var(--borde); flex: 0 0 auto; }
-        .sidebar .logo-box img { width: 30px; height: 30px; border-radius: 6px; object-fit: cover; }
+        .sidebar .logo-box { display: flex; align-items: center; gap: .65rem; padding: 0 1rem; height: 56px; border-bottom: 1px solid rgba(255,255,255,.07); flex: 0 0 auto; }
+        .sidebar .logo-box img { width: 30px; height: 30px; border-radius: 7px; object-fit: cover; background: #fff; }
         .sidebar .logo-box .marca { line-height: 1.15; min-width: 0; }
-        .sidebar .logo-box .marca strong { display: block; font-size: .9rem; font-weight: 600; color: var(--texto); }
-        .sidebar .logo-box .marca span { display: block; font-size: .72rem; color: var(--texto-3); }
-        .sidebar nav { flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; flex-wrap: nowrap; padding: .5rem .5rem 1rem; scrollbar-width: thin; }
-        .sidebar .nav-section { font-size: .7rem; font-weight: 600; color: var(--texto-3); padding: 1rem .65rem .35rem; text-transform: uppercase; letter-spacing: .04em; }
+        .sidebar .logo-box .marca strong { display: block; font-size: .9rem; font-weight: 600; color: #fff; }
+        .sidebar .logo-box .marca span { display: block; font-size: .72rem; color: rgba(255,255,255,.45); }
+        .sidebar nav { flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; flex-wrap: nowrap; padding: .5rem .6rem 1rem; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.15) transparent; }
+        .sidebar .nav-section { font-size: .68rem; font-weight: 600; color: rgba(255,255,255,.35); padding: 1.1rem .65rem .35rem; text-transform: uppercase; letter-spacing: .06em; }
         .sidebar .nav-link {
-            display: flex; align-items: center; gap: .6rem; padding: .42rem .65rem; margin: 1px 0;
-            color: var(--texto-2); font-size: .85rem; font-weight: 500; border-radius: var(--radio-sm); white-space: nowrap;
+            display: flex; align-items: center; gap: .65rem; padding: .45rem .65rem; margin: 1px 0; position: relative;
+            color: rgba(255,255,255,.68); font-size: .85rem; font-weight: 500; border-radius: var(--radio-sm); white-space: nowrap;
         }
-        .sidebar .nav-link i { font-size: 1rem; width: 18px; text-align: center; color: var(--texto-3); flex-shrink: 0; }
-        .sidebar .nav-link:hover { background: var(--superficie-2); color: var(--texto); }
-        .sidebar .nav-link.active { background: var(--acento-suave); color: var(--acento); }
-        .sidebar .nav-link.active i { color: var(--acento); }
-        .sidebar-pie { flex: 0 0 auto; border-top: 1px solid var(--borde); padding: .5rem; }
+        .sidebar .nav-link i { font-size: 1rem; width: 18px; text-align: center; color: rgba(255,255,255,.42); flex-shrink: 0; }
+        .sidebar .nav-link:hover { background: rgba(255,255,255,.06); color: #fff; }
+        .sidebar .nav-link:hover i { color: rgba(255,255,255,.75); }
+        .sidebar .nav-link.active { background: rgba(255,255,255,.1); color: #fff; }
+        .sidebar .nav-link.active i { color: #b9aef0; }
+        .sidebar .nav-link.active::before { content: ""; position: absolute; left: -.6rem; top: 7px; bottom: 7px; width: 3px; border-radius: 0 3px 3px 0; background: #b9aef0; }
+        .sidebar-pie { flex: 0 0 auto; border-top: 1px solid rgba(255,255,255,.07); padding: .5rem .6rem; }
         .btn-collapse-sidebar {
-            display: flex; align-items: center; gap: .6rem; width: 100%; padding: .42rem .65rem; border: 0; background: transparent;
-            color: var(--texto-3); font-size: .8rem; border-radius: var(--radio-sm);
+            display: flex; align-items: center; gap: .65rem; width: 100%; padding: .45rem .65rem; border: 0; background: transparent;
+            color: rgba(255,255,255,.45); font-size: .8rem; border-radius: var(--radio-sm);
         }
-        .btn-collapse-sidebar:hover { background: var(--superficie-2); color: var(--texto); }
+        .btn-collapse-sidebar:hover { background: rgba(255,255,255,.06); color: #fff; }
         .btn-collapse-sidebar i { width: 18px; text-align: center; }
 
         .content-wrap { margin-left: var(--sidebar-ancho); min-height: 100vh; display: flex; flex-direction: column; transition: margin-left .2s ease; }
@@ -198,7 +200,7 @@
         .input-group-text { font-size: .8125rem; background: var(--superficie-2); border-color: var(--borde-fuerte); color: var(--texto-2); }
 
         /* ---------------- Tarjetas ---------------- */
-        .card { --bs-card-bg: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio); box-shadow: none; }
+        .card { --bs-card-bg: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio); box-shadow: 0 1px 2px rgba(20, 20, 18, .04); }
         .card-header { background: transparent; border-bottom: 1px solid var(--borde); font-weight: 600; padding: .75rem 1rem; }
         .card.p-3 > h6:first-child, .card.p-4 > h6:first-child { font-size: .875rem; font-weight: 600; }
         .card-kpi { border: 1px solid var(--borde); }
@@ -310,6 +312,54 @@
         /* ---------------- Encabezados de pagina dentro de las vistas ---------------- */
         .main-content > .d-flex:first-child h4, .main-content > .d-flex:first-child h5 { font-weight: 600; }
         .main-content h5.fw-semibold, .main-content h4.fw-semibold, .main-content h4.fw-bold { font-size: 1.125rem; }
+
+        /* ---------------- Encabezado de pagina, indicadores y barras ---------------- */
+        .page-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+        .page-head h4 { font-size: 1.25rem; font-weight: 600; }
+        .page-head .text-muted { max-width: 640px; }
+        .page-head-acciones { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
+        .page-head-acciones form { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; margin: 0; }
+        .page-head-acciones .form-select, .page-head-acciones .form-control { width: auto; min-width: 120px; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: .75rem; margin-bottom: 1.25rem; }
+        @media (max-width: 575px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; } .stat { padding: .7rem .8rem; } .stat-valor { font-size: 1.25rem; } .page-head h4 { font-size: 1.1rem; } }
+        .stat { background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio); padding: .9rem 1rem; box-shadow: 0 1px 2px rgba(20, 20, 18, .04); }
+        .min-w-0 { min-width: 0; }
+        .stat-label { font-size: .78rem; color: var(--texto-3); margin-bottom: .2rem; }
+        .stat-valor { font-size: 1.5rem; font-weight: 600; letter-spacing: -.01em; font-variant-numeric: tabular-nums; line-height: 1.2; color: var(--texto); }
+        .stat-detalle { font-size: .78rem; color: var(--texto-3); margin-top: .2rem; }
+        .tono-verde { color: var(--verde) !important; }
+        .tono-rojo { color: var(--rojo) !important; }
+        .tono-ambar { color: var(--ambar) !important; }
+        .tono-acento { color: var(--acento) !important; }
+        .barra-fila { display: flex; align-items: center; gap: .6rem; min-width: 140px; }
+        .barra { flex: 1; height: 6px; background: #efeeea; border-radius: 3px; overflow: hidden; }
+        .barra > span { display: block; height: 100%; border-radius: 3px; background: var(--acento); }
+        .barra > span.tono-verde { background: var(--verde); }
+        .barra > span.tono-rojo { background: var(--rojo); }
+        .barra > span.tono-ambar { background: #d49a1a; }
+        .barra > span.tono-acento { background: var(--acento); }
+        .barra-num { font-size: .78rem; color: var(--texto-2); min-width: 42px; text-align: right; font-variant-numeric: tabular-nums; }
+        .seccion-titulo { font-size: .875rem; font-weight: 600; margin: 0 0 .75rem; }
+        .table tfoot td { font-weight: 600; background: var(--superficie-2); border-top: 1px solid var(--borde); }
+        .vacio { text-align: center; padding: 2.5rem 1rem; color: var(--texto-3); }
+        .vacio i { font-size: 1.5rem; display: block; margin-bottom: .5rem; color: var(--borde-fuerte); }
+        @media print {
+            .sidebar, .topbar, .page-head-acciones, .btn-volver, .sidebar-backdrop { display: none !important; }
+            .content-wrap { margin-left: 0 !important; }
+            .main-content { padding: 0 !important; }
+            body { background: #fff; }
+        }
+
+        /* Chips neutros (ej. especialidades de un maestro) */
+        .chip { display: inline-flex; align-items: center; gap: .35rem; padding: .18rem .5rem; margin: 0 .25rem .25rem 0; border: 1px solid var(--borde); border-radius: 999px; font-size: .75rem; background: var(--superficie); white-space: nowrap; }
+        .chip-punto { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+        /* Historial por mes: cuadritos tipo calendario */
+        .celda-mes { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 22px; border-radius: 5px; font-size: .78rem; vertical-align: middle; }
+        .celda-mes.activa { background: var(--verde-suave); color: var(--verde); }
+        .celda-mes.inactiva { background: #f0f0ec; color: var(--texto-3); }
+        .celda-mes.vacia { border: 1px dashed var(--borde); }
+        table.historial td, table.historial th { text-align: center; }
+        table.historial td:first-child, table.historial th:first-child { text-align: left; }
 
         /* ---------------- Tablero de horarios (cuadro por maestro) ---------------- */
         .tablero-maestro { border: 1px solid var(--borde); border-radius: var(--radio); overflow: hidden; margin-bottom: 1rem; background: var(--superficie); }
@@ -615,7 +665,7 @@
     // el nombre de su columna (data-label) para mostrar "Campo: valor".
     // Tambien corre sobre tablas que se recargan por AJAX (filtros).
     function maTablasTarjetas() {
-        document.querySelectorAll('table.table:not(.tablero-tabla)').forEach(tabla => {
+        document.querySelectorAll('table.table:not(.tablero-tabla):not(.historial)').forEach(tabla => {
             const columnas = [...tabla.querySelectorAll('thead tr:last-child th')].map(th => th.textContent.replace(/\s+/g, ' ').trim());
             if (!columnas.length) return;
             tabla.classList.add('tabla-tarjetas');

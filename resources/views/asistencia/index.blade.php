@@ -2,12 +2,9 @@
 @section('titulo', 'Asistencia')
 
 @section('contenido')
-<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-    <div>
-        <h5 class="fw-semibold mb-0">Control de Asistencia</h5>
-        <small class="text-muted">Marca la asistencia de cada clase del día</small>
-    </div>
-    <form method="GET" class="d-flex gap-2">
+@php $nombresEstado = ['asistio' => 'Asistió', 'falto' => 'Faltó', 'justificado' => 'Faltó con aviso', 'tardanza' => 'Tardanza']; @endphp
+<x-page-head titulo="Asistencia" subtitulo="Marca con un toque si cada alumno asistió o faltó. Usa «Más» para faltas con aviso, tardanzas u observaciones.">
+    <form method="GET">
         <select name="maestro_id" class="form-select" onchange="this.form.submit()" title="Filtrar por maestro">
             <option value="">Todos los maestros</option>
             @foreach($maestros as $m)
@@ -16,36 +13,41 @@
         </select>
         <input type="date" name="fecha" value="{{ $fecha }}" class="form-control" onchange="this.form.submit()">
     </form>
+</x-page-head>
+
+<div class="stats">
+    <x-stat label="Clases del día" :valor="$clases->count()" :detalle="\Carbon\Carbon::parse($fecha)->translatedFormat('l d/m')" />
+    <x-stat label="Marcadas" :valor="$clases->filter(fn ($c) => $c->asistencia)->count()" />
+    <x-stat label="Asistieron" :valor="$clases->filter(fn ($c) => $c->asistencia && in_array($c->asistencia->estado, ['asistio', 'tardanza']))->count()" tono="verde" />
+    <x-stat label="Faltaron" :valor="$clases->filter(fn ($c) => $c->asistencia && in_array($c->asistencia->estado, ['falto', 'justificado']))->count()" tono="rojo" />
 </div>
 
 <div class="card p-3 mb-3">
     <div class="table-responsive">
         <table class="table align-middle">
-            <thead><tr><th>Hora</th><th>Alumno</th><th>Maestro</th><th>Especialidad</th><th>Asistencia</th><th class="text-end">Acción</th></tr></thead>
+            <thead><tr><th>Hora</th><th>Alumno</th><th>Taller</th><th>Estado</th><th class="text-end">Marcar</th></tr></thead>
             <tbody>
             @forelse($clases as $c)
                 <tr>
-                    <td>{{ \Carbon\Carbon::parse($c->hora_inicio)->format('H:i') }}</td>
+                    <td class="text-nowrap">{{ \Carbon\Carbon::parse($c->hora_inicio)->format('g:i a') }}</td>
                     <td class="fw-semibold">{{ $c->alumno->nombre }}</td>
-                    <td>{{ $c->maestro->nombre ?? '—' }}</td>
-                    <td>{{ $c->especialidad->nombre ?? '—' }}</td>
+                    <td>{{ $c->especialidad->nombre ?? '—' }} <span class="text-muted">· {{ $c->maestro->nombre ?? '—' }}</span></td>
                     <td>
                         <span id="badge-asistencia-{{ $c->id }}"
-                            class="badge {{ $c->asistencia ? ['asistio'=>'bg-success','falto'=>'bg-danger','justificado'=>'bg-warning text-dark','tardanza'=>'bg-info text-dark'][$c->asistencia->estado] : 'bg-secondary' }}"
-                            style="cursor:pointer"
-                            title="Clic para marcar como Asistio"
-                            onclick="marcarRapido({{ $c->id }})">
-                            {{ $c->asistencia ? ucfirst($c->asistencia->estado) : 'Sin marcar' }}
+                            class="badge {{ $c->asistencia ? ['asistio'=>'bg-success','falto'=>'bg-danger','justificado'=>'bg-warning','tardanza'=>'bg-info'][$c->asistencia->estado] : 'bg-secondary' }}">
+                            {{ $c->asistencia ? ($nombresEstado[$c->asistencia->estado] ?? ucfirst($c->asistencia->estado)) : 'Sin marcar' }}
                         </span>
                     </td>
-                    <td class="text-end">
-                        <button class="btn btn-sm btn-morado" onclick="marcarAsistencia({{ $c->id }}, '{{ $c->alumno->nombre }}', '{{ $c->asistencia->estado ?? '' }}')">
-                            <i class="bi bi-clipboard-check"></i> Marcar
-                        </button>
+                    <td class="text-end text-nowrap">
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button class="btn btn-light" onclick="marcarRapido({{ $c->id }}, 'asistio')"><i class="bi bi-check-lg text-success"></i> Asistió</button>
+                            <button class="btn btn-light" onclick="marcarRapido({{ $c->id }}, 'falto')"><i class="bi bi-x-lg text-danger"></i> Faltó</button>
+                            <button class="btn btn-light" onclick="marcarAsistencia({{ $c->id }}, @js($c->alumno->nombre), '{{ $c->asistencia->estado ?? '' }}')">Más</button>
+                        </div>
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="6" class="text-center text-muted py-4">No hay clases programadas para esta fecha.</td></tr>
+                <tr><td colspan="5"><div class="vacio"><i class="bi bi-calendar-x"></i>No hay clases para esta fecha.</div></td></tr>
             @endforelse
             </tbody>
         </table>
@@ -103,9 +105,9 @@
                 <div class="mb-3">
                     <label class="form-label small fw-semibold">Estado</label>
                     <select class="form-select" id="asistencia_estado" required>
-                        <option value="asistio">Asistio</option>
-                        <option value="falto">Falto</option>
-                        <option value="justificado">Justificado</option>
+                        <option value="asistio">Asistió</option>
+                        <option value="falto">Faltó (sin aviso)</option>
+                        <option value="justificado">Faltó con aviso</option>
                         <option value="tardanza">Tardanza</option>
                     </select>
                 </div>
@@ -130,7 +132,7 @@
     const BADGE_CLASES = {
         asistio: 'bg-success',
         falto: 'bg-danger',
-        justificado: 'bg-warning text-dark',
+        justificado: 'bg-warning',
         tardanza: 'bg-info text-dark',
     };
 
@@ -138,19 +140,20 @@
         const badge = document.getElementById(`badge-asistencia-${claseId}`);
         if (!badge) return;
         badge.className = 'badge ' + (BADGE_CLASES[estado] || 'bg-secondary');
-        badge.textContent = estado ? estado.charAt(0).toUpperCase() + estado.slice(1) : 'Sin marcar';
+        const NOMBRES = { asistio: 'Asistió', falto: 'Faltó', justificado: 'Faltó con aviso', tardanza: 'Tardanza' };
+        badge.textContent = estado ? (NOMBRES[estado] || estado) : 'Sin marcar';
     }
 
-    // Clic rapido en la etiqueta: marca "Asistio" al instante, sin abrir modal.
-    async function marcarRapido(claseId) {
+    // Botones rapidos de la fila: marcan al instante, sin abrir la ventana.
+    async function marcarRapido(claseId, estado = 'asistio') {
         const res = await maFetch(`/asistencia/${claseId}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ estado: 'asistio' }),
+            body: JSON.stringify({ estado }),
         });
         if (res && res.ok) {
-            pintarBadge(claseId, 'asistio');
-            maToast('success', 'Marcado como Asistio');
+            pintarBadge(claseId, estado);
+            maToast('success', estado === 'asistio' ? 'Marcado: asistió' : 'Marcado: faltó');
         }
     }
 

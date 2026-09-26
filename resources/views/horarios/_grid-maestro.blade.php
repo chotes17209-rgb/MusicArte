@@ -46,7 +46,7 @@
                             <td class="{{ $celda->isNotEmpty() ? 'celda-ocupada' : '' }}">
                                 @foreach($celda as $h)
                                     <div class="alumno-celda {{ !$h->activo ? 'inactivo' : '' }}">
-                                        {{ $h->alumno->nombre ?? '—' }}@if($h->alumno && $h->alumno->edad !== null)<span class="edad-celda">({{ $h->alumno->edad }})</span>@endif
+                                        {{ $h->alumno->nombre ?? '—' }}@if($h->alumno && $h->alumno->edad !== null)<span class="edad-celda">· {{ mb_strtolower(trim($h->alumno->edad)) }}</span>@endif
                                         @if(!$h->activo)<i class="bi bi-x-lg text-danger ms-1"></i>@endif
                                     </div>
                                 @endforeach

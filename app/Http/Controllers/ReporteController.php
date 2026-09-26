@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Alumno;
+use App\Models\AlumnoTaller;
 use App\Models\Asistencia;
 use App\Models\CajaChica;
 use App\Models\Clase;
@@ -10,8 +11,10 @@ use App\Models\Egreso;
 use App\Models\Especialidad;
 use App\Models\Maestro;
 use App\Models\Pago;
+use App\Models\Periodo;
 use App\Models\Planilla;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ReporteController extends Controller
 {
@@ -20,51 +23,78 @@ class ReporteController extends Controller
         return view('reportes.index');
     }
 
-    /** Reporte: alumnos activos por especialidad. */
-    public function alumnosPorEspecialidad()
+    /**
+     * Reporte: alumnos por especialidad en un periodo. Cuenta talleres del
+     * periodo (un alumno que lleva Piano y Canto suma en las dos), y cuantos
+     * alumnos distintos hay en total.
+     */
+    public function alumnosPorEspecialidad(Request $request)
     {
-        $data = Especialidad::withCount(['alumnos' => fn ($q) => $q->where('activo', true)])
-            ->orderByDesc('alumnos_count')->get();
+        $periodos = Periodo::orderByDesc('anio')->orderByDesc('mes')->get();
+        $periodo = $request->filled('periodo_id')
+            ? $periodos->firstWhere('id', (int) $request->periodo_id)
+            : ($periodos->firstWhere('activo', true) ?? $periodos->first());
 
-        return view('reportes.alumnos-especialidad', ['data' => $data]);
+        $talleres = $periodo
+            ? AlumnoTaller::with(['especialidad', 'maestro'])->where('periodo_id', $periodo->id)->get()
+            : collect();
+
+        $data = $talleres->groupBy('especialidad_id')->map(fn ($ts) => [
+            'especialidad' => $ts->first()->especialidad,
+            'alumnos' => $ts->pluck('alumno_id')->unique()->count(),
+            'maestros' => $ts->pluck('maestro.nombre')->filter()->unique()->sort()->values(),
+        ])->sortByDesc('alumnos')->values();
+
+        $totalAlumnos = $talleres->pluck('alumno_id')->unique()->count();
+
+        return view('reportes.alumnos-especialidad', compact('data', 'periodos', 'periodo', 'totalAlumnos'));
     }
 
     /**
-     * Reporte de asistencia mensual (seccion 17). Si se filtra por maestro,
-     * solo se consideran las clases dictadas por ese maestro y solo se
-     * listan los alumnos que tuvieron al menos una clase con el.
+     * Reporte de asistencia mensual: por cada alumno con clases en el mes,
+     * cuantas clases tuvo, a cuantas asistio, cuantas falto (con o sin aviso)
+     * y cuantas aun no se marcan. Se puede filtrar por maestro.
      */
     public function asistenciaMensual(Request $request)
     {
-        $mes = $request->get('mes', now()->month);
-        $anio = $request->get('anio', now()->year);
+        $mes = (int) $request->get('mes', now()->month);
+        $anio = (int) $request->get('anio', now()->year);
         $maestroId = $request->get('maestro_id');
 
-        $data = Alumno::activos()->with(['asistencias' => function ($q) use ($mes, $anio, $maestroId) {
-            $q->whereHas('clase', function ($c) use ($mes, $anio, $maestroId) {
-                $c->whereMonth('fecha', $mes)->whereYear('fecha', $anio);
-                if ($maestroId) {
-                    $c->where('maestro_id', $maestroId);
-                }
-            });
-        }])->get()->map(function ($alumno) {
-            $total = $alumno->asistencias->count();
-            $asistio = $alumno->asistencias->where('estado', 'asistio')->count();
-            $faltas = $alumno->asistencias->where('estado', 'falto')->count();
-            $tardanzas = $alumno->asistencias->where('estado', 'tardanza')->count();
+        $clases = Clase::with(['alumno', 'maestro', 'especialidad', 'asistencia'])
+            ->whereMonth('fecha', $mes)->whereYear('fecha', $anio)
+            ->where('estado', '!=', 'cancelada')
+            ->when($maestroId, fn ($q) => $q->where('maestro_id', $maestroId))
+            ->get();
+
+        $data = $clases->groupBy('alumno_id')->map(function ($cs) {
+            $marcadas = $cs->filter(fn ($c) => $c->asistencia);
+            $asistio = $marcadas->filter(fn ($c) => in_array($c->asistencia->estado, ['asistio', 'tardanza']))->count();
+
             return [
-                'alumno' => $alumno->nombre,
-                'total' => $total,
+                'alumno' => $cs->first()->alumno,
+                'talleres' => $cs->map(fn ($c) => ($c->especialidad->nombre ?? '—').' · '.($c->maestro->nombre ?? '—'))->unique()->values(),
+                'total' => $cs->count(),
                 'asistio' => $asistio,
-                'faltas' => $faltas,
-                'tardanzas' => $tardanzas,
-                'porcentaje' => $total > 0 ? round($asistio / $total * 100, 1) : 0,
+                'justificado' => $marcadas->filter(fn ($c) => $c->asistencia->estado === 'justificado')->count(),
+                'faltas' => $marcadas->filter(fn ($c) => $c->asistencia->estado === 'falto')->count(),
+                'sin_marcar' => $cs->count() - $marcadas->count(),
+                'porcentaje' => $marcadas->count() > 0 ? round($asistio / $marcadas->count() * 100, 1) : null,
             ];
-        })->when($maestroId, fn ($collection) => $collection->filter(fn ($row) => $row['total'] > 0)->values());
+        })->sortBy(fn ($r) => $r['alumno']->nombre ?? '')->values();
+
+        $marcadasTotal = $data->sum('asistio') + $data->sum('justificado') + $data->sum('faltas');
+        $resumen = [
+            'clases' => $data->sum('total'),
+            'asistio' => $data->sum('asistio'),
+            'faltas' => $data->sum('faltas') + $data->sum('justificado'),
+            'sin_marcar' => $data->sum('sin_marcar'),
+            'porcentaje' => $marcadasTotal > 0 ? round($data->sum('asistio') / $marcadasTotal * 100, 1) : null,
+        ];
 
         $maestros = Maestro::where('activo', true)->orderBy('nombre')->get();
 
-        return view('reportes.asistencia-mensual', compact('data', 'mes', 'anio', 'maestros', 'maestroId'));
+        return view('reportes.asistencia-mensual', compact('data', 'resumen', 'mes', 'anio', 'maestros', 'maestroId'));
     }
 
     /** Reporte: ingresos vs egresos por mes. */
@@ -73,7 +103,8 @@ class ReporteController extends Controller
         $anio = $request->get('anio', now()->year);
 
         $data = collect(range(1, 12))->map(function ($mes) use ($anio) {
-            $ingresos = Pago::where('mes', $mes)->where('anio', $anio)->sum('monto_total');
+            // Ingreso = lo realmente cobrado (total del mes menos lo que aun se debe).
+            $ingresos = Pago::where('mes', $mes)->where('anio', $anio)->sum(DB::raw('monto_total - saldo'));
             $egresos = Egreso::whereMonth('fecha', $mes)->whereYear('fecha', $anio)->sum('total');
             $cajaChica = CajaChica::whereMonth('fecha', $mes)->whereYear('fecha', $anio)->sum('monto');
             $planilla = Planilla::where('mes', $mes)->where('anio', $anio)->sum('monto');

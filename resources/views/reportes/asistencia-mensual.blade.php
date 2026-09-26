@@ -1,54 +1,65 @@
 @extends('layouts.app')
-@section('titulo', 'Reporte: Asistencia Mensual')
+@section('titulo', 'Reporte de asistencia')
 
 @section('contenido')
-<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-    <div>
-        <a href="{{ route('reportes.index') }}" class="btn btn-sm btn-volver"><i class="bi bi-arrow-left me-1"></i> Volver a Reportes</a>
-        <h5 class="fw-semibold mb-0 mt-1">Asistencia Mensual</h5>
-        <small class="text-muted">Asistencia de cada alumno, por maestro.</small>
-    </div>
-    <div class="d-flex gap-2">
-        <form class="d-flex gap-2" method="GET">
-            <select name="maestro_id" class="form-select form-select-sm" style="min-width:160px">
-                <option value="">Todos los maestros</option>
-                @foreach($maestros as $m)
-                    <option value="{{ $m->id }}" @selected($maestroId==$m->id)>{{ $m->nombre }}</option>
-                @endforeach
-            </select>
-            <select name="mes" class="form-select form-select-sm">
-                @foreach(\App\Models\Pago::MESES as $num => $nombre)<option value="{{ $num }}" @selected($mes==$num)>{{ $nombre }}</option>@endforeach
-            </select>
-            <input type="number" name="anio" value="{{ $anio }}" class="form-control form-control-sm" style="width:90px">
-            <button class="btn btn-sm btn-light">Filtrar</button>
-        </form>
-        <button class="btn btn-outline-secondary btn-sm" onclick="window.print()"><i class="bi bi-printer me-1"></i> Imprimir</button>
-    </div>
+<x-page-head titulo="Asistencia de {{ \App\Models\Pago::MESES[$mes] }} {{ $anio }}"
+             subtitulo="Cuántas clases tuvo cada alumno en el mes y a cuántas asistió. El porcentaje se calcula sobre las clases ya marcadas."
+             :volver="route('reportes.index')" volver-texto="Reportes">
+    <form method="GET">
+        <select name="maestro_id" class="form-select" onchange="this.form.submit()">
+            <option value="">Todos los maestros</option>
+            @foreach($maestros as $m)
+                <option value="{{ $m->id }}" @selected($maestroId==$m->id)>{{ $m->nombre }}</option>
+            @endforeach
+        </select>
+        <select name="mes" class="form-select" onchange="this.form.submit()">
+            @foreach(\App\Models\Pago::MESES as $num => $nombre)<option value="{{ $num }}" @selected($mes==$num)>{{ $nombre }}</option>@endforeach
+        </select>
+        <input type="number" name="anio" value="{{ $anio }}" class="form-control" style="width:90px" onchange="this.form.submit()">
+    </form>
+    <button class="btn btn-light" onclick="window.print()"><i class="bi bi-printer me-1"></i> Imprimir</button>
+</x-page-head>
+
+<div class="stats">
+    <x-stat label="Asistencia promedio" :valor="$resumen['porcentaje'] !== null ? $resumen['porcentaje'].'%' : '—'"
+            :tono="$resumen['porcentaje'] === null ? null : ($resumen['porcentaje'] >= 85 ? 'verde' : ($resumen['porcentaje'] >= 65 ? 'ambar' : 'rojo'))" />
+    <x-stat label="Clases del mes" :valor="$resumen['clases']" :detalle="$data->count().' alumnos'" />
+    <x-stat label="Asistió" :valor="$resumen['asistio']" tono="verde" />
+    <x-stat label="Faltó" :valor="$resumen['faltas']" tono="rojo" />
+    <x-stat label="Sin marcar" :valor="$resumen['sin_marcar']" detalle="Clases sin asistencia registrada" />
 </div>
 
 <div class="card p-3">
     <div class="table-responsive">
         <table class="table align-middle">
-            <thead><tr><th>Alumno</th><th>Total clases</th><th>Asistio</th><th>Faltas</th><th>Tardanzas</th><th>% Asistencia</th></tr></thead>
+            <thead>
+                <tr>
+                    <th>Alumno</th><th>Taller</th>
+                    <th class="text-end">Clases</th><th class="text-end">Asistió</th>
+                    <th class="text-end">Faltó con aviso</th><th class="text-end">Faltó sin aviso</th>
+                    <th class="text-end">Sin marcar</th><th style="min-width:170px">Asistencia</th>
+                </tr>
+            </thead>
             <tbody>
             @forelse($data as $d)
                 <tr>
-                    <td class="fw-semibold">{{ $d['alumno'] }}</td>
-                    <td>{{ $d['total'] }}</td>
-                    <td class="text-success">{{ $d['asistio'] }}</td>
-                    <td class="text-danger">{{ $d['faltas'] }}</td>
-                    <td class="text-warning">{{ $d['tardanzas'] }}</td>
+                    <td class="fw-semibold">{{ $d['alumno']->nombre ?? '—' }}</td>
+                    <td>@foreach($d['talleres'] as $t)<div class="small">{{ $t }}</div>@endforeach</td>
+                    <td class="text-end">{{ $d['total'] }}</td>
+                    <td class="text-end tono-verde">{{ $d['asistio'] }}</td>
+                    <td class="text-end">{{ $d['justificado'] ?: '—' }}</td>
+                    <td class="text-end {{ $d['faltas'] ? 'tono-rojo' : '' }}">{{ $d['faltas'] ?: '—' }}</td>
+                    <td class="text-end text-muted">{{ $d['sin_marcar'] ?: '—' }}</td>
                     <td>
-                        <div class="d-flex align-items-center gap-2">
-                            <div class="progress flex-grow-1" style="height:6px;max-width:100px">
-                                <div class="progress-bar" style="width:{{ $d['porcentaje'] }}%;background:var(--acento)"></div>
-                            </div>
-                            <span class="small">{{ $d['porcentaje'] }}%</span>
-                        </div>
+                        @if($d['porcentaje'] !== null)
+                            <x-barra :porcentaje="$d['porcentaje']" />
+                        @else
+                            <span class="text-muted small">Sin marcar aún</span>
+                        @endif
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="6" class="text-center text-muted py-4">Sin datos para el periodo seleccionado.</td></tr>
+                <tr><td colspan="8"><div class="vacio"><i class="bi bi-calendar-x"></i>No hay clases en {{ \App\Models\Pago::MESES[$mes] }} {{ $anio }}.</div></td></tr>
             @endforelse
             </tbody>
         </table>

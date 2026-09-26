@@ -13,8 +13,9 @@ class ClaseController extends Controller
     {
         $alumnos = Alumno::activos()->orderBy('nombre')->get();
         $maestros = Maestro::where('activo', true)->orderBy('nombre')->get();
+        $especialidades = \App\Models\Especialidad::where('activo', true)->orderBy('nombre')->get();
 
-        return view('calendario.index', compact('alumnos', 'maestros'));
+        return view('calendario.index', compact('alumnos', 'maestros', 'especialidades'));
     }
 
     /** Feed de eventos que consume FullCalendar via AJAX (?start=&end=). */
