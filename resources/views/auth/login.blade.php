@@ -7,18 +7,34 @@
     <link rel="icon" href="{{ asset('images/logo.png') }}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Poppins', sans-serif;
-            min-height: 100vh;
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+            min-height: 100vh; padding: 1rem;
             display: flex; align-items: center; justify-content: center;
-            background: linear-gradient(135deg, #2a1e63, #3d2c8d 60%, #5a3fc0);
+            background:
+                radial-gradient(40rem 30rem at 10% 10%, rgba(123,92,224,.55), transparent 60%),
+                radial-gradient(30rem 25rem at 90% 90%, rgba(242,177,52,.30), transparent 60%),
+                linear-gradient(135deg, #1c1545, #2a1e63 50%, #3d2c8d);
+            -webkit-font-smoothing: antialiased;
         }
-        .login-card { width: 100%; max-width: 400px; border-radius: 18px; border: none; box-shadow: 0 20px 50px rgba(0,0,0,.3); }
-        .login-card img { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 4px #f2b134; }
-        .btn-morado { background: #3d2c8d; border-color: #3d2c8d; }
-        .btn-morado:hover { background: #2a1e63; border-color: #2a1e63; }
+        .login-card {
+            width: 100%; max-width: 410px; border-radius: 22px; border: 1px solid rgba(255,255,255,.6);
+            background: #fff; box-shadow: 0 30px 70px rgba(10,6,40,.45); padding: 2.2rem !important;
+        }
+        .login-card img { width: 84px; height: 84px; border-radius: 22px; object-fit: cover; box-shadow: 0 0 0 4px rgba(242,177,52,.7), 0 10px 24px rgba(61,44,141,.25); }
+        .login-card h4 { letter-spacing: 2px; font-weight: 800 !important; }
+        .form-label { color: #3b3a4d; }
+        .form-control { border-radius: 12px; border-color: #e3e3ee; padding: .7rem .95rem; }
+        .form-control:focus { border-color: #a99be3; box-shadow: 0 0 0 4px rgba(61,44,141,.12); }
+        .form-check-input:checked { background-color: #3d2c8d; border-color: #3d2c8d; }
+        .btn-morado {
+            background: linear-gradient(135deg, #4b37a9, #3d2c8d); border: 0; border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(61,44,141,.3); transition: all .15s ease;
+        }
+        .btn-morado:hover { background: linear-gradient(135deg, #3d2c8d, #2a1e63); transform: translateY(-1px); box-shadow: 0 12px 26px rgba(61,44,141,.35); }
+        .alert { border-radius: 12px; border: 0; }
     </style>
 </head>
 <body>

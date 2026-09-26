@@ -44,13 +44,16 @@ class PagoController extends Controller
             $query->whereHas('alumnoTaller', fn ($q) => $q->where('maestro_id', $maestroId));
         }
 
+        // Los totales se calculan ANTES de paginar: paginate() le pone
+        // limit/offset al query y solo sumaba los 20 pagos de la pagina.
+        $totalesQuery = (clone $query);
+
         $pagos = $query->orderBy('fecha_pago', 'desc')->paginate(20)->withQueryString();
 
         $alumnos = Alumno::activos()->orderBy('nombre')->get();
         $especialidades = Especialidad::orderBy('nombre')->get();
         $maestros = Maestro::where('activo', true)->orderBy('nombre')->get();
 
-        $totalesQuery = (clone $query);
         $totales = [
             'recaudado' => (clone $totalesQuery)->get()->sum(fn ($p) => $p->monto_total - $p->saldo),
             'pendiente' => (clone $totalesQuery)->sum('saldo'),
