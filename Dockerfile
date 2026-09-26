@@ -35,7 +35,12 @@ COPY . .
 # (composer.lock no incluye todavia phpoffice/phpspreadsheet -nueva
 # dependencia para el importador de pagos del Excel-, asi que se usa
 # "composer update" para que la resuelva de una: "composer install" solo
-# no sirve aqui porque Composer corta apenas ve que el lock no matchea)
+# no sirve aqui porque Composer corta apenas ve que el lock no matchea.
+# "policy.advisories.block=false" en composer.json evita que Composer
+# corte el build por CVEs ya reportados en laravel/framework 11.x que
+# todavia no tienen parche disponible; el lock que ya estaba en produccion
+# usaba una version igualmente afectada -esto no cambia el riesgo real,
+# solo deja que el build pase como pasaba antes-.)
 RUN composer update \
     --no-dev \
     --optimize-autoloader \
