@@ -53,6 +53,8 @@ Route::middleware('auth')->group(function () {
     // Catalogos y operacion diaria (ambos roles, con reglas internas
     // en el controlador para el campo "precio_mensual").
     // ---------------------------------------------------------------
+    Route::post('/periodo-de-trabajo', [PeriodoController::class, 'seleccionar'])->name('periodos.seleccionar');
+    Route::get('/buscar', [DashboardController::class, 'buscar'])->name('buscar');
     Route::resource('periodos', PeriodoController::class)->except(['show', 'create']);
     Route::get('/periodos/{periodo}/candidatos', [PeriodoController::class, 'candidatos'])->name('periodos.candidatos');
     Route::post('/periodos/{periodo}/pasar-alumnos', [PeriodoController::class, 'pasarAlumnos'])->name('periodos.pasarAlumnos');

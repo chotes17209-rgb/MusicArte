@@ -17,6 +17,12 @@ class AlumnoController extends Controller
 {
     public function index(Request $request)
     {
+        // Por defecto se muestran los alumnos del periodo con el que se
+        // trabaja (barra superior). "Todos los periodos" envia periodo_id vacio.
+        if (! $request->has('periodo_id')) {
+            $request->merge(['periodo_id' => Periodo::seleccionado()?->id]);
+        }
+
         $query = $this->aplicarFiltros($request);
 
         $alumnos = $query->orderBy('nombre')->paginate(15)->withQueryString();
@@ -148,13 +154,13 @@ class AlumnoController extends Controller
             $query->where('activo', $request->estado === 'activo');
         }
 
-        // 1.1 Filtro por periodo/mes: se considera "del periodo" al alumno
-        // que tiene al menos un horario programado dentro de ese periodo
-        // (en cualquiera de sus talleres).
+        // 1.1 Filtro por periodo/mes: alumno inscrito en el periodo (tiene
+        // un taller de ese periodo) o con algun horario programado en el.
         if ($request->filled('periodo_id')) {
             $periodoId = $request->periodo_id;
-            $query->whereHas('horarios', function ($q) use ($periodoId) {
-                $q->where('periodo_id', $periodoId);
+            $query->where(function ($q) use ($periodoId) {
+                $q->whereHas('talleres', fn ($t) => $t->where('periodo_id', $periodoId))
+                    ->orWhereHas('horarios', fn ($h) => $h->where('periodo_id', $periodoId));
             });
         }
 

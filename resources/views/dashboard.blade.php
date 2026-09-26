@@ -37,7 +37,7 @@
     <div>
         <h4 class="mb-1">{{ $saludo }}, {{ $primerNombre }}</h4>
         <p class="text-muted mb-0">
-            @if($periodoActual) Periodo en curso: <strong class="text-body fw-medium">{{ $periodoActual->nombre }}</strong> ({{ $periodoActual->fecha_inicio->format('d/m') }} al {{ $periodoActual->fecha_fin->format('d/m') }}) @else No hay un periodo en curso. @endif
+            @if($periodoActual) {{ $periodoActual->estaEnCurso() ? 'Periodo en curso' : 'Viendo el periodo' }}: <strong class="text-body fw-medium">{{ $periodoActual->nombre }}</strong> ({{ $periodoActual->fecha_inicio->format('d/m') }} al {{ $periodoActual->fecha_fin->format('d/m') }}) @else No hay un periodo en curso. @endif
         </p>
     </div>
     <div class="page-head-acciones">

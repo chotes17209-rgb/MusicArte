@@ -33,7 +33,7 @@ class ReporteController extends Controller
         $periodos = Periodo::orderByDesc('anio')->orderByDesc('mes')->get();
         $periodo = $request->filled('periodo_id')
             ? $periodos->firstWhere('id', (int) $request->periodo_id)
-            : ($periodos->firstWhere('activo', true) ?? $periodos->first());
+            : Periodo::seleccionado();
 
         $talleres = $periodo
             ? AlumnoTaller::with(['especialidad', 'maestro'])->where('periodo_id', $periodo->id)->get()
@@ -57,8 +57,9 @@ class ReporteController extends Controller
      */
     public function asistenciaMensual(Request $request)
     {
-        $mes = (int) $request->get('mes', now()->month);
-        $anio = (int) $request->get('anio', now()->year);
+        [$mesPeriodo, $anioPeriodo] = Periodo::mesAnioSeleccionado();
+        $mes = (int) $request->get('mes', $mesPeriodo);
+        $anio = (int) $request->get('anio', $anioPeriodo);
         $maestroId = $request->get('maestro_id');
 
         $clases = Clase::with(['alumno', 'maestro', 'especialidad', 'asistencia'])
@@ -100,7 +101,7 @@ class ReporteController extends Controller
     /** Reporte: ingresos vs egresos por mes. */
     public function ingresosEgresos(Request $request)
     {
-        $anio = $request->get('anio', now()->year);
+        $anio = $request->get('anio', Periodo::mesAnioSeleccionado()[1]);
 
         $data = collect(range(1, 12))->map(function ($mes) use ($anio) {
             // Ingreso = lo realmente cobrado (total del mes menos lo que aun se debe).
@@ -126,8 +127,9 @@ class ReporteController extends Controller
      */
     public function pagosPendientes(Request $request)
     {
-        $mes = $request->get('mes', now()->month);
-        $anio = $request->get('anio', now()->year);
+        [$mesPeriodo, $anioPeriodo] = Periodo::mesAnioSeleccionado();
+        $mes = $request->get('mes', $mesPeriodo);
+        $anio = $request->get('anio', $anioPeriodo);
 
         $query = Pago::with(['alumno', 'alumnoTaller.especialidad', 'alumnoTaller.maestro'])
             ->where('mes', $mes)->where('anio', $anio);
@@ -165,7 +167,7 @@ class ReporteController extends Controller
      */
     public function pagosAnual(Request $request)
     {
-        $anio = $request->get('anio', now()->year);
+        $anio = $request->get('anio', Periodo::mesAnioSeleccionado()[1]);
 
         $pagosDelAnio = Pago::with('alumno')->where('anio', $anio)->get();
 
@@ -208,8 +210,9 @@ class ReporteController extends Controller
     /** Reporte: planilla de pago a maestros. */
     public function planillaMaestros(Request $request)
     {
-        $mes = $request->get('mes', now()->month);
-        $anio = $request->get('anio', now()->year);
+        [$mesPeriodo, $anioPeriodo] = Periodo::mesAnioSeleccionado();
+        $mes = $request->get('mes', $mesPeriodo);
+        $anio = $request->get('anio', $anioPeriodo);
 
         $data = Planilla::with(['maestro', 'alumno', 'especialidad'])
             ->where('mes', $mes)->where('anio', $anio)->orderBy('maestro_id')->get();

@@ -15,7 +15,7 @@ class HorarioController extends Controller
     public function index(Request $request)
     {
         $periodoId = $request->get('periodo_id')
-            ?? \App\Models\Periodo::where('activo', true)->orderByDesc('anio')->orderByDesc('mes')->value('id');
+            ?? \App\Models\Periodo::seleccionado()?->id;
 
         $horarios = Horario::with(['alumno', 'maestro', 'especialidad', 'periodo'])
             ->when($periodoId, fn ($q) => $q->where('periodo_id', $periodoId))
@@ -39,7 +39,7 @@ class HorarioController extends Controller
     public function tablero(Request $request)
     {
         $periodoId = $request->get('periodo_id')
-            ?? \App\Models\Periodo::where('activo', true)->orderByDesc('anio')->orderByDesc('mes')->value('id');
+            ?? \App\Models\Periodo::seleccionado()?->id;
 
         $periodo = $periodoId ? \App\Models\Periodo::find($periodoId) : null;
         $periodos = \App\Models\Periodo::orderByDesc('anio')->orderByDesc('mes')->get();
@@ -71,8 +71,9 @@ class HorarioController extends Controller
      */
     public function vistaMensual(Request $request)
     {
-        $mes = (int) $request->get('mes', now()->month);
-        $anio = (int) $request->get('anio', now()->year);
+        [$mesPeriodo, $anioPeriodo] = \App\Models\Periodo::mesAnioSeleccionado();
+        $mes = (int) $request->get('mes', $mesPeriodo);
+        $anio = (int) $request->get('anio', $anioPeriodo);
 
         // Solo los horarios del periodo de ese mes (antes se mezclaban los
         // de todos los periodos y un alumno aparecia con sus dias repetidos).

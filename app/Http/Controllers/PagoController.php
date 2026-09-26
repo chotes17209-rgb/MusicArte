@@ -18,8 +18,9 @@ class PagoController extends Controller
      */
     public function index(Request $request)
     {
-        $mes = $request->get('mes', now()->month);
-        $anio = $request->get('anio', now()->year);
+        [$mesPeriodo, $anioPeriodo] = \App\Models\Periodo::mesAnioSeleccionado();
+        $mes = $request->get('mes', $mesPeriodo);
+        $anio = $request->get('anio', $anioPeriodo);
 
         $query = Pago::with(['alumno', 'alumnoTaller.especialidad', 'alumnoTaller.maestro', 'abonos'])
             ->where('mes', $mes)->where('anio', $anio);

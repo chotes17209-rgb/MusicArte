@@ -34,6 +34,13 @@ class AppServiceProvider extends ServiceProvider
                 $avisos = collect();
             }
             $view->with('avisosFlotantes', $avisos);
+
+            // Selector de periodo de la barra superior.
+            if (auth()->check()) {
+                $view->with('periodosLista', \App\Models\Periodo::orderByDesc('anio')->orderByDesc('mes')->get());
+                $view->with('periodoTrabajo', \App\Models\Periodo::seleccionado());
+                $view->with('periodoElegidoAMano', session()->has('periodo_id'));
+            }
         });
     }
 }

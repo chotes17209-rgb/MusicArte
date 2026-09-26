@@ -77,7 +77,7 @@
         </div>
         <div class="col-md-1 d-grid">
             <button type="button" class="btn btn-light" onclick="limpiarFiltrosAlumnos()" title="Limpiar filtros">
-                <i class="bi bi-x-lg me-1"></i> Limpiar
+                <i class="bi bi-x-lg"></i><span class="d-md-none ms-1">Limpiar filtros</span>
             </button>
         </div>
         <div class="col-12 d-flex justify-content-end">

@@ -1,3 +1,10 @@
+@if(request()->header('X-Modal'))
+{{-- Pedido desde la ventana "Ver": solo el contenido de la pantalla, sin menu ni barra. --}}
+<div class="vista-fragmento" data-titulo="@yield('titulo', '')">
+    @stack('estilos')
+    @yield('contenido')
+</div>
+@else
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -361,6 +368,80 @@
         table.historial td, table.historial th { text-align: center; }
         table.historial td:first-child, table.historial th:first-child { text-align: left; }
 
+        /* ---------------- Barra superior: buscador, periodo, paneles ---------------- */
+        .topbar { gap: 1rem; }
+        .buscador { position: relative; flex: 1 1 auto; max-width: 420px; margin: 0 auto 0 1rem; }
+        .buscador input { width: 100%; height: 36px; padding: 0 4.5rem 0 2.2rem; border: 1px solid var(--borde); border-radius: 8px; background: var(--superficie-2); font-size: .8125rem; color: var(--texto); transition: border-color .12s, background .12s, box-shadow .12s; }
+        .buscador input:focus { outline: 0; background: var(--superficie); border-color: var(--acento); box-shadow: 0 0 0 3px rgba(61,44,141,.12); }
+        .buscador input::-webkit-search-cancel-button { display: none; }
+        .buscador-icono { position: absolute; left: .75rem; top: 50%; transform: translateY(-50%); color: var(--texto-3); font-size: .85rem; pointer-events: none; }
+        .buscador-atajo { position: absolute; right: .5rem; top: 50%; transform: translateY(-50%); font-size: .68rem; font-family: inherit; color: var(--texto-3); background: var(--superficie); border: 1px solid var(--borde); border-radius: 4px; padding: .1rem .35rem; pointer-events: none; }
+        .buscador-resultados { position: absolute; top: calc(100% + 6px); left: 0; right: 0; background: var(--superficie); border: 1px solid var(--borde); border-radius: 10px; box-shadow: 0 16px 40px rgba(20,20,18,.14); padding: .35rem; max-height: 420px; overflow-y: auto; z-index: 1050; }
+        .resultado-grupo { font-size: .68rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--texto-3); padding: .5rem .6rem .25rem; }
+        .resultado { display: flex; align-items: center; gap: .6rem; padding: .45rem .6rem; border-radius: 6px; color: var(--texto); }
+        .resultado.activo, .resultado:hover { background: var(--acento-suave); color: var(--texto); }
+        .resultado-icono { width: 28px; height: 28px; border-radius: 6px; background: var(--superficie-2); border: 1px solid var(--borde); display: inline-flex; align-items: center; justify-content: center; color: var(--texto-3); flex-shrink: 0; }
+        .periodo-pill { display: inline-flex; align-items: center; gap: .45rem; height: 36px; padding: 0 .75rem; border: 1px solid var(--borde); border-radius: 8px; background: var(--superficie); color: var(--texto); font-size: .8125rem; font-weight: 500; white-space: nowrap; }
+        .periodo-pill:hover, .periodo-pill[aria-expanded="true"] { background: var(--superficie-2); border-color: var(--borde-fuerte); }
+        .periodo-pill > .bi-calendar-range { color: var(--acento); }
+        .punto-vivo { width: 7px; height: 7px; border-radius: 50%; background: var(--verde); box-shadow: 0 0 0 3px var(--verde-suave); }
+        .panel-menu { width: 340px; max-width: calc(100vw - 1.5rem); padding: 0; overflow: hidden; }
+        .panel-menu-cab { padding: .75rem 1rem; border-bottom: 1px solid var(--borde); }
+        .panel-menu-cab strong { display: block; font-size: .875rem; }
+        .panel-menu-cab span { display: block; font-size: .75rem; color: var(--texto-3); margin-top: .1rem; }
+        .panel-menu-lista { max-height: 360px; overflow-y: auto; padding: .35rem; margin: 0; }
+        .panel-menu-pie { padding: .5rem; border-top: 1px solid var(--borde); background: var(--superficie-2); margin: 0; }
+        .panel-item { display: flex; align-items: center; gap: .6rem; width: 100%; padding: .5rem .65rem; border: 0; background: transparent; border-radius: 6px; font-size: .8125rem; color: var(--texto); }
+        .panel-item:hover { background: var(--superficie-2); }
+        .panel-item.activo { background: var(--acento-suave); }
+        .aviso-item { display: flex; gap: .65rem; align-items: flex-start; padding: .6rem .65rem; border-radius: 6px; font-size: .8125rem; }
+        .aviso-item:hover { background: var(--superficie-2); }
+        .aviso-item .btn-close { font-size: .6rem; margin-top: .2rem; flex-shrink: 0; }
+        .aviso-texto { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+        .aviso-icono { width: 30px; height: 30px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .tono-fondo-rojo { background: var(--rojo-suave); color: var(--rojo); }
+        .tono-fondo-ambar { background: var(--ambar-suave); color: var(--ambar); }
+        .tono-fondo-azul { background: var(--azul-suave); color: var(--azul); }
+        .tono-fondo-verde { background: var(--verde-suave); color: var(--verde); }
+        @media (max-width: 767px) {
+            .buscador { display: none; position: fixed; top: 8px; left: 8px; right: 8px; max-width: none; margin: 0; z-index: 1060; }
+            .buscador.abierto { display: block; }
+            .buscador.abierto input { height: 42px; background: var(--superficie); box-shadow: 0 8px 30px rgba(20,20,18,.2); }
+            .buscador-atajo { display: none; }
+            .topbar { gap: .5rem; }
+        }
+
+        /* ---------------- Notificaciones (toasts) ---------------- */
+        .toasts { position: fixed; right: 1.25rem; bottom: 1.25rem; z-index: 2000; display: flex; flex-direction: column; gap: .5rem; width: 360px; max-width: calc(100vw - 2rem); pointer-events: none; }
+        .toast-ma { position: relative; overflow: hidden; pointer-events: auto; display: flex; align-items: flex-start; gap: .7rem; padding: .8rem .9rem .9rem; background: var(--superficie); border: 1px solid var(--borde); border-radius: 10px; box-shadow: 0 12px 32px rgba(20,20,18,.14); animation: toastEntra .22s ease-out; }
+        .toast-ma.saliendo { animation: toastSale .2s ease-in forwards; }
+        .toast-icono { font-size: 1.1rem; line-height: 1.3; }
+        .toast-success .toast-icono { color: var(--verde); }
+        .toast-error .toast-icono { color: var(--rojo); }
+        .toast-warning .toast-icono { color: #d49a1a; }
+        .toast-info .toast-icono { color: var(--azul); }
+        .toast-texto { flex: 1; min-width: 0; font-size: .8125rem; line-height: 1.4; }
+        .toast-texto strong { display: block; font-weight: 600; color: var(--texto); }
+        .toast-texto span { color: var(--texto-2); }
+        .toast-cerrar { border: 0; background: transparent; color: var(--texto-3); padding: 0; line-height: 1; font-size: 1.1rem; }
+        .toast-cerrar:hover { color: var(--texto); }
+        .toast-progreso { position: absolute; left: 0; bottom: 0; height: 2px; width: 100%; transform-origin: left; animation: toastTiempo linear forwards; background: currentColor; opacity: .5; }
+        .toast-success .toast-progreso { color: var(--verde); }
+        .toast-error .toast-progreso { color: var(--rojo); }
+        .toast-warning .toast-progreso { color: #d49a1a; }
+        .toast-info .toast-progreso { color: var(--azul); }
+        .toast-ma.pausado .toast-progreso { animation-play-state: paused; }
+        @keyframes toastEntra { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
+        @keyframes toastSale { to { opacity: 0; transform: translateX(16px); } }
+        @keyframes toastTiempo { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+        @media (max-width: 575px) { .toasts { left: 1rem; right: 1rem; bottom: 1rem; width: auto; } }
+
+        /* ---------------- Ventana "Ver" ---------------- */
+        #modalVista .modal-body { background: var(--fondo); padding: 1.25rem; }
+        #modalVista .btn-volver { display: none; }
+        #modalVista .page-head { margin-bottom: 1rem; }
+        .cargando { display: flex; align-items: center; justify-content: center; gap: .5rem; padding: 3rem 1rem; color: var(--texto-3); }
+
         /* ---------------- Tablero de horarios (cuadro por maestro) ---------------- */
         .tablero-maestro { border: 1px solid var(--borde); border-radius: var(--radio); overflow: hidden; margin-bottom: 1rem; background: var(--superficie); }
         .tablero-header { background: var(--superficie); color: var(--texto); padding: .7rem 1rem; display: flex; align-items: baseline; gap: .6rem; flex-wrap: wrap; border-bottom: 1px solid var(--borde); }
@@ -472,29 +553,102 @@
             <button class="btn-topbar toggler-mobile" id="btnToggleSidebar" aria-label="Abrir menú"><i class="bi bi-list fs-5"></i></button>
             <h1 class="topbar-titulo text-truncate">@yield('titulo', 'Panel')</h1>
         </div>
-        <div class="d-flex align-items-center gap-2">
-            <span class="topbar-fecha me-2">{{ ucfirst($dias[now()->isoWeekday()]) }}, {{ now()->day }} de {{ $meses[now()->month] }}</span>
-            <button class="btn-topbar" id="btnAvisos" title="Avisos" aria-label="Avisos">
-                <i class="bi bi-bell"></i>
-                @if(($avisosFlotantes ?? collect())->count() > 0)
-                    <span class="contador">{{ $avisosFlotantes->count() }}</span>
-                @endif
-            </button>
+
+        {{-- Buscador rapido de alumnos y maestros (Ctrl + K) --}}
+        <div class="buscador" id="buscador">
+            <i class="bi bi-search buscador-icono"></i>
+            <input type="search" id="buscadorInput" placeholder="Buscar alumno o maestro…" autocomplete="off" aria-label="Buscar">
+            <kbd class="buscador-atajo">Ctrl K</kbd>
+            <div class="buscador-resultados" id="buscadorResultados" hidden></div>
+        </div>
+
+        <div class="d-flex align-items-center gap-1 gap-sm-2 flex-shrink-0">
+            <button class="btn-topbar d-md-none" id="btnBuscarMovil" aria-label="Buscar"><i class="bi bi-search"></i></button>
+
+            {{-- Periodo de trabajo: todas las pantallas filtran por el por defecto --}}
+            @if($periodoTrabajo)
+            <div class="dropdown">
+                <button class="periodo-pill" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" title="Periodo con el que estás trabajando">
+                    <i class="bi bi-calendar-range"></i>
+                    <span class="d-none d-sm-inline">{{ $periodoTrabajo->nombre }}</span>
+                    <span class="d-sm-none">{{ \Illuminate\Support\Str::limit(\Illuminate\Support\Str::before($periodoTrabajo->nombre, ' '), 3, '') }}</span>
+                    @if($periodoTrabajo->estaEnCurso())<span class="punto-vivo" title="En curso"></span>@endif
+                    <i class="bi bi-chevron-down small"></i>
+                </button>
+                <div class="dropdown-menu dropdown-menu-end panel-menu">
+                    <div class="panel-menu-cab">
+                        <strong>Periodo de trabajo</strong>
+                        <span>Alumnos, pagos, horarios y reportes se muestran de este periodo.</span>
+                    </div>
+                    <form method="POST" action="{{ route('periodos.seleccionar') }}" class="panel-menu-lista">
+                        @csrf
+                        @foreach($periodosLista as $p)
+                            <button type="submit" name="periodo_id" value="{{ $p->id }}" class="panel-item {{ $periodoTrabajo->id === $p->id ? 'activo' : '' }}">
+                                <span class="flex-grow-1 text-start">
+                                    {{ $p->nombre }}
+                                    <span class="d-block small text-muted">{{ $p->fecha_inicio->format('d/m') }} al {{ $p->fecha_fin->format('d/m') }}</span>
+                                </span>
+                                @if($p->estaEnCurso())<span class="badge bg-success">En curso</span>@endif
+                                @if($periodoTrabajo->id === $p->id)<i class="bi bi-check2 text-primary"></i>@endif
+                            </button>
+                        @endforeach
+                    </form>
+                    @if($periodoElegidoAMano)
+                        <form method="POST" action="{{ route('periodos.seleccionar') }}" class="panel-menu-pie">
+                            @csrf
+                            <button type="submit" class="btn btn-sm btn-light w-100"><i class="bi bi-arrow-counterclockwise me-1"></i> Volver al periodo en curso</button>
+                        </form>
+                    @endif
+                </div>
+            </div>
+            @endif
+
+            {{-- Avisos --}}
+            <div class="dropdown">
+                <button class="btn-topbar" id="btnAvisos" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" title="Avisos" aria-label="Avisos">
+                    <i class="bi bi-bell"></i>
+                    @if(($avisosFlotantes ?? collect())->count() > 0)
+                        <span class="contador" id="contadorAvisos">{{ $avisosFlotantes->count() }}</span>
+                    @endif
+                </button>
+                <div class="dropdown-menu dropdown-menu-end panel-menu panel-avisos">
+                    <div class="panel-menu-cab d-flex justify-content-between align-items-center">
+                        <strong>Avisos</strong>
+                        <a href="{{ route('avisos.index') }}" class="small">Ver todos</a>
+                    </div>
+                    <div class="panel-menu-lista" id="listaAvisos">
+                        @forelse(($avisosFlotantes ?? collect()) as $aviso)
+                            @php $ic = ['urgente' => ['bi-exclamation-octagon', 'rojo'], 'advertencia' => ['bi-exclamation-triangle', 'ambar']][$aviso->tipo] ?? ['bi-info-circle', 'azul']; @endphp
+                            <div class="aviso-item" data-aviso-id="{{ $aviso->id }}">
+                                <span class="aviso-icono tono-fondo-{{ $ic[1] }}"><i class="bi {{ $ic[0] }}"></i></span>
+                                <div class="min-w-0 flex-grow-1">
+                                    <div class="fw-semibold">{{ $aviso->titulo }}</div>
+                                    <div class="small text-muted aviso-texto">{!! nl2br(e($aviso->mensaje)) !!}</div>
+                                </div>
+                                <button class="btn-close" title="Descartar" onclick="descartarAviso({{ $aviso->id }}, this)"></button>
+                            </div>
+                        @empty
+                            <div class="vacio py-4"><i class="bi bi-bell-slash"></i>No hay avisos por ahora.</div>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+
             <div class="dropdown">
                 <button class="usuario-menu" data-bs-toggle="dropdown" aria-expanded="false">
                     <span class="avatar">{{ $iniciales }}</span>
-                    <span class="d-none d-sm-block">
+                    <span class="d-none d-xl-block">
                         <span class="nombre d-block">{{ $usuarioActual->name }}</span>
                         <span class="rol d-block">{{ $usuarioActual->rolLabel() }}</span>
                     </span>
-                    <i class="bi bi-chevron-down small text-muted d-none d-sm-inline"></i>
+                    <i class="bi bi-chevron-down small text-muted d-none d-xl-inline"></i>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end">
-                    <li class="px-2 py-1 d-sm-none">
+                    <li class="px-2 py-1">
                         <div class="fw-semibold">{{ $usuarioActual->name }}</div>
-                        <div class="small text-muted">{{ $usuarioActual->rolLabel() }}</div>
+                        <div class="small text-muted">{{ $usuarioActual->rolLabel() }} · {{ $usuarioActual->email }}</div>
                     </li>
-                    <li class="d-sm-none"><hr class="dropdown-divider"></li>
+                    <li><hr class="dropdown-divider"></li>
                     <li>
                         <form action="{{ route('logout') }}" method="POST">
                             @csrf
@@ -509,6 +663,23 @@
     <main class="main-content">
         @yield('contenido')
     </main>
+</div>
+
+<!-- Notificaciones (toasts) -->
+<div class="toasts" id="maToasts" aria-live="polite"></div>
+
+<!-- Ventana para "Ver" (perfil de alumno, maestro, etc.) sin salir de la pantalla -->
+<div class="modal fade" id="modalVista" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable modal-fullscreen-md-down">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="btn-topbar me-1" id="vistaAtras" title="Atrás" hidden><i class="bi bi-arrow-left"></i></button>
+                <h5 class="modal-title text-truncate" id="vistaTitulo">Cargando…</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body" id="vistaCuerpo"></div>
+        </div>
+    </div>
 </div>
 
 <!-- ===================== MODAL VENTANA FLOTANTE DE AVISOS ===================== -->
@@ -543,11 +714,37 @@
     const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').content;
 
     // ---------- Helpers globales de UI (toasts, confirmaciones, fetch AJAX) ----------
-    const Toast = Swal.mixin({
-        toast: true, position: 'top-end', showConfirmButton: false, timer: 3200, timerProgressBar: true,
-    });
-
-    function maToast(icon, message) { Toast.fire({ icon, title: message }); }
+    // ---------- Notificaciones (toasts) ----------
+    // maToast('success' | 'error' | 'warning' | 'info', 'Mensaje', 'Titulo opcional')
+    const _TOAST_TIPOS = {
+        success: { icono: 'bi-check-circle-fill', titulo: 'Listo' },
+        error: { icono: 'bi-x-circle-fill', titulo: 'No se pudo completar' },
+        warning: { icono: 'bi-exclamation-triangle-fill', titulo: 'Atención' },
+        info: { icono: 'bi-info-circle-fill', titulo: 'Aviso' },
+    };
+    function maToast(tipo, mensaje, titulo = null) {
+        const t = _TOAST_TIPOS[tipo] || _TOAST_TIPOS.info;
+        const cont = document.getElementById('maToasts');
+        if (!cont) return;
+        const el = document.createElement('div');
+        el.className = `toast-ma toast-${tipo in _TOAST_TIPOS ? tipo : 'info'}`;
+        el.setAttribute('role', tipo === 'error' ? 'alert' : 'status');
+        el.innerHTML = `<i class="bi ${t.icono} toast-icono"></i>
+            <div class="toast-texto"><strong></strong><span></span></div>
+            <button type="button" class="toast-cerrar" aria-label="Cerrar"><i class="bi bi-x"></i></button>
+            <div class="toast-progreso"></div>`;
+        el.querySelector('strong').textContent = titulo || t.titulo;
+        el.querySelector('span').textContent = mensaje || '';
+        const duracion = tipo === 'error' ? 6000 : 3500;
+        el.querySelector('.toast-progreso').style.animationDuration = duracion + 'ms';
+        const cerrar = () => { el.classList.add('saliendo'); setTimeout(() => el.remove(), 200); };
+        el.querySelector('.toast-cerrar').addEventListener('click', cerrar);
+        let timer = setTimeout(cerrar, duracion);
+        el.addEventListener('mouseenter', () => { clearTimeout(timer); el.classList.add('pausado'); });
+        el.addEventListener('mouseleave', () => { el.classList.remove('pausado'); timer = setTimeout(cerrar, 1500); });
+        cont.appendChild(el);
+        while (cont.children.length > 4) cont.firstElementChild.remove();
+    }
 
     // Evita que un doble clic (o doble tap) dispare dos peticiones identicas
     // en simultaneo. Si ya hay una peticion en curso al mismo metodo+URL,
@@ -601,13 +798,13 @@
                     const msgs = Object.values(data.errors).flat().join('<br>');
                     Swal.fire({ icon: 'warning', title: 'Revisa el formulario', html: msgs });
                 } else {
-                    Swal.fire({ icon: 'error', title: 'No se pudo completar', text: data.message || 'Ocurrio un error inesperado.' });
+                    maToast('error', data.message || 'Ocurrió un error inesperado.');
                 }
                 return null;
             }
             return data;
         } catch (e) {
-            Swal.fire({ icon: 'error', title: 'Error de conexion', text: 'Revisa tu conexion e intenta de nuevo.' });
+            maToast('error', 'Revisa tu conexión a internet e intenta de nuevo.', 'Sin conexión');
             return null;
         }
     }
@@ -627,12 +824,119 @@
 
     async function descartarAviso(id, btn) {
         await maFetch(`/avisos/${id}/descartar`, { method: 'POST' });
-        btn.closest('.aviso-flotante').remove();
+        document.querySelectorAll(`[data-aviso-id="${id}"]`).forEach(el => el.remove());
+        const cont = document.getElementById('contadorAvisos');
+        const quedan = document.querySelectorAll('#listaAvisos .aviso-item').length;
+        if (cont) { quedan ? (cont.textContent = quedan) : cont.remove(); }
+        if (!quedan) document.getElementById('listaAvisos').innerHTML = '<div class="vacio py-4"><i class="bi bi-bell-slash"></i>No hay avisos por ahora.</div>';
     }
 
-    document.getElementById('btnAvisos')?.addEventListener('click', () => {
-        new bootstrap.Modal('#modalAvisos').show();
+    // ---------- Ventana "Ver": perfiles y detalles sin salir de la pantalla ----------
+    // Cualquier enlace a /alumnos/{id} o /maestros/{id} se abre en la ventana.
+    const _VISTA_RUTAS = /^\/(alumnos|maestros)\/\d+\/?$/;
+    let _vistaModal = null, _vistaHistorial = [];
+
+    function _esRutaVista(href) {
+        try {
+            const u = new URL(href, location.origin);
+            return u.origin === location.origin && _VISTA_RUTAS.test(u.pathname);
+        } catch (e) { return false; }
+    }
+
+    async function maAbrirVista(url, { agregarHistorial = true } = {}) {
+        _vistaModal = _vistaModal || new bootstrap.Modal('#modalVista');
+        const cuerpo = document.getElementById('vistaCuerpo');
+        const titulo = document.getElementById('vistaTitulo');
+        if (!document.getElementById('modalVista').classList.contains('show')) { _vistaHistorial = []; _vistaModal.show(); }
+        if (agregarHistorial) _vistaHistorial.push(url);
+        document.getElementById('vistaAtras').hidden = _vistaHistorial.length < 2;
+        cuerpo.innerHTML = '<div class="cargando"><span class="spinner-border spinner-border-sm"></span> Cargando…</div>';
+        try {
+            const res = await fetch(url, { headers: { 'X-Modal': '1', 'X-Requested-With': 'XMLHttpRequest' } });
+            if (!res.ok) throw new Error(res.status);
+            const html = await res.text();
+            const tmp = document.createElement('div');
+            tmp.innerHTML = html;
+            const frag = tmp.querySelector('.vista-fragmento');
+            titulo.textContent = frag?.dataset.titulo || '';
+            cuerpo.innerHTML = frag ? frag.innerHTML : html;
+            cuerpo.scrollTop = 0;
+        } catch (e) {
+            cuerpo.innerHTML = '<div class="vacio"><i class="bi bi-wifi-off"></i>No se pudo cargar. Intenta de nuevo.</div>';
+        }
+    }
+    function maCerrarVista() { _vistaModal?.hide(); }
+
+    document.addEventListener('click', (e) => {
+        const a = e.target.closest('a[href]');
+        if (!a || a.target === '_blank' || e.ctrlKey || e.metaKey || e.shiftKey || a.hasAttribute('data-sin-ventana')) return;
+        if (_esRutaVista(a.href)) { e.preventDefault(); maAbrirVista(a.href); }
     });
+    // Formularios GET dentro de la ventana (ej. cambiar el periodo en el perfil del maestro).
+    document.getElementById('vistaCuerpo').addEventListener('submit', (e) => {
+        const f = e.target;
+        if ((f.method || 'get').toLowerCase() !== 'get') return;
+        e.preventDefault();
+        const url = new URL(f.action || _vistaHistorial[_vistaHistorial.length - 1], location.origin);
+        url.search = new URLSearchParams(new FormData(f)).toString();
+        _vistaHistorial[_vistaHistorial.length - 1] = url.toString();
+        maAbrirVista(url.toString(), { agregarHistorial: false });
+    });
+    document.getElementById('vistaCuerpo').addEventListener('change', (e) => {
+        // Los <select onchange="this.form.submit()"> no disparan "submit": se reenvia a mano.
+        if (e.target.matches('select[onchange*="submit"]')) { e.stopImmediatePropagation(); e.target.form.requestSubmit(); }
+    }, true);
+    document.getElementById('vistaAtras').addEventListener('click', () => {
+        _vistaHistorial.pop();
+        maAbrirVista(_vistaHistorial[_vistaHistorial.length - 1], { agregarHistorial: false });
+        document.getElementById('vistaAtras').hidden = _vistaHistorial.length < 2;
+    });
+
+    // ---------- Buscador rapido (Ctrl + K) ----------
+    (function () {
+        const caja = document.getElementById('buscador');
+        const input = document.getElementById('buscadorInput');
+        const lista = document.getElementById('buscadorResultados');
+        if (!input) return;
+        let timer = null, activo = -1, controlador = null;
+
+        const items = () => [...lista.querySelectorAll('.resultado')];
+        const marcar = (i) => { items().forEach((el, j) => el.classList.toggle('activo', j === i)); activo = i; };
+        const cerrar = () => { lista.hidden = true; activo = -1; };
+        const esc = (t) => (t || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+        async function buscar() {
+            const q = input.value.trim();
+            if (q.length < 2) { cerrar(); return; }
+            controlador?.abort();
+            controlador = new AbortController();
+            try {
+                const r = await fetch(`{{ route('buscar') }}?q=${encodeURIComponent(q)}`, { headers: { 'Accept': 'application/json' }, signal: controlador.signal });
+                const d = await r.json();
+                const grupo = (titulo, arr, icono) => arr.length ? `<div class="resultado-grupo">${titulo}</div>` + arr.map(x =>
+                    `<a class="resultado" href="${x.url}"><span class="resultado-icono"><i class="bi ${icono}"></i></span><span class="min-w-0"><span class="d-block text-truncate">${esc(x.nombre)}</span><span class="d-block small text-muted text-truncate">${esc(x.detalle)}</span></span></a>`).join('') : '';
+                const html = grupo('Alumnos', d.alumnos, 'bi-person') + grupo('Maestros', d.maestros, 'bi-person-badge');
+                lista.innerHTML = html || `<div class="vacio py-3">Sin resultados para “${esc(q)}”.</div>`;
+                lista.hidden = false;
+                marcar(items().length ? 0 : -1);
+            } catch (e) {}
+        }
+        input.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(buscar, 200); });
+        input.addEventListener('focus', () => { if (lista.innerHTML && input.value.trim().length >= 2) lista.hidden = false; });
+        input.addEventListener('keydown', (e) => {
+            const n = items().length;
+            if (e.key === 'ArrowDown' && n) { e.preventDefault(); marcar((activo + 1) % n); }
+            else if (e.key === 'ArrowUp' && n) { e.preventDefault(); marcar((activo - 1 + n) % n); }
+            else if (e.key === 'Enter' && activo >= 0) { e.preventDefault(); items()[activo].click(); }
+            else if (e.key === 'Escape') { cerrar(); input.blur(); caja.classList.remove('abierto'); }
+        });
+        lista.addEventListener('click', (e) => { if (e.target.closest('.resultado')) { cerrar(); caja.classList.remove('abierto'); } });
+        document.addEventListener('click', (e) => { if (!caja.contains(e.target) && !e.target.closest('#btnBuscarMovil')) { cerrar(); caja.classList.remove('abierto'); } });
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); caja.classList.add('abierto'); input.focus(); input.select(); }
+        });
+        document.getElementById('btnBuscarMovil')?.addEventListener('click', () => { caja.classList.add('abierto'); input.focus(); });
+    })();
 
     // Menu en celular: se abre sobre el contenido con un fondo que lo cierra al tocarlo.
     function maMenuMovil(abrir) {
@@ -705,3 +1009,4 @@
 @stack('scripts')
 </body>
 </html>
+@endif

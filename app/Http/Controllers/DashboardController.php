@@ -24,15 +24,24 @@ class DashboardController extends Controller
             'clases_hoy_realizadas' => Clase::whereDate('fecha', $hoy)->where('estado', 'realizada')->count(),
         ];
 
-        // Asistencia del mes (sobre las clases ya marcadas) y cuantos alumnos
-        // tienen algo pendiente de pago: solo cantidades, sin montos (19.2).
-        $asistenciasMes = \App\Models\Asistencia::whereHas('clase', fn ($q) => $q->whereMonth('fecha', now()->month)->whereYear('fecha', now()->year))
-            ->selectRaw('estado, count(*) as total')->groupBy('estado')->pluck('total', 'estado');
+        // Todo lo del periodo con el que se trabaja (barra superior): alumnos
+        // inscritos, asistencia y pagos pendientes. Solo cantidades, sin
+        // montos (19.2: el inicio no muestra informacion financiera).
+        $periodoActual = Periodo::seleccionado();
+        [$mesP, $anioP] = Periodo::mesAnioSeleccionado();
+
+        if ($periodoActual) {
+            $kpis['alumnos_activos'] = AlumnoPeriodo::where('periodo_id', $periodoActual->id)->activos()->count();
+        }
+
+        $asistenciasMes = \App\Models\Asistencia::whereHas('clase', function ($q) use ($periodoActual, $mesP, $anioP) {
+            $periodoActual
+                ? $q->where('periodo_id', $periodoActual->id)
+                : $q->whereMonth('fecha', $mesP)->whereYear('fecha', $anioP);
+        })->selectRaw('estado, count(*) as total')->groupBy('estado')->pluck('total', 'estado');
         $marcadas = $asistenciasMes->sum();
         $kpis['asistencia_mes'] = $marcadas > 0 ? round((($asistenciasMes['asistio'] ?? 0) + ($asistenciasMes['tardanza'] ?? 0)) / $marcadas * 100) : null;
-        $kpis['alumnos_con_saldo'] = Alumno::activos()->whereHas('pagos', fn ($q) => $q->where('mes', now()->month)->where('anio', now()->year)->where('saldo', '>', 0))->count();
-        $periodoActual = Periodo::whereDate('fecha_inicio', '<=', $hoy)->whereDate('fecha_fin', '>=', $hoy)->first()
-            ?? Periodo::where('activo', true)->orderByDesc('anio')->orderByDesc('mes')->first();
+        $kpis['alumnos_con_saldo'] = Alumno::whereHas('pagos', fn ($q) => $q->where('mes', $mesP)->where('anio', $anioP)->where('saldo', '>', 0))->count();
 
         $clasesHoy = Clase::with(['alumno', 'maestro', 'especialidad'])
             ->whereDate('fecha', $hoy)
@@ -47,12 +56,12 @@ class DashboardController extends Controller
                 'cantidad' => AlumnoPeriodo::where('periodo_id', $p->id)->activos()->count(),
             ])->values();
 
-        $alumnosConSaldo = Alumno::activos()
-            ->whereHas('pagos', function ($q) {
-                $q->where('mes', now()->month)->where('anio', now()->year)->where('saldo', '>', 0);
+        $alumnosConSaldo = Alumno::query()
+            ->whereHas('pagos', function ($q) use ($mesP, $anioP) {
+                $q->where('mes', $mesP)->where('anio', $anioP)->where('saldo', '>', 0);
             })
-            ->with(['pagos' => function ($q) {
-                $q->where('mes', now()->month)->where('anio', now()->year);
+            ->with(['pagos' => function ($q) use ($mesP, $anioP) {
+                $q->where('mes', $mesP)->where('anio', $anioP);
             }])
             ->orderBy('nombre')
             ->limit(10)
@@ -92,5 +101,36 @@ class DashboardController extends Controller
         return view('dashboard', compact(
             'kpis', 'periodoActual', 'clasesHoy', 'alumnosPorMes', 'alumnosConSaldo', 'cumpleanieros', 'ultimasClasesCanceladas', 'alertaSunat'
         ));
+    }
+
+    /**
+     * Busqueda rapida de la barra superior: alumnos y maestros por nombre
+     * (sin importar mayusculas ni tildes). Devuelve JSON para el menu.
+     */
+    public function buscar(\Illuminate\Http\Request $request)
+    {
+        $palabras = preg_split('/\s+/', mb_strtolower(\Illuminate\Support\Str::ascii(trim((string) $request->get('q')))), -1, PREG_SPLIT_NO_EMPTY);
+        if (! $palabras) {
+            return response()->json(['alumnos' => [], 'maestros' => []]);
+        }
+
+        $col = fn (string $c) => \Illuminate\Support\Facades\DB::getDriverName() === 'pgsql'
+            ? "translate(lower($c), 'áéíóúüñàèìòù', 'aeiouunaeiou')" : "lower($c)";
+        $filtrar = function ($q) use ($palabras, $col) {
+            foreach ($palabras as $p) {
+                $q->whereRaw($col('nombre').' LIKE ?', ['%'.addcslashes($p, '%_\\').'%']);
+            }
+        };
+
+        $alumnos = Alumno::with('especialidad')->where($filtrar)->orderByDesc('activo')->orderBy('nombre')->limit(8)->get()
+            ->map(fn ($a) => [
+                'nombre' => $a->nombre,
+                'detalle' => trim(($a->especialidad->nombre ?? '').($a->activo ? '' : ' · Inactivo'), ' ·'),
+                'url' => route('alumnos.show', $a),
+            ]);
+        $maestros = Maestro::where($filtrar)->orderBy('nombre')->limit(4)->get()
+            ->map(fn ($m) => ['nombre' => $m->nombre, 'detalle' => 'Maestro', 'url' => route('maestros.show', $m)]);
+
+        return response()->json(['alumnos' => $alumnos, 'maestros' => $maestros]);
     }
 }

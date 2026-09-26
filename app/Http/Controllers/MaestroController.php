@@ -30,7 +30,7 @@ class MaestroController extends Controller
         $periodoId = $request->get('periodo_id');
         $periodo = $periodoId
             ? \App\Models\Periodo::find($periodoId)
-            : \App\Models\Periodo::where('activo', true)->orderByDesc('anio')->orderByDesc('mes')->first();
+            : \App\Models\Periodo::seleccionado();
 
         $horarios = collect();
         if ($periodo) {

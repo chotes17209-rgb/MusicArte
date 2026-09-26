@@ -16,7 +16,8 @@
             @if($alumno->dni)<span class="badge bg-light text-dark border">DNI {{ $alumno->dni }}</span>@endif
         </div>
     </div>
-    <button class="btn btn-morado" onclick="editarAlumnoDesdeShow({{ $alumno->id }})"><i class="bi bi-pencil me-1"></i> Editar</button>
+    {{-- En la ventana "Ver" (pantalla de Alumnos) abre el formulario ahi mismo; en pagina completa va a Alumnos. --}}
+    <button class="btn btn-morado" onclick="if (window.editarAlumno) { maCerrarVista(); editarAlumno({{ $alumno->id }}); } else { location.href = '{{ route('alumnos.index') }}?editar={{ $alumno->id }}'; }"><i class="bi bi-pencil me-1"></i> Editar</button>
 </div>
 
 <div class="row g-3">
@@ -128,11 +129,3 @@
     </div>
 </div>
 @endsection
-
-@push('scripts')
-<script>
-    function editarAlumnoDesdeShow(id) {
-        window.location.href = "{{ route('alumnos.index') }}?editar=" + id;
-    }
-</script>
-@endpush

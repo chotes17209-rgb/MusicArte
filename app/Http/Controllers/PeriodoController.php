@@ -21,6 +21,31 @@ class PeriodoController extends Controller
         return redirect()->route('alumnos.index', ['tab' => 'periodos']);
     }
 
+    /**
+     * Cambia el periodo con el que se trabaja en toda la app (selector de
+     * la barra superior). Vacio = volver al periodo en curso.
+     */
+    public function seleccionar(Request $request)
+    {
+        $request->validate(['periodo_id' => 'nullable|exists:periodos,id']);
+
+        if ($request->filled('periodo_id')) {
+            session(['periodo_id' => (int) $request->periodo_id]);
+        } else {
+            session()->forget('periodo_id');
+        }
+
+        // Al volver, se quitan los filtros de mes/periodo de la URL para que
+        // la pantalla tome el periodo recien elegido.
+        $anterior = url()->previous();
+        $partes = parse_url($anterior);
+        parse_str($partes['query'] ?? '', $query);
+        unset($query['periodo_id'], $query['mes'], $query['anio'], $query['page']);
+        $destino = ($partes['path'] ?? '/').($query ? '?'.http_build_query($query) : '');
+
+        return redirect($destino);
+    }
+
     public function store(Request $request)
     {
         $data = $this->validarDatos($request);

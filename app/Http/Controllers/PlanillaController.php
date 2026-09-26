@@ -15,8 +15,9 @@ class PlanillaController extends Controller
 {
     public function index(Request $request)
     {
-        $mes = $request->get('mes', now()->month);
-        $anio = $request->get('anio', now()->year);
+        [$mesPeriodo, $anioPeriodo] = \App\Models\Periodo::mesAnioSeleccionado();
+        $mes = $request->get('mes', $mesPeriodo);
+        $anio = $request->get('anio', $anioPeriodo);
 
         // Agrupado por maestro (como en el Excel: un bloque por maestro,
         // con sus alumnos debajo y el total al final de cada bloque).
