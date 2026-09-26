@@ -33,13 +33,10 @@ COPY . .
 
 # Dependencias Laravel
 # (composer.lock no incluye todavia phpoffice/phpspreadsheet -nueva
-# dependencia para el importador de pagos del Excel-, asi que se resuelve
-# aparte con "composer update" de ese paquete puntual en cada build)
-RUN composer install \
-    --no-dev \
-    --optimize-autoloader \
-    --no-interaction \
-    && composer update phpoffice/phpspreadsheet \
+# dependencia para el importador de pagos del Excel-, asi que se usa
+# "composer update" para que la resuelva de una: "composer install" solo
+# no sirve aqui porque Composer corta apenas ve que el lock no matchea)
+RUN composer update \
     --no-dev \
     --optimize-autoloader \
     --no-interaction
