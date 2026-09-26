@@ -8,10 +8,7 @@
         <small class="text-muted">{{ \App\Models\Pago::MESES[$mes] }} {{ $anio }}</small>
     </div>
     @auth @if(auth()->user()->esAdmin())
-    <div class="d-flex gap-2">
-        <a href="{{ route('pagos.importarExcel.form') }}" class="btn btn-outline-secondary"><i class="bi bi-file-earmark-excel me-1"></i> Importar Excel</a>
-        <button class="btn btn-morado" data-bs-toggle="modal" data-bs-target="#modalPago" onclick="nuevoPago()"><i class="bi bi-plus-lg me-1"></i> Registrar Pago</button>
-    </div>
+    <button class="btn btn-morado" data-bs-toggle="modal" data-bs-target="#modalPago" onclick="nuevoPago()"><i class="bi bi-plus-lg me-1"></i> Registrar Pago</button>
     @else
     <span class="badge bg-secondary"><i class="bi bi-lock-fill me-1"></i>Modo solo lectura (precios reservados al administrador)</span>
     @endif @endauth

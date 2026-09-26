@@ -10,7 +10,6 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EgresoController;
 use App\Http\Controllers\EspecialidadController;
 use App\Http\Controllers\HorarioController;
-use App\Http\Controllers\ImportarExcelController;
 use App\Http\Controllers\MaestroController;
 use App\Http\Controllers\PagoController;
 use App\Http\Controllers\PeriodoController;
@@ -129,12 +128,6 @@ Route::middleware('auth')->group(function () {
             Route::get('/planilla/{planilla}/edit', [PlanillaController::class, 'edit'])->name('planilla.edit');
             Route::put('/planilla/{planilla}', [PlanillaController::class, 'update'])->name('planilla.update');
             Route::delete('/planilla/{planilla}', [PlanillaController::class, 'destroy'])->name('planilla.destroy');
-
-            // Importar ADMINISTRACION_2026.xlsx desde el navegador (sin
-            // necesitar el Shell de Render, que requiere plan pago).
-            Route::get('/pagos/importar-excel', [ImportarExcelController::class, 'form'])->name('pagos.importarExcel.form');
-            Route::post('/pagos/importar-excel', [ImportarExcelController::class, 'subir'])->name('pagos.importarExcel.subir');
-            Route::post('/pagos/importar-excel/confirmar', [ImportarExcelController::class, 'confirmar'])->name('pagos.importarExcel.confirmar');
         });
     });
 
