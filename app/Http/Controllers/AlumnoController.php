@@ -31,7 +31,12 @@ class AlumnoController extends Controller
             ]);
         }
 
-        return view('alumnos.index', compact('alumnos', 'especialidades', 'maestros', 'periodos'));
+        // Seccion "Periodos" (movida aqui dentro de Alumnos): a diferencia
+        // de $periodos (solo activos, para los selects de taller), esta
+        // lista trae TODOS los periodos, activos e inactivos, para el CRUD.
+        $todosPeriodos = Periodo::orderByDesc('anio')->orderByDesc('mes')->get();
+
+        return view('alumnos.index', compact('alumnos', 'especialidades', 'maestros', 'periodos', 'todosPeriodos'));
     }
 
     /**

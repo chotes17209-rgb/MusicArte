@@ -11,11 +11,14 @@ use Illuminate\Validation\Rule;
 
 class PeriodoController extends Controller
 {
+    /**
+     * Periodos ya no tiene pantalla propia (seccion movida dentro de
+     * Alumnos, pestana "Periodos"). Esta ruta se conserva solo por
+     * compatibilidad con enlaces/favoritos antiguos y redirige alla.
+     */
     public function index()
     {
-        $periodos = Periodo::orderByDesc('anio')->orderByDesc('mes')->get();
-
-        return view('periodos.index', compact('periodos'));
+        return redirect()->route('alumnos.index', ['tab' => 'periodos']);
     }
 
     public function store(Request $request)

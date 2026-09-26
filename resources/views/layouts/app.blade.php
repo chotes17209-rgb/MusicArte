@@ -140,10 +140,9 @@
         <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}"><i class="bi bi-speedometer2"></i> <span class="nav-text">Dashboard</span></a>
 
         <div class="nav-section">Academico</div>
-        <a class="nav-link {{ request()->routeIs('alumnos.*') ? 'active' : '' }}" href="{{ route('alumnos.index') }}"><i class="bi bi-people"></i> <span class="nav-text">Alumnos</span></a>
+        <a class="nav-link {{ request()->routeIs('alumnos.*') || request()->routeIs('periodos.*') ? 'active' : '' }}" href="{{ route('alumnos.index') }}"><i class="bi bi-people"></i> <span class="nav-text">Alumnos</span></a>
         <a class="nav-link {{ request()->routeIs('maestros.*') ? 'active' : '' }}" href="{{ route('maestros.index') }}"><i class="bi bi-person-badge"></i> <span class="nav-text">Maestros</span></a>
         <a class="nav-link {{ request()->routeIs('especialidades.*') ? 'active' : '' }}" href="{{ route('especialidades.index') }}"><i class="bi bi-music-note-list"></i> <span class="nav-text">Especialidades</span></a>
-        <a class="nav-link {{ request()->routeIs('periodos.*') ? 'active' : '' }}" href="{{ route('periodos.index') }}"><i class="bi bi-calendar-range"></i> <span class="nav-text">Periodos</span></a>
 
         <div class="nav-section">Clases</div>
         <a class="nav-link {{ request()->routeIs('calendario.*') ? 'active' : '' }}" href="{{ route('calendario.index') }}"><i class="bi bi-calendar3"></i> <span class="nav-text">Calendario</span></a>
