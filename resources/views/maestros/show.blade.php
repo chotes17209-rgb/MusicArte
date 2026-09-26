@@ -5,7 +5,7 @@
 <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
     <div>
         <a href="{{ route('maestros.index') }}" class="btn btn-sm btn-volver"><i class="bi bi-arrow-left me-1"></i> Volver a Maestros</a>
-        <h4 class="fw-bold mb-0 mt-1" style="color:#3d2c8d">{{ $maestro->nombre }}</h4>
+        <h4 class="fw-bold mb-0 mt-1">{{ $maestro->nombre }}</h4>
         <div class="d-flex gap-2 mt-1 flex-wrap">
             @if($maestro->activo)<span class="badge bg-success">Activo</span>@else<span class="badge bg-secondary">Inactivo</span>@endif
             @foreach($maestro->especialidades as $e)
@@ -25,7 +25,7 @@
 <div class="row g-3">
     <div class="col-lg-4">
         <div class="card p-3">
-            <h6 class="fw-semibold mb-3"><i class="bi bi-person-badge me-1"></i> Datos de contacto</h6>
+            <h6 class="fw-semibold mb-3">Datos de contacto</h6>
             <dl class="row small mb-0">
                 <dt class="col-5 text-muted">Teléfono</dt><dd class="col-7">{{ $maestro->telefono ?? '—' }}</dd>
                 <dt class="col-5 text-muted">Email</dt><dd class="col-7">{{ $maestro->email ?? '—' }}</dd>

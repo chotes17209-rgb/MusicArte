@@ -31,7 +31,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="6" class="text-center text-muted py-4">Aun no hay avisos publicados.</td></tr>
+                <tr><td colspan="6" class="text-center text-muted py-4">Aún no hay avisos publicados.</td></tr>
             @endforelse
             </tbody>
         </table>
@@ -42,9 +42,9 @@
 <div class="modal fade" id="modalAviso" tabindex="-1">
     <div class="modal-dialog">
         <form class="modal-content" id="formAviso">
-            <div class="modal-header" style="background:#3d2c8d;color:#fff">
+            <div class="modal-header">
                 <h5 class="modal-title" id="tituloModalAviso">Nuevo Aviso</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="aviso_id">

@@ -77,7 +77,7 @@
         </div>
         <div class="col-md-1 d-grid">
             <button type="button" class="btn btn-light" onclick="limpiarFiltrosAlumnos()" title="Limpiar filtros">
-                <i class="bi bi-x-lg"></i>
+                <i class="bi bi-x-lg me-1"></i> Limpiar
             </button>
         </div>
         <div class="col-12 d-flex justify-content-end">
@@ -97,9 +97,9 @@
 <div class="modal fade" id="modalAlumno" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <form class="modal-content" id="formAlumno">
-            <div class="modal-header" style="background:#3d2c8d;color:#fff">
+            <div class="modal-header">
                 <h5 class="modal-title" id="tituloModalAlumno">Nuevo Alumno</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="alumno_id">
@@ -112,7 +112,7 @@
                         <label class="form-label small fw-semibold">Edad</label>
                         <input type="text" class="form-control" id="alumno_edad" readonly tabindex="-1"
                                placeholder="Se calcula sola">
-                        <small class="text-muted">Se calcula automaticamente desde la fecha de nacimiento.</small>
+                        <small class="text-muted">Se calcula automáticamente desde la fecha de nacimiento.</small>
                     </div>
                 </div>
                 <div class="row">
@@ -148,7 +148,7 @@
                     </div>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label small fw-semibold">Diagnostico / condicion especial (opcional)</label>
+                    <label class="form-label small fw-semibold">Diagnóstico / condicion especial (opcional)</label>
                     <textarea class="form-control" id="alumno_diagnostico" rows="2"></textarea>
                 </div>
                 <div class="mb-3">
@@ -203,14 +203,14 @@
                         </div>
                     </div>
                     <div class="mb-1">
-                        <label class="form-label small fw-semibold">Dias y horario de clase</label>
+                        <label class="form-label small fw-semibold">Días y horario de clase</label>
                         <div class="table-responsive">
                             <table class="table table-sm align-middle mb-0">
                                 <thead>
-                                    <tr><th style="width:36px"></th><th>Dia</th><th>Hora inicio</th><th>Hora fin</th></tr>
+                                    <tr><th style="width:36px"></th><th>Día</th><th>Hora inicio</th><th>Hora fin</th></tr>
                                 </thead>
                                 <tbody>
-                                    @foreach(['1'=>'Lunes','2'=>'Martes','3'=>'Miercoles','4'=>'Jueves','5'=>'Viernes','6'=>'Sabado','7'=>'Domingo'] as $num => $label)
+                                    @foreach(['1'=>'Lunes','2'=>'Martes','3'=>'Miércoles','4'=>'Jueves','5'=>'Viernes','6'=>'Sábado','7'=>'Domingo'] as $num => $label)
                                     <tr>
                                         <td>
                                             <input class="form-check-input" type="checkbox" value="{{ $num }}"
@@ -224,7 +224,7 @@
                                 </tbody>
                             </table>
                         </div>
-                        <small class="text-muted">Cada dia puede tener una hora distinta. El salon se asigna desde el modulo de Horarios.</small>
+                        <small class="text-muted">Cada día puede tener una hora distinta. El salón se asigna desde el módulo de Horarios.</small>
                     </div>
                 </div>
 
@@ -282,7 +282,7 @@
                                 <small class="text-muted" id="taller_periodo_duracion"></small>
                             </div>
                             <div class="col-md-4 mb-2">
-                                <label class="form-label small fw-semibold">Salon</label>
+                                <label class="form-label small fw-semibold">Salón</label>
                                 <input type="text" class="form-control form-control-sm" id="taller_salon">
                             </div>
                             <div class="col-md-3 mb-2">
@@ -294,14 +294,14 @@
                             </div>
                         </div>
                         <div class="mb-2">
-                            <label class="form-label small fw-semibold">Dias y horario de este taller</label>
+                            <label class="form-label small fw-semibold">Días y horario de este taller</label>
                             <div class="table-responsive">
                                 <table class="table table-sm align-middle mb-0">
                                     <thead>
-                                        <tr><th style="width:36px"></th><th>Dia</th><th>Hora inicio</th><th>Hora fin</th></tr>
+                                        <tr><th style="width:36px"></th><th>Día</th><th>Hora inicio</th><th>Hora fin</th></tr>
                                     </thead>
                                     <tbody>
-                                        @foreach(['1'=>'Lunes','2'=>'Martes','3'=>'Miercoles','4'=>'Jueves','5'=>'Viernes','6'=>'Sabado','7'=>'Domingo'] as $num => $label)
+                                        @foreach(['1'=>'Lunes','2'=>'Martes','3'=>'Miércoles','4'=>'Jueves','5'=>'Viernes','6'=>'Sábado','7'=>'Domingo'] as $num => $label)
                                         <tr>
                                             <td>
                                                 <input class="form-check-input" type="checkbox" value="{{ $num }}"
@@ -315,7 +315,7 @@
                                     </tbody>
                                 </table>
                             </div>
-                            <small class="text-muted">Deja los dias sin marcar si no quieres (re)programar el calendario de este taller ahora.</small>
+                            <small class="text-muted">Deja los días sin marcar si no quieres (re)programar el calendario de este taller ahora.</small>
                         </div>
                         <div class="text-end">
                             <button type="button" class="btn btn-sm btn-light" onclick="mostrarListaTalleres()">Cancelar</button>
@@ -363,7 +363,7 @@
 <div class="card p-3">
     <div class="table-responsive">
         <table class="table align-middle">
-            <thead><tr><th>Periodo</th><th>Fechas</th><th>Duracion</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead>
+            <thead><tr><th>Periodo</th><th>Fechas</th><th>Duración</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead>
             <tbody>
             @forelse($todosPeriodos as $p)
                 @php($enCurso = now()->startOfDay()->between($p->fecha_inicio, $p->fecha_fin))
@@ -389,7 +389,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="5" class="text-center text-muted py-4">Aun no hay periodos creados.</td></tr>
+                <tr><td colspan="5" class="text-center text-muted py-4">Aún no hay periodos creados.</td></tr>
             @endforelse
             </tbody>
         </table>
@@ -399,9 +399,9 @@
 <div class="modal fade" id="modalPeriodo" tabindex="-1">
     <div class="modal-dialog">
         <form class="modal-content" id="formPeriodo">
-            <div class="modal-header" style="background:#3d2c8d;color:#fff">
+            <div class="modal-header">
                 <h5 class="modal-title" id="tituloModalPeriodo">Nuevo Periodo</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="periodo_id">
@@ -416,7 +416,7 @@
                         </select>
                     </div>
                     <div class="col-md-6 mb-3">
-                        <label class="form-label small fw-semibold">Ano</label>
+                        <label class="form-label small fw-semibold">Año</label>
                         <input type="number" class="form-control" id="periodo_anio" value="{{ date('Y') }}" required>
                     </div>
                 </div>
@@ -431,13 +431,13 @@
                     </div>
                 </div>
                 <button type="button" class="btn btn-sm btn-light mb-3" onclick="calcularRangoAutomatico()">
-                    <i class="bi bi-magic me-1"></i> Calcular 4 semanas automaticamente
+                    <i class="bi bi-magic me-1"></i> Calcular 4 semanas automáticamente
                 </button>
                 <div class="form-check form-switch">
                     <input class="form-check-input" type="checkbox" id="periodo_activo" checked>
                     <label class="form-check-label small">Periodo activo</label>
                 </div>
-                <div class="alert alert-secondary small mt-3 mb-0">Si dejas las fechas vacias, se calculan automaticamente 4 semanas desde el dia 1 del mes.</div>
+                <div class="alert alert-secondary small mt-3 mb-0">Si dejas las fechas vacías, se calculan automáticamente 4 semanas desde el día 1 del mes.</div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
@@ -453,9 +453,9 @@
 <div class="modal fade" id="modalPaseAlumnos" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header" style="background:#3d2c8d;color:#fff">
+            <div class="modal-header">
                 <h5 class="modal-title">Pasar alumnos al siguiente periodo</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="row mb-3">
@@ -589,7 +589,7 @@
         const cont = document.getElementById('listaTalleresAlumno');
 
         if (!talleresAlumnoActual.length) {
-            cont.innerHTML = '<div class="text-muted small">Este alumno todavia no tiene talleres. Usa "Agregar taller".</div>';
+            cont.innerHTML = '<div class="text-muted small">Este alumno todavía no tiene talleres. Usa "Agregar taller".</div>';
             return;
         }
 

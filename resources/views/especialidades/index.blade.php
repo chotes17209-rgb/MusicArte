@@ -39,7 +39,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="7" class="text-center text-muted py-4">Aun no hay especialidades registradas.</td></tr>
+                <tr><td colspan="7" class="text-center text-muted py-4">Aún no hay especialidades registradas.</td></tr>
             @endforelse
             </tbody>
         </table>
@@ -50,9 +50,9 @@
 <div class="modal fade" id="modalEspecialidad" tabindex="-1">
     <div class="modal-dialog">
         <form class="modal-content" id="formEspecialidad">
-            <div class="modal-header" style="background:#3d2c8d;color:#fff">
+            <div class="modal-header">
                 <h5 class="modal-title" id="tituloModalEspecialidad">Nueva Especialidad</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="especialidad_id">

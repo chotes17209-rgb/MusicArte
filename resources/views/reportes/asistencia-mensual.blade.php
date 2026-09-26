@@ -6,7 +6,7 @@
     <div>
         <a href="{{ route('reportes.index') }}" class="btn btn-sm btn-volver"><i class="bi bi-arrow-left me-1"></i> Volver a Reportes</a>
         <h5 class="fw-semibold mb-0 mt-1">Asistencia Mensual</h5>
-        <small class="text-muted">Reporte de asistencia por maestro (seccion 17)</small>
+        <small class="text-muted">Asistencia de cada alumno, por maestro.</small>
     </div>
     <div class="d-flex gap-2">
         <form class="d-flex gap-2" method="GET">
@@ -41,7 +41,7 @@
                     <td>
                         <div class="d-flex align-items-center gap-2">
                             <div class="progress flex-grow-1" style="height:6px;max-width:100px">
-                                <div class="progress-bar" style="width:{{ $d['porcentaje'] }}%;background:#3d2c8d"></div>
+                                <div class="progress-bar" style="width:{{ $d['porcentaje'] }}%;background:var(--acento)"></div>
                             </div>
                             <span class="small">{{ $d['porcentaje'] }}%</span>
                         </div>

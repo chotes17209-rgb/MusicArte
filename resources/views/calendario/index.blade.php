@@ -7,19 +7,17 @@
     /* Seccion 5: calendario mas moderno y ordenado. Semana de Lunes a
        Domingo (firstDay:1 en la config de FullCalendar mas abajo), asi
        el Domingo siempre cae correctamente al lado derecho. */
-    #calendar { background: #fff; border-radius: 16px; padding: 1.25rem; border: 1px solid #edeef5; box-shadow: 0 2px 10px rgba(61,44,141,.04); }
-    .fc { font-family: inherit; }
-    .fc-event { cursor: pointer; border: none !important; padding: 3px 6px; border-radius: 6px !important; font-size: .8rem; font-weight: 500; }
-    .fc-toolbar-title { font-size: 1.15rem !important; font-weight: 700; color: #3d2c8d; }
-    .fc-button-primary { background: #3d2c8d !important; border-color: #3d2c8d !important; border-radius: 8px !important; text-transform: capitalize; }
-    .fc-button-primary:hover { background: #2a1e63 !important; }
-    .fc-button-active { background: #2a1e63 !important; }
-    .fc-col-header-cell { background: #f7f6fc; text-transform: uppercase; font-size: .72rem; letter-spacing: .04em; color: #3d2c8d; padding: 8px 0; }
-    .fc-day-sun .fc-col-header-cell-cushion, .fc-day-sun.fc-daygrid-day-number { color: #a3288c; }
-    .fc-daygrid-day.fc-day-today, .fc-timegrid-col.fc-day-today { background: #f1eefb !important; }
-    .fc-scrollgrid { border-radius: 10px; overflow: hidden; }
-    .fc-timegrid-slot-label, .fc-timegrid-axis-cushion { font-size: .75rem; color: #777; }
-    #filtroMaestro, #filtroAlumno { border-radius: 8px; }
+    #calendar { background: var(--superficie); border-radius: var(--radio); padding: 1rem; border: 1px solid var(--borde); }
+    .fc { font-family: inherit; font-size: .8125rem; --fc-border-color: #efeeea; --fc-today-bg-color: var(--acento-suave); --fc-neutral-bg-color: var(--superficie-2); }
+    .fc-event { cursor: pointer; border: none !important; padding: 2px 5px; border-radius: 4px !important; font-size: .75rem; font-weight: 500; }
+    .fc-toolbar-title { font-size: 1rem !important; font-weight: 600; color: var(--texto); text-transform: capitalize; }
+    .fc .fc-button-primary { background: var(--superficie) !important; border: 1px solid var(--borde-fuerte) !important; color: var(--texto) !important; border-radius: var(--radio-sm) !important; text-transform: capitalize; font-size: .8125rem; font-weight: 500; box-shadow: none !important; padding: .35rem .7rem; }
+    .fc .fc-button-primary:hover { background: var(--superficie-2) !important; }
+    .fc .fc-button-primary.fc-button-active, .fc .fc-button-primary:not(:disabled):active { background: var(--texto) !important; border-color: var(--texto) !important; color: #fff !important; }
+    .fc-col-header-cell { background: var(--superficie-2); font-size: .75rem; font-weight: 500; color: var(--texto-3); padding: 6px 0; }
+    .fc-col-header-cell-cushion, .fc-daygrid-day-number { color: var(--texto-2); }
+    .fc-scrollgrid { border-radius: var(--radio-sm); overflow: hidden; }
+    .fc-timegrid-slot-label, .fc-timegrid-axis-cushion { font-size: .72rem; color: var(--texto-3); }
 </style>
 @endpush
 
@@ -48,9 +46,9 @@
 <div class="modal fade" id="modalClase" tabindex="-1">
     <div class="modal-dialog">
         <form class="modal-content" id="formClase">
-            <div class="modal-header" style="background:#3d2c8d;color:#fff">
+            <div class="modal-header">
                 <h5 class="modal-title" id="tituloModalClase">Programar Clase</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="clase_id">
@@ -84,7 +82,7 @@
                 </div>
                 <div class="row">
                     <div class="col-6 mb-3">
-                        <label class="form-label small fw-semibold">Salon</label>
+                        <label class="form-label small fw-semibold">Salón</label>
                         <input type="text" class="form-control" id="clase_salon">
                     </div>
                     <div class="col-6 mb-3">

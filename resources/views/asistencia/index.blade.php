@@ -5,7 +5,7 @@
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <div>
         <h5 class="fw-semibold mb-0">Control de Asistencia</h5>
-        <small class="text-muted">Marca la asistencia de cada clase del dia</small>
+        <small class="text-muted">Marca la asistencia de cada clase del día</small>
     </div>
     <form method="GET" class="d-flex gap-2">
         <select name="maestro_id" class="form-select" onchange="this.form.submit()" title="Filtrar por maestro">
@@ -21,7 +21,7 @@
 <div class="card p-3 mb-3">
     <div class="table-responsive">
         <table class="table align-middle">
-            <thead><tr><th>Hora</th><th>Alumno</th><th>Maestro</th><th>Especialidad</th><th>Asistencia</th><th class="text-end">Accion</th></tr></thead>
+            <thead><tr><th>Hora</th><th>Alumno</th><th>Maestro</th><th>Especialidad</th><th>Asistencia</th><th class="text-end">Acción</th></tr></thead>
             <tbody>
             @forelse($clases as $c)
                 <tr>
@@ -53,7 +53,7 @@
 </div>
 
 <div class="card p-3">
-    <h6 class="fw-semibold mb-3"><i class="bi bi-graph-up me-1"></i> Resumen de asistencia por alumno</h6>
+    <h6 class="fw-semibold mb-3">Resumen de asistencia por alumno</h6>
     <form method="GET" class="row g-2 mb-3">
         <input type="hidden" name="fecha" value="{{ $fecha }}">
         <input type="hidden" name="maestro_id" value="{{ request('maestro_id') }}">
@@ -71,11 +71,11 @@
         <div class="row g-3 mb-3">
             <div class="col-md-4"><div class="card-kpi card p-3 text-center"><div class="text-muted small">Total clases</div><div class="fs-4 fw-bold">{{ $resumenAlumno['total'] }}</div></div></div>
             <div class="col-md-4"><div class="card-kpi card p-3 text-center"><div class="text-muted small">Asistio</div><div class="fs-4 fw-bold text-success">{{ $resumenAlumno['asistio'] }}</div></div></div>
-            <div class="col-md-4"><div class="card-kpi card p-3 text-center"><div class="text-muted small">% Asistencia</div><div class="fs-4 fw-bold" style="color:#3d2c8d">{{ $resumenAlumno['porcentaje'] }}%</div></div></div>
+            <div class="col-md-4"><div class="card-kpi card p-3 text-center"><div class="text-muted small">% Asistencia</div><div class="fs-4 fw-bold">{{ $resumenAlumno['porcentaje'] }}%</div></div></div>
         </div>
         <div class="table-responsive">
             <table class="table table-sm">
-                <thead><tr><th>Fecha</th><th>Estado</th><th>Observacion</th></tr></thead>
+                <thead><tr><th>Fecha</th><th>Estado</th><th>Observación</th></tr></thead>
                 <tbody>
                 @foreach($resumenAlumno['detalle'] as $d)
                     <tr>
@@ -94,9 +94,9 @@
 <div class="modal fade" id="modalAsistencia" tabindex="-1">
     <div class="modal-dialog">
         <form class="modal-content" id="formAsistencia">
-            <div class="modal-header" style="background:#3d2c8d;color:#fff">
+            <div class="modal-header">
                 <h5 class="modal-title" id="tituloModalAsistencia">Marcar Asistencia</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="asistencia_clase_id">
@@ -110,7 +110,7 @@
                     </select>
                 </div>
                 <div class="mb-1">
-                    <label class="form-label small fw-semibold">Observacion (opcional)</label>
+                    <label class="form-label small fw-semibold">Observación (opcional)</label>
                     <textarea class="form-control" id="asistencia_observacion" rows="2"></textarea>
                 </div>
             </div>

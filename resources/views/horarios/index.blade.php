@@ -58,9 +58,9 @@
 <div class="modal fade" id="modalHorario" tabindex="-1">
     <div class="modal-dialog">
         <form class="modal-content" id="formHorario">
-            <div class="modal-header" style="background:#3d2c8d;color:#fff">
+            <div class="modal-header">
                 <h5 class="modal-title" id="tituloModalHorario">Nuevo Horario</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="horario_id">
@@ -100,7 +100,7 @@
                             <option value="{{ $p->id }}" @selected($periodoId == $p->id)>{{ $p->nombre }}</option>
                         @endforeach
                     </select>
-                    <small class="text-muted">Cada mes es un periodo distinto: asi se conserva el historial de con que maestro estuvo cada alumno.</small>
+                    <small class="text-muted">Cada mes es un periodo distinto: así se conserva el historial de con que maestro estuvo cada alumno.</small>
                 </div>
                 <div class="mb-3">
                     <label class="form-label small fw-semibold">Día de la semana</label>
@@ -140,9 +140,9 @@
 <div class="modal fade" id="modalGenerar" tabindex="-1">
     <div class="modal-dialog">
         <form class="modal-content" id="formGenerar">
-            <div class="modal-header" style="background:#3d2c8d;color:#fff">
+            <div class="modal-header">
                 <h5 class="modal-title">Generar clases en el calendario</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <p class="small text-muted">Se crearán las clases del calendario a partir de todos los horarios activos, en el rango de fechas indicado.</p>

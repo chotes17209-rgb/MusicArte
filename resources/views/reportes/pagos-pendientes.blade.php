@@ -6,7 +6,7 @@
     <div>
         <a href="{{ route('reportes.index') }}" class="btn btn-sm btn-volver"><i class="bi bi-arrow-left me-1"></i> Volver a Reportes</a>
         <h5 class="fw-semibold mb-0 mt-1">Alumnos con pagos pendientes o parciales</h5>
-        <small class="text-muted">Seccion 14: filtra por periodo, maestro, taller y estado de pago</small>
+        <small class="text-muted">Filtra por periodo, maestro, taller y estado de pago.</small>
     </div>
     <button class="btn btn-outline-secondary btn-sm" onclick="window.print()"><i class="bi bi-printer me-1"></i> Imprimir</button>
 </div>

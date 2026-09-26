@@ -27,7 +27,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="5" class="text-center text-muted py-4">Aun no hay recitales o eventos registrados.</td></tr>
+                <tr><td colspan="5" class="text-center text-muted py-4">Aún no hay recitales o eventos registrados.</td></tr>
             @endforelse
             </tbody>
         </table>
@@ -37,9 +37,9 @@
 <div class="modal fade" id="modalRecital" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <form class="modal-content" id="formRecital">
-            <div class="modal-header" style="background:#3d2c8d;color:#fff">
+            <div class="modal-header">
                 <h5 class="modal-title" id="tituloModalRecital">Nuevo Recital/Evento</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="recital_id">
@@ -51,7 +51,7 @@
                     <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">Tema</label><input type="text" class="form-control" id="recital_tema"></div>
                     <div class="col-md-6 mb-3"><label class="form-label small fw-semibold">Pago por alumno (S/)</label><input type="number" step="0.01" min="0" class="form-control" id="recital_pago"></div>
                 </div>
-                <div class="mb-3"><label class="form-label small fw-semibold">Descripcion</label><textarea class="form-control" id="recital_descripcion" rows="2"></textarea></div>
+                <div class="mb-3"><label class="form-label small fw-semibold">Descripción</label><textarea class="form-control" id="recital_descripcion" rows="2"></textarea></div>
                 <div class="mb-1"><label class="form-label small fw-semibold">Participantes</label><textarea class="form-control" id="recital_participantes" rows="2" placeholder="Nombres de los alumnos participantes"></textarea></div>
             </div>
             <div class="modal-footer">

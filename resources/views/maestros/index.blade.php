@@ -19,7 +19,7 @@
 <div class="card p-3">
     <div class="table-responsive">
         <table class="table align-middle">
-            <thead><tr><th>Nombre</th><th>Especialidades</th><th>Telefono</th><th>Email</th><th>Alumnos</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead>
+            <thead><tr><th>Nombre</th><th>Especialidades</th><th>Teléfono</th><th>Email</th><th>Alumnos</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead>
             <tbody>
             @forelse($maestros as $m)
                 <tr>
@@ -42,7 +42,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="7" class="text-center text-muted py-4">Aun no hay maestros registrados.</td></tr>
+                <tr><td colspan="7" class="text-center text-muted py-4">Aún no hay maestros registrados.</td></tr>
             @endforelse
             </tbody>
         </table>
@@ -52,9 +52,9 @@
 <div class="modal fade" id="modalMaestro" tabindex="-1">
     <div class="modal-dialog">
         <form class="modal-content" id="formMaestro">
-            <div class="modal-header" style="background:#3d2c8d;color:#fff">
+            <div class="modal-header">
                 <h5 class="modal-title" id="tituloModalMaestro">Nuevo Maestro</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="maestro_id">
@@ -79,11 +79,11 @@
                             </div>
                         @endforeach
                     </div>
-                    <small class="text-muted">Marca las especialidades y define cuanto se le paga por hora en cada una (puede variar, ej. Piano S/10, Bateria S/15).</small>
+                    <small class="text-muted">Marca las especialidades y define cuanto se le paga por hora en cada una (puede variar, ej. Piano S/10, Batería S/15).</small>
                 </div>
                 <div class="row">
                     <div class="col-6 mb-3">
-                        <label class="form-label small fw-semibold">Telefono</label>
+                        <label class="form-label small fw-semibold">Teléfono</label>
                         <input type="text" class="form-control" id="maestro_telefono">
                     </div>
                     <div class="col-6 mb-3">

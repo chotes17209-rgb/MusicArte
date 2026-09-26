@@ -5,7 +5,7 @@
 <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
     <div>
         <a href="{{ route('alumnos.index') }}" class="btn btn-sm btn-volver"><i class="bi bi-arrow-left me-1"></i> Volver a Alumnos</a>
-        <h4 class="fw-bold mb-0 mt-1" style="color:#3d2c8d">{{ $alumno->nombre }}</h4>
+        <h4 class="fw-bold mb-0 mt-1">{{ $alumno->nombre }}</h4>
         <div class="d-flex gap-2 mt-1 flex-wrap">
             @if($alumno->activo)
                 <span class="badge bg-success">Activo</span>
@@ -22,14 +22,14 @@
 <div class="row g-3">
     <div class="col-lg-4">
         <div class="card p-3 mb-3">
-            <h6 class="fw-semibold mb-3"><i class="bi bi-person-vcard me-1"></i> Datos del alumno</h6>
+            <h6 class="fw-semibold mb-3">Datos del alumno</h6>
             <dl class="row small mb-0">
                 <dt class="col-5 text-muted">Tutor</dt><dd class="col-7">{{ $alumno->tutor ?? '—' }}</dd>
                 <dt class="col-5 text-muted">Celular</dt><dd class="col-7">{{ $alumno->celular ?? '—' }}</dd>
                 <dt class="col-5 text-muted">Fecha nacimiento</dt><dd class="col-7">{{ optional($alumno->fecha_nacimiento)->format('d/m/Y') ?? '—' }}</dd>
                 <dt class="col-5 text-muted">Fecha ingreso</dt><dd class="col-7">{{ optional($alumno->fecha_ingreso)->format('d/m/Y') ?? '—' }}</dd>
-                @if($alumno->diagnostico)
-                <dt class="col-5 text-muted">Diagnostico</dt><dd class="col-7">{{ $alumno->diagnostico }}</dd>
+                @if($alumno->diagnóstico)
+                <dt class="col-5 text-muted">Diagnóstico</dt><dd class="col-7">{{ $alumno->diagnostico }}</dd>
                 @endif
                 @if($alumno->observaciones)
                 <dt class="col-5 text-muted">Observaciones</dt><dd class="col-7">{{ $alumno->observaciones }}</dd>
@@ -38,14 +38,14 @@
         </div>
 
         <div class="card p-3">
-            <h6 class="fw-semibold mb-3"><i class="bi bi-music-note-list me-1"></i> Talleres activos ahora</h6>
+            <h6 class="fw-semibold mb-3">Talleres activos ahora</h6>
             @forelse($tallerActual as $t)
                 <div class="border rounded p-2 mb-2">
                     <div class="fw-semibold">{{ $t->especialidad->nombre ?? '—' }}</div>
                     <div class="small text-muted">
                         <i class="bi bi-person-badge"></i> {{ $t->maestro->nombre ?? 'Sin maestro asignado' }}
                         @if($t->periodo)<br><i class="bi bi-calendar3"></i> {{ $t->periodo->nombre }}@endif
-                        @if($t->salon)<br><i class="bi bi-door-open"></i> Salón {{ $t->salon }}@endif
+                        @if($t->salón)<br><i class="bi bi-door-open"></i> Salón {{ $t->salon }}@endif
                     </div>
                 </div>
             @empty
@@ -56,7 +56,7 @@
 
     <div class="col-lg-8">
         <div class="card p-3 mb-3">
-            <h6 class="fw-semibold mb-1"><i class="bi bi-clock-history me-1"></i> Línea de tiempo por periodo</h6>
+            <h6 class="fw-semibold mb-1">Línea de tiempo por periodo</h6>
             <small class="text-muted d-block mb-3">Con qué maestro, taller y horario estuvo cada mes — util para reincorporarlo con el mismo maestro.</small>
 
             @forelse($lineaDeTiempo as $item)
@@ -95,12 +95,12 @@
                     @endif
                 </div>
             @empty
-                <p class="text-muted small mb-0">Este alumno aun no tiene periodos registrados.</p>
+                <p class="text-muted small mb-0">Este alumno aún no tiene periodos registrados.</p>
             @endforelse
         </div>
 
         <div class="card p-3">
-            <h6 class="fw-semibold mb-3"><i class="bi bi-cash-coin me-1"></i> Últimos pagos</h6>
+            <h6 class="fw-semibold mb-3">Últimos pagos</h6>
             @if($pagos->isEmpty())
                 <p class="text-muted small mb-0">No hay pagos registrados. (El detalle de montos se gestiona en el módulo de Pagos.)</p>
             @else

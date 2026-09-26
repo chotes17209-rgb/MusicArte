@@ -16,7 +16,7 @@
     <input type="text" id="filtroHistorial" class="form-control mb-3" placeholder="Buscar alumno por nombre..." autocomplete="off">
 
     @if($periodos->isEmpty())
-        <div class="text-center text-muted py-5">Aun no hay periodos creados. Ve al modulo "Periodos" para crear el primero.</div>
+        <div class="text-center text-muted py-5">Aún no hay periodos creados. Ve al módulo "Periodos" para crear el primero.</div>
     @else
     <div class="table-responsive">
         <table class="table table-bordered align-middle table-sm" id="tablaHistorial">

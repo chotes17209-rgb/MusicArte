@@ -2,13 +2,11 @@
 @section('titulo', 'Confirmar acceso')
 
 @section('contenido')
-<div class="d-flex justify-content-center">
-    <div class="card p-4" style="max-width: 420px; width: 100%;">
-        <div class="text-center mb-3">
-            <i class="bi bi-shield-lock fs-1" style="color:#3d2c8d"></i>
-            <h5 class="fw-semibold mt-2 mb-1">Zona protegida</h5>
-            <small class="text-muted">El modulo de Pagos contiene informacion sensible. Confirma tu contrasena para continuar.</small>
-        </div>
+<div class="d-flex justify-content-center pt-4">
+    <div class="card p-4" style="max-width: 400px; width: 100%;">
+        <div class="kpi-icon mb-3"><i class="bi bi-lock"></i></div>
+        <h5 class="mb-1">Confirma tu contraseña</h5>
+        <p class="text-muted mb-3">Pagos tiene información sensible. Vuelve a escribir tu contraseña para continuar.</p>
 
         @if($errors->any())
             <div class="alert alert-danger py-2">{{ $errors->first('password') }}</div>
@@ -17,11 +15,13 @@
         <form method="POST" action="{{ route('pagos.confirmar.submit') }}">
             @csrf
             <div class="mb-3">
-                <label class="form-label small fw-semibold">Contrasena</label>
-                <input type="password" name="password" class="form-control" autofocus required>
+                <label class="form-label" for="password">Contraseña</label>
+                <input type="password" name="password" id="password" class="form-control" autofocus required autocomplete="current-password">
             </div>
-            <button type="submit" class="btn btn-morado w-100">Confirmar y continuar</button>
-            <a href="{{ route('dashboard') }}" class="btn btn-light w-100 mt-2">Cancelar</a>
+            <div class="d-flex gap-2">
+                <a href="{{ route('dashboard') }}" class="btn btn-light flex-fill">Cancelar</a>
+                <button type="submit" class="btn btn-morado flex-fill">Continuar</button>
+            </div>
         </form>
     </div>
 </div>

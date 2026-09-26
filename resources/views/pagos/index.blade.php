@@ -107,9 +107,9 @@
 <div class="modal fade" id="modalPago" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <form class="modal-content" id="formPago">
-            <div class="modal-header" style="background:#3d2c8d;color:#fff">
+            <div class="modal-header">
                 <h5 class="modal-title" id="tituloModalPago">Registrar Pago</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="pago_id">
@@ -141,7 +141,7 @@
                         </select>
                     </div>
                     <div class="col-md-2 mb-3">
-                        <label class="form-label small fw-semibold">Ano</label>
+                        <label class="form-label small fw-semibold">Año</label>
                         <input type="number" class="form-control" id="pago_anio" value="{{ $anio }}">
                     </div>
                     <div class="col-md-3 mb-3">
@@ -156,7 +156,7 @@
                     </div>
                 </div>
                 <div class="mb-1">
-                    <label class="form-label small fw-semibold">Observacion</label>
+                    <label class="form-label small fw-semibold">Observación</label>
                     <textarea class="form-control" id="pago_observacion" rows="2"></textarea>
                 </div>
                 <div class="alert alert-info small mb-0">
@@ -176,9 +176,9 @@
 <div class="modal fade" id="modalAbonos" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header" style="background:#3d2c8d;color:#fff">
+            <div class="modal-header">
                 <h5 class="modal-title">Abonos — <span id="abonos_titulo_alumno"></span></h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="abonos_pago_id">
@@ -190,7 +190,7 @@
 
                 <div class="table-responsive mb-3">
                     <table class="table table-sm">
-                        <thead><tr><th>Fecha</th><th>Metodo</th><th>N° Recibo</th><th>Monto</th><th class="text-end">Recibo</th></tr></thead>
+                        <thead><tr><th>Fecha</th><th>Método</th><th>N° Recibo</th><th>Monto</th><th class="text-end">Recibo</th></tr></thead>
                         <tbody id="abonos_tbody">
                         </tbody>
                     </table>
@@ -209,7 +209,7 @@
                         <input type="date" class="form-control" id="abono_fecha" value="{{ now()->toDateString() }}" required>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label small">Metodo de pago</label>
+                        <label class="form-label small">Método de pago</label>
                         <select class="form-select" id="abono_metodo" required>
                             <option value="transferencia">Transferencia</option>
                             <option value="yape">Yape</option>
@@ -221,7 +221,7 @@
                         <input type="text" class="form-control" id="abono_recibo_nro">
                     </div>
                     <div class="col-12">
-                        <label class="form-label small">Observacion (opcional)</label>
+                        <label class="form-label small">Observación (opcional)</label>
                         <input type="text" class="form-control" id="abono_observacion">
                     </div>
                     <div class="col-12 d-grid">
@@ -272,7 +272,7 @@
             tbody.appendChild(tr);
         });
         if (!(pago.abonos || []).length) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-2">Aun no se ha registrado ningun abono.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-2">Aún no se ha registrado ningun abono.</td></tr>';
         }
     }
 

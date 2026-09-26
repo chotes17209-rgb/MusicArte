@@ -3,64 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ingresar - MusicArte</title>
+    <title>Iniciar sesión · MusicArte</title>
     <link rel="icon" href="{{ asset('images/logo.png') }}">
     <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
-    <meta name="theme-color" content="#2a1e63">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-title" content="MusicArte">
-    <link rel="apple-touch-icon" href="{{ asset('images/app-icon-192.png') }}">
-    <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
-    <meta name="theme-color" content="#2a1e63">
+    <meta name="theme-color" content="#ffffff">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="MusicArte">
     <link rel="apple-touch-icon" href="{{ asset('images/app-icon-192.png') }}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
+        :root { --acento: #3d2c8d; --acento-hover: #30226f; --borde: #e6e5e0; --borde-fuerte: #d4d3cd; --texto: #1d1c1a; --texto-2: #55534d; --texto-3: #8a8880; }
         body {
-            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-            min-height: 100vh; padding: 1rem;
-            display: flex; align-items: center; justify-content: center;
-            background:
-                radial-gradient(40rem 30rem at 10% 10%, rgba(123,92,224,.55), transparent 60%),
-                radial-gradient(30rem 25rem at 90% 90%, rgba(242,177,52,.30), transparent 60%),
-                linear-gradient(135deg, #1c1545, #2a1e63 50%, #3d2c8d);
+            font-family: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            font-size: .875rem; color: var(--texto); background: #f6f6f4;
+            min-height: 100vh; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem 1rem;
             -webkit-font-smoothing: antialiased;
         }
-        .login-card {
-            width: 100%; max-width: 410px; border-radius: 22px; border: 1px solid rgba(255,255,255,.6);
-            background: #fff; box-shadow: 0 30px 70px rgba(10,6,40,.45); padding: 2.2rem !important;
-        }
-        .login-card img { width: 84px; height: 84px; border-radius: 22px; object-fit: cover; box-shadow: 0 0 0 4px rgba(242,177,52,.7), 0 10px 24px rgba(61,44,141,.25); }
-        .login-card h4 { letter-spacing: 2px; font-weight: 800 !important; }
-        .form-label { color: #3b3a4d; }
-        .form-control { border-radius: 12px; border-color: #e3e3ee; padding: .7rem .95rem; }
-        .form-control:focus { border-color: #a99be3; box-shadow: 0 0 0 4px rgba(61,44,141,.12); }
-        .form-check-input:checked { background-color: #3d2c8d; border-color: #3d2c8d; }
-        .btn-morado {
-            background: linear-gradient(135deg, #4b37a9, #3d2c8d); border: 0; border-radius: 12px;
-            box-shadow: 0 8px 20px rgba(61,44,141,.3); transition: all .15s ease;
-        }
-        .btn-morado:hover { background: linear-gradient(135deg, #3d2c8d, #2a1e63); transform: translateY(-1px); box-shadow: 0 12px 26px rgba(61,44,141,.35); }
-        .alert { border-radius: 12px; border: 0; }
+        .marca { display: flex; align-items: center; gap: .6rem; margin-bottom: 1.5rem; }
+        .marca img { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; }
+        .marca strong { display: block; font-size: 1rem; font-weight: 600; line-height: 1.1; }
+        .marca span { display: block; font-size: .75rem; color: var(--texto-3); }
+        .panel { width: 100%; max-width: 380px; background: #fff; border: 1px solid var(--borde); border-radius: 10px; padding: 1.75rem; }
+        .panel h1 { font-size: 1.125rem; font-weight: 600; margin: 0 0 .25rem; letter-spacing: -.01em; }
+        .panel p.sub { color: var(--texto-3); margin: 0 0 1.25rem; }
+        .form-label { font-size: .8125rem; font-weight: 500; color: var(--texto-2); margin-bottom: .3rem; }
+        .form-control { font-size: .875rem; padding: .5rem .75rem; border: 1px solid var(--borde-fuerte); border-radius: 6px; }
+        .form-control:focus { border-color: var(--acento); box-shadow: 0 0 0 3px rgba(61,44,141,.12); }
+        .form-check-input:checked { background-color: var(--acento); border-color: var(--acento); }
+        .form-check-input:focus { box-shadow: 0 0 0 3px rgba(61,44,141,.12); }
+        .btn-ingresar { background: var(--acento); border: 1px solid var(--acento); color: #fff; font-weight: 500; font-size: .875rem; padding: .55rem; border-radius: 6px; }
+        .btn-ingresar:hover, .btn-ingresar:focus { background: var(--acento-hover); border-color: var(--acento-hover); color: #fff; }
+        .alert { font-size: .8125rem; border-radius: 8px; background: #fdeeec; border: 1px solid #f3c7c1; color: #7a1a12; padding: .6rem .8rem; }
+        .pie { margin-top: 1.25rem; color: var(--texto-3); font-size: .75rem; }
     </style>
 </head>
 <body>
-    <div class="card login-card p-4">
-        <div class="text-center mb-3">
-            <img src="{{ asset('images/logo.png') }}" alt="MusicArte">
-            <h4 class="fw-bold mt-3 mb-0" style="color:#3d2c8d">MUSICARTE</h4>
-            <small class="text-muted">Centro Cultural &mdash; Panel de Gestion</small>
+    <div class="marca">
+        <img src="{{ asset('images/logo.png') }}" alt="">
+        <div>
+            <strong>MusicArte</strong>
+            <span>Centro Cultural</span>
         </div>
+    </div>
+
+    <main class="panel">
+        <h1>Iniciar sesión</h1>
+        <p class="sub">Ingresa con tu cuenta del centro.</p>
 
         @if ($errors->any())
-            <div class="alert alert-danger py-2">
+            <div class="alert mb-3">
                 @foreach ($errors->all() as $error)
-                    <div class="small">{{ $error }}</div>
+                    <div>{{ $error }}</div>
                 @endforeach
             </div>
         @endif
@@ -68,20 +65,21 @@
         <form method="POST" action="{{ route('login.attempt') }}">
             @csrf
             <div class="mb-3">
-                <label class="form-label small fw-semibold">Correo electronico</label>
-                <input type="email" name="email" class="form-control" value="{{ old('email') }}" required autofocus placeholder="correo@musicarte.pe">
+                <label class="form-label" for="email">Correo electrónico</label>
+                <input type="email" name="email" id="email" class="form-control" value="{{ old('email') }}" required autofocus autocomplete="username">
             </div>
             <div class="mb-3">
-                <label class="form-label small fw-semibold">Contrasena</label>
-                <input type="password" name="password" class="form-control" required placeholder="••••••••">
+                <label class="form-label" for="password">Contraseña</label>
+                <input type="password" name="password" id="password" class="form-control" required autocomplete="current-password">
             </div>
             <div class="form-check mb-3">
                 <input class="form-check-input" type="checkbox" name="remember" id="remember">
-                <label class="form-check-label small" for="remember">Recordarme</label>
+                <label class="form-check-label" for="remember">Mantener la sesión iniciada</label>
             </div>
-            <button type="submit" class="btn btn-morado w-100 text-white fw-semibold py-2">Ingresar</button>
+            <button type="submit" class="btn btn-ingresar w-100">Ingresar</button>
         </form>
-        <p class="text-center text-muted small mt-3 mb-0">Sistema interno &mdash; acceso restringido al personal.</p>
-    </div>
+    </main>
+
+    <p class="pie">Acceso solo para el personal de MusicArte.</p>
 </body>
 </html>

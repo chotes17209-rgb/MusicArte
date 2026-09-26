@@ -46,8 +46,8 @@
 @foreach($planillas as $grupo)
 <div class="card p-3 mb-3">
     <div class="d-flex justify-content-between align-items-center mb-2">
-        <h6 class="fw-semibold mb-0"><i class="bi bi-person-badge me-1"></i> MAESTRO: {{ strtoupper($grupo['maestro']->nombre ?? 'Sin asignar') }}</h6>
-        <span class="fw-bold" style="color:#3d2c8d">S/ {{ number_format($grupo['total_monto'], 2) }} &middot; {{ $grupo['total_horas'] }} horas</span>
+        <h6 class="fw-semibold mb-0">MAESTRO: {{ strtoupper($grupo['maestro']->nombre ?? 'Sin asignar') }}</h6>
+        <span class="fw-bold">S/ {{ number_format($grupo['total_monto'], 2) }} &middot; {{ $grupo['total_horas'] }} horas</span>
     </div>
     <div class="table-responsive">
         <table class="table table-sm align-middle mb-0">
@@ -80,9 +80,9 @@
 <div class="modal fade" id="modalGenerar" tabindex="-1">
     <div class="modal-dialog">
         <form class="modal-content" id="formGenerar">
-            <div class="modal-header" style="background:#3d2c8d;color:#fff">
+            <div class="modal-header">
                 <h5 class="modal-title">Generar planilla desde asistencia</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <p class="small text-muted">
@@ -98,7 +98,7 @@
                         </select>
                     </div>
                     <div class="col-6 mb-3">
-                        <label class="form-label small fw-semibold">Ano</label>
+                        <label class="form-label small fw-semibold">Año</label>
                         <input type="number" class="form-control" id="generar_anio" value="{{ $anio }}">
                     </div>
                 </div>
@@ -115,9 +115,9 @@
 <div class="modal fade" id="modalPlanilla" tabindex="-1">
     <div class="modal-dialog">
         <form class="modal-content" id="formPlanilla">
-            <div class="modal-header" style="background:#3d2c8d;color:#fff">
+            <div class="modal-header">
                 <h5 class="modal-title" id="tituloModalPlanilla">Agregar registro manual</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="planilla_id">
@@ -148,7 +148,7 @@
                             @foreach(\App\Models\Pago::MESES as $num => $nombre)<option value="{{ $num }}" @selected($mes==$num)>{{ $nombre }}</option>@endforeach
                         </select>
                     </div>
-                    <div class="col-4 mb-3"><label class="form-label small fw-semibold">Ano</label><input type="number" class="form-control" id="planilla_anio" value="{{ $anio }}"></div>
+                    <div class="col-4 mb-3"><label class="form-label small fw-semibold">Año</label><input type="number" class="form-control" id="planilla_anio" value="{{ $anio }}"></div>
                     <div class="col-4 mb-3"><label class="form-label small fw-semibold">Horas</label><input type="number" step="0.5" min="0" class="form-control" id="planilla_horas"></div>
                 </div>
                 <div class="mb-3">
@@ -156,7 +156,7 @@
                     <input type="number" step="0.01" min="0" class="form-control" id="planilla_monto" required>
                 </div>
                 <div class="mb-1">
-                    <label class="form-label small fw-semibold">Observacion</label>
+                    <label class="form-label small fw-semibold">Observación</label>
                     <input type="text" class="form-control" id="planilla_observacion" placeholder="Ej. OJO, 1R (recuperacion), etc.">
                 </div>
             </div>

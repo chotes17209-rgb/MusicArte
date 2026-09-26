@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('titulo', 'Dashboard')
+@section('titulo', 'Inicio')
 
 @section('contenido')
 
@@ -10,9 +10,9 @@
     <i class="bi bi-exclamation-triangle-fill fs-3"></i>
     <div>
         @if($alertaSunat['es_hoy'])
-            <div class="fw-bold fs-5">⚠️ HOY ES 14</div>
+            <div class="fw-bold fs-5">Hoy es 14</div>
         @else
-            <div class="fw-bold fs-5">⚠️ FALTAN {{ $alertaSunat['dias_restantes'] }} {{ $alertaSunat['dias_restantes'] == 1 ? 'DIA' : 'DIAS' }} PARA EL 14</div>
+            <div class="fw-bold fs-5">Faltan {{ $alertaSunat['dias_restantes'] }} {{ $alertaSunat['dias_restantes'] == 1 ? 'día' : 'días' }} para el 14</div>
         @endif
         <div>Se debe realizar el pago de SUNAT y servicios.</div>
     </div>
@@ -25,9 +25,9 @@
             <div class="d-flex justify-content-between align-items-start">
                 <div>
                     <div class="text-muted small">Alumnos activos</div>
-                    <div class="fs-3 fw-bold" style="color:#3d2c8d">{{ $kpis['alumnos_activos'] }}</div>
+                    <div class="fs-3 fw-bold">{{ $kpis['alumnos_activos'] }}</div>
                 </div>
-                <div class="btn-icon" style="background:#eee9fb;color:#3d2c8d"><i class="bi bi-people fs-5"></i></div>
+                <div class="kpi-icon"><i class="bi bi-people fs-5"></i></div>
             </div>
         </div>
     </div>
@@ -36,9 +36,9 @@
             <div class="d-flex justify-content-between align-items-start">
                 <div>
                     <div class="text-muted small">Maestros activos</div>
-                    <div class="fs-3 fw-bold" style="color:#3d2c8d">{{ $kpis['maestros_activos'] }}</div>
+                    <div class="fs-3 fw-bold">{{ $kpis['maestros_activos'] }}</div>
                 </div>
-                <div class="btn-icon" style="background:#eee9fb;color:#3d2c8d"><i class="bi bi-person-badge fs-5"></i></div>
+                <div class="kpi-icon"><i class="bi bi-person-badge fs-5"></i></div>
             </div>
         </div>
     </div>
@@ -47,10 +47,10 @@
             <div class="d-flex justify-content-between align-items-start">
                 <div>
                     <div class="text-muted small">Clases hoy</div>
-                    <div class="fs-3 fw-bold" style="color:#3d2c8d">{{ $kpis['clases_hoy'] }}</div>
+                    <div class="fs-3 fw-bold">{{ $kpis['clases_hoy'] }}</div>
                     <div class="small text-success">{{ $kpis['clases_hoy_realizadas'] }} realizadas</div>
                 </div>
-                <div class="btn-icon" style="background:#eee9fb;color:#3d2c8d"><i class="bi bi-calendar3 fs-5"></i></div>
+                <div class="kpi-icon"><i class="bi bi-calendar3 fs-5"></i></div>
             </div>
         </div>
     </div>
@@ -60,10 +60,10 @@
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <div class="text-muted small">Pagos</div>
-                        <div class="fs-6 fw-semibold" style="color:#3d2c8d">Ver modulo <i class="bi bi-arrow-right"></i></div>
-                        <div class="small text-muted">Informacion financiera aqui</div>
+                        <div class="fs-6 fw-semibold">Ir a Pagos <i class="bi bi-arrow-right"></i></div>
+                        <div class="small text-muted">Cobros y abonos del mes</div>
                     </div>
-                    <div class="btn-icon" style="background:#eee9fb;color:#3d2c8d"><i class="bi bi-cash-coin fs-5"></i></div>
+                    <div class="kpi-icon"><i class="bi bi-cash-coin fs-5"></i></div>
                 </div>
             </div>
         </a>
@@ -72,16 +72,16 @@
 
 {{-- 19.1: alumnos por periodo/mes --}}
 <div class="card p-3 mb-4">
-    <h6 class="fw-semibold mb-3"><i class="bi bi-bar-chart-line me-1"></i> Alumnos por mes</h6>
+    <h6 class="fw-semibold mb-3">Alumnos por mes</h6>
     @if($alumnosPorMes->isEmpty())
-        <p class="text-muted small mb-0">Aun no hay periodos registrados.</p>
+        <p class="text-muted small mb-0">Aún no hay periodos registrados.</p>
     @else
         @php $maxCant = max(1, $alumnosPorMes->max('cantidad')); @endphp
         <div class="d-flex align-items-end gap-3" style="height:140px;">
             @foreach($alumnosPorMes as $m)
                 <div class="d-flex flex-column align-items-center justify-content-end" style="flex:1; height:100%;">
                     <div class="small fw-semibold mb-1">{{ $m['cantidad'] }}</div>
-                    <div style="width:100%; max-width:48px; background:#3d2c8d; border-radius:6px 6px 0 0; height:{{ max(4, round($m['cantidad'] / $maxCant * 100)) }}%;"></div>
+                    <div style="width:100%; max-width:40px; background:var(--acento); border-radius:3px 3px 0 0; height:{{ max(4, round($m['cantidad'] / $maxCant * 100)) }}%;"></div>
                     <div class="small text-muted mt-1 text-center">{{ $m['label'] }}</div>
                 </div>
             @endforeach
@@ -92,7 +92,7 @@
 <div class="row g-3">
     <div class="col-lg-7">
         <div class="card p-3 h-100">
-            <h6 class="fw-semibold mb-3"><i class="bi bi-calendar-event me-1"></i> Clases de hoy</h6>
+            <h6 class="fw-semibold mb-3">Clases de hoy</h6>
             @if($clasesHoy->isEmpty())
                 <p class="text-muted small mb-0">No hay clases programadas para hoy.</p>
             @else
@@ -121,7 +121,7 @@
 
     <div class="col-lg-5">
         <div class="card p-3 mb-3">
-            <h6 class="fw-semibold mb-3"><i class="bi bi-cash-stack me-1"></i> Alumnos con pago pendiente (mes actual)</h6>
+            <h6 class="fw-semibold mb-3">Alumnos con pago pendiente (mes actual)</h6>
             @if($alumnosConSaldo->isEmpty())
                 <p class="text-muted small mb-0">No hay pagos pendientes registrados.</p>
             @else
@@ -139,7 +139,7 @@
 
         @if($cumpleanieros->isNotEmpty())
         <div class="card p-3">
-            <h6 class="fw-semibold mb-3"><i class="bi bi-balloon-heart-fill me-1"></i> Cumpleanos del mes</h6>
+            <h6 class="fw-semibold mb-3">Cumpleaños del mes</h6>
             <ul class="list-group list-group-flush">
                 @foreach($cumpleanieros as $c)
                     <li class="list-group-item px-0 d-flex justify-content-between">

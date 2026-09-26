@@ -14,7 +14,7 @@
             <tr>
                 <td>
                     <div class="fw-semibold">{{ $a->nombre }}</div>
-                    @if($a->edad)<div class="small text-muted">{{ $a->edad }}</div>@endif
+                    @if($a->edad)<div class="small text-muted fw-normal">{{ mb_strtolower($a->edad) }}</div>@endif
                 </td>
                 <td>
                     @if($a->especialidad)

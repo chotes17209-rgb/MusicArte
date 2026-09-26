@@ -6,7 +6,7 @@
     <div>
         <a href="{{ route('reportes.index') }}" class="btn btn-sm btn-volver"><i class="bi bi-arrow-left me-1"></i> Volver a Reportes</a>
         <h5 class="fw-semibold mb-0 mt-1">Historial de Pagos — Año {{ $anio }}</h5>
-        <small class="text-muted">Seccion 13: consulta de enero a diciembre — pagados, a cuenta y pendientes</small>
+        <small class="text-muted">Enero a diciembre: cuánto se facturó, cuánto se cobró y quién debe.</small>
     </div>
     <div class="d-flex gap-2">
         <form class="d-flex gap-2" method="GET">
@@ -18,7 +18,7 @@
 </div>
 
 <div class="row g-3 mb-3">
-    <div class="col-md-4"><div class="card-kpi card p-3 text-center"><div class="text-muted small">Total facturado</div><div class="fs-4 fw-bold" style="color:#3d2c8d">S/ {{ number_format($totales['facturado'], 2) }}</div></div></div>
+    <div class="col-md-4"><div class="card-kpi card p-3 text-center"><div class="text-muted small">Total facturado</div><div class="fs-4 fw-bold">S/ {{ number_format($totales['facturado'], 2) }}</div></div></div>
     <div class="col-md-4"><div class="card-kpi card p-3 text-center"><div class="text-muted small">Total cobrado</div><div class="fs-4 fw-bold text-success">S/ {{ number_format($totales['cobrado'], 2) }}</div></div></div>
     <div class="col-md-4"><div class="card-kpi card p-3 text-center"><div class="text-muted small">Total pendiente</div><div class="fs-4 fw-bold text-danger">S/ {{ number_format($totales['pendiente'], 2) }}</div></div></div>
 </div>
@@ -40,9 +40,9 @@
                     <td>S/ {{ number_format($m['facturado'], 2) }}</td>
                     <td class="text-success">S/ {{ number_format($m['cobrado'], 2) }}</td>
                     <td class="text-danger">S/ {{ number_format($m['pendiente'], 2) }}</td>
-                    <td><span class="badge bg-success">{{ $m['cant_pagado'] }}</span></td>
-                    <td><span class="badge bg-warning text-dark">{{ $m['cant_a_cuenta'] }}</span></td>
-                    <td><span class="badge bg-danger">{{ $m['cant_pendiente'] }}</span></td>
+                    <td>{{ $m['cant_pagado'] }}</td>
+                    <td>{{ $m['cant_a_cuenta'] }}</td>
+                    <td class="{{ $m['cant_pendiente'] > 0 ? 'text-danger' : '' }}">{{ $m['cant_pendiente'] }}</td>
                 </tr>
             @endforeach
             </tbody>
@@ -63,7 +63,7 @@
                     <td class="text-danger fw-semibold">S/ {{ number_format($d['total_debe'], 2) }}</td>
                 </tr>
             @empty
-                <tr><td colspan="3" class="text-center text-muted py-4">No hay deudores registrados este año. 🎉</td></tr>
+                <tr><td colspan="3" class="text-center text-muted py-4">No hay deudores registrados este año.</td></tr>
             @endforelse
             </tbody>
         </table>

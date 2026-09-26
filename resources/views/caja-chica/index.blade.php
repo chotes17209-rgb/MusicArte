@@ -30,7 +30,7 @@
 <div class="card p-3">
     <div class="table-responsive">
         <table class="table align-middle">
-            <thead><tr><th>Fecha</th><th>Proveedor</th><th>Descripcion</th><th>Monto</th><th class="text-end">Acciones</th></tr></thead>
+            <thead><tr><th>Fecha</th><th>Proveedor</th><th>Descripción</th><th>Monto</th><th class="text-end">Acciones</th></tr></thead>
             <tbody>
             @forelse($movimientos as $m)
                 <tr>
@@ -55,9 +55,9 @@
 <div class="modal fade" id="modalCaja" tabindex="-1">
     <div class="modal-dialog">
         <form class="modal-content" id="formCaja">
-            <div class="modal-header" style="background:#3d2c8d;color:#fff">
+            <div class="modal-header">
                 <h5 class="modal-title" id="tituloModalCaja">Nuevo Movimiento</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="caja_id">
@@ -66,7 +66,7 @@
                     <div class="col-6 mb-3"><label class="form-label small fw-semibold">Monto (S/)</label><input type="number" step="0.01" min="0" class="form-control" id="caja_monto" required></div>
                 </div>
                 <div class="mb-3"><label class="form-label small fw-semibold">Proveedor</label><input type="text" class="form-control" id="caja_proveedor"></div>
-                <div class="mb-1"><label class="form-label small fw-semibold">Descripcion</label><input type="text" class="form-control" id="caja_descripcion" required></div>
+                <div class="mb-1"><label class="form-label small fw-semibold">Descripción</label><input type="text" class="form-control" id="caja_descripcion" required></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
