@@ -60,7 +60,7 @@
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <div class="text-muted small">Pagos</div>
-                        <div class="fs-6 fw-semibold" style="color:#3d2c8d">Ver modulo &rarr;</div>
+                        <div class="fs-6 fw-semibold" style="color:#3d2c8d">Ver modulo <i class="bi bi-arrow-right"></i></div>
                         <div class="small text-muted">Informacion financiera aqui</div>
                     </div>
                     <div class="btn-icon" style="background:#eee9fb;color:#3d2c8d"><i class="bi bi-cash-coin fs-5"></i></div>
@@ -115,7 +115,7 @@
                     </table>
                 </div>
             @endif
-            <a href="{{ route('calendario.index') }}" class="small mt-2">Ir al calendario completo &rarr;</a>
+            <a href="{{ route('calendario.index') }}" class="btn btn-sm btn-ir mt-3 align-self-start">Ir al calendario completo <i class="bi bi-arrow-right ms-1"></i></a>
         </div>
     </div>
 
@@ -133,7 +133,7 @@
                         </li>
                     @endforeach
                 </ul>
-                <a href="{{ route('pagos.index') }}" class="small mt-2">Ver detalle de montos en Pagos &rarr;</a>
+                <a href="{{ route('pagos.index') }}" class="btn btn-sm btn-ir mt-3 align-self-start">Ver detalle de montos en Pagos <i class="bi bi-arrow-right ms-1"></i></a>
             @endif
         </div>
 

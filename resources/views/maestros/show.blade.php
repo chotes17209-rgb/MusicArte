@@ -4,7 +4,7 @@
 @section('contenido')
 <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
     <div>
-        <a href="{{ route('maestros.index') }}" class="text-muted small"><i class="bi bi-arrow-left"></i> Volver a Maestros</a>
+        <a href="{{ route('maestros.index') }}" class="btn btn-sm btn-volver"><i class="bi bi-arrow-left me-1"></i> Volver a Maestros</a>
         <h4 class="fw-bold mb-0 mt-1" style="color:#3d2c8d">{{ $maestro->nombre }}</h4>
         <div class="d-flex gap-2 mt-1 flex-wrap">
             @if($maestro->activo)<span class="badge bg-success">Activo</span>@else<span class="badge bg-secondary">Inactivo</span>@endif

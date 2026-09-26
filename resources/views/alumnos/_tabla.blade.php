@@ -2,13 +2,9 @@
     <table class="table align-middle">
         <thead>
             <tr>
-                <th>Nombre</th>
-                <th>Edad</th>
-                <th>Especialidad</th>
-                <th>Maestro</th>
-                <th>Talleres</th>
-                <th>Tutor</th>
-                <th>Celular</th>
+                <th>Alumno</th>
+                <th>Taller</th>
+                <th>Contacto (tutor)</th>
                 <th>Estado</th>
                 <th class="text-end">Acciones</th>
             </tr>
@@ -16,17 +12,24 @@
         <tbody>
         @forelse($alumnos as $a)
             <tr>
-                <td class="fw-semibold">{{ $a->nombre }}</td>
-                <td>{{ $a->edad ?? '—' }}</td>
-                <td>{{ $a->especialidad->nombre ?? '—' }}</td>
-                <td>{{ $a->maestro->nombre ?? '—' }}</td>
                 <td>
-                    <span class="badge bg-light text-dark border">
-                        {{ $a->talleres_activos_count }} {{ Str::plural('taller', $a->talleres_activos_count) }}
-                    </span>
+                    <div class="fw-semibold">{{ $a->nombre }}</div>
+                    @if($a->edad)<div class="small text-muted">{{ $a->edad }}</div>@endif
                 </td>
-                <td>{{ $a->tutor ?? '—' }}</td>
-                <td>{{ $a->celular ?? '—' }}</td>
+                <td>
+                    @if($a->especialidad)
+                        <div>{{ $a->especialidad->nombre }} <span class="text-muted">con</span> {{ $a->maestro->nombre ?? '—' }}</div>
+                    @else
+                        <span class="text-muted">Sin taller</span>
+                    @endif
+                    @if($a->talleres_activos_count > 1)
+                        <div class="small text-muted">{{ $a->talleres_activos_count }} talleres en total</div>
+                    @endif
+                </td>
+                <td>
+                    <div>{{ $a->tutor ?? '—' }}</div>
+                    @if($a->celular)<div class="small text-muted"><i class="bi bi-telephone me-1"></i>{{ $a->celular }}</div>@endif
+                </td>
                 <td>
                     @if($a->activo)
                         <span class="badge bg-success">Activo</span>
@@ -41,7 +44,7 @@
                 </td>
             </tr>
         @empty
-            <tr><td colspan="9" class="text-center text-muted py-4">No se encontraron alumnos con los filtros aplicados.</td></tr>
+            <tr><td colspan="5" class="text-center text-muted py-4">No se encontraron alumnos con los filtros aplicados.</td></tr>
         @endforelse
         </tbody>
     </table>

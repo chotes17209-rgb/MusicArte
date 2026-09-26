@@ -46,7 +46,8 @@
         <div class="col-md-2">
             <select name="periodo_id" id="filtro_periodo_id" class="form-select">
                 <option value="">Todos los periodos</option>
-                @foreach($periodos as $p)
+                {{-- Filtro: todos los periodos (tambien los cerrados) para poder ver alumnos de meses anteriores. --}}
+                @foreach($todosPeriodos as $p)
                     <option value="{{ $p->id }}" @selected(request('periodo_id') == $p->id)>{{ $p->nombre }}</option>
                 @endforeach
             </select>
@@ -346,7 +347,10 @@
         <h5 class="fw-semibold mb-0">Periodos</h5>
         <small class="text-muted">Define cuanto dura cada periodo de clases (normalmente 4 semanas por mes)</small>
     </div>
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="{{ route('alumnos.historial') }}" class="btn btn-ir">
+            <i class="bi bi-clock-history me-1"></i> Ver historial por alumno
+        </a>
         <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalPaseAlumnos" onclick="prepararPaseAlumnos()">
             <i class="bi bi-arrow-right-circle me-1"></i> Pasar alumnos al siguiente periodo
         </button>
@@ -359,28 +363,36 @@
 <div class="card p-3">
     <div class="table-responsive">
         <table class="table align-middle">
-            <thead><tr><th>Periodo</th><th>Duracion</th><th>Desde</th><th>Hasta</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead>
+            <thead><tr><th>Periodo</th><th>Fechas</th><th>Duracion</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead>
             <tbody>
             @forelse($todosPeriodos as $p)
-                <tr>
-                    <td class="fw-semibold">{{ $p->nombre }}</td>
+                @php($enCurso = now()->startOfDay()->between($p->fecha_inicio, $p->fecha_fin))
+                <tr class="{{ $enCurso ? 'fila-actual' : '' }}">
+                    <td class="fw-semibold">
+                        {{ $p->nombre }}
+                        @if($enCurso)<span class="badge bg-primary ms-1">En curso</span>@endif
+                    </td>
+                    <td>{{ $p->fecha_inicio->format('d/m/Y') }} <span class="text-muted">al</span> {{ $p->fecha_fin->format('d/m/Y') }}</td>
                     <td>{{ $p->duracionSemanas() }} semanas</td>
-                    <td>{{ $p->fecha_inicio->format('d/m/Y') }}</td>
-                    <td>{{ $p->fecha_fin->format('d/m/Y') }}</td>
-                    <td>@if($p->activo)<span class="badge bg-success">Activo</span>@else<span class="badge bg-secondary">Inactivo</span>@endif</td>
+                    <td>
+                        @if($p->activo)
+                            <span class="badge bg-success">Activo</span>
+                            <div class="small text-muted">Se puede inscribir alumnos</div>
+                        @else
+                            <span class="badge bg-secondary">Cerrado</span>
+                            <div class="small text-muted">Solo historial</div>
+                        @endif
+                    </td>
                     <td class="text-end">
                         <button class="btn btn-sm btn-light btn-icon" onclick="editarPeriodo({{ $p->id }})"><i class="bi bi-pencil"></i></button>
                         <button class="btn btn-sm btn-light btn-icon text-danger" onclick="eliminarPeriodo({{ $p->id }}, '{{ $p->nombre }}')"><i class="bi bi-trash"></i></button>
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="6" class="text-center text-muted py-4">Aun no hay periodos creados.</td></tr>
+                <tr><td colspan="5" class="text-center text-muted py-4">Aun no hay periodos creados.</td></tr>
             @endforelse
             </tbody>
         </table>
-    </div>
-    <div class="text-end">
-        <a href="{{ route('alumnos.historial') }}" class="small">Ver historial de actividad por alumno <i class="bi bi-arrow-right"></i></a>
     </div>
 </div>
 

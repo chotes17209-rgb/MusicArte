@@ -4,7 +4,7 @@
 @section('contenido')
 <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
     <div>
-        <a href="{{ route('alumnos.index') }}" class="text-muted small"><i class="bi bi-arrow-left"></i> Volver a Alumnos</a>
+        <a href="{{ route('alumnos.index') }}" class="btn btn-sm btn-volver"><i class="bi bi-arrow-left me-1"></i> Volver a Alumnos</a>
         <h4 class="fw-bold mb-0 mt-1" style="color:#3d2c8d">{{ $alumno->nombre }}</h4>
         <div class="d-flex gap-2 mt-1 flex-wrap">
             @if($alumno->activo)
@@ -12,7 +12,7 @@
             @else
                 <span class="badge bg-secondary">Inactivo</span>
             @endif
-            @if($alumno->edad !== null)<span class="badge bg-light text-dark border">{{ $alumno->edad }} años</span>@endif
+            @if($alumno->edad !== null)<span class="badge bg-light text-dark border">{{ $alumno->edad }}{{ is_numeric(trim($alumno->edad)) ? ' años' : '' }}</span>@endif
             @if($alumno->dni)<span class="badge bg-light text-dark border">DNI {{ $alumno->dni }}</span>@endif
         </div>
     </div>
@@ -122,7 +122,7 @@
                         </tbody>
                     </table>
                 </div>
-                <a href="{{ route('pagos.index') }}" class="small d-inline-block mt-2">Ver montos y abonos en Pagos &rarr;</a>
+                <a href="{{ route('pagos.index') }}" class="btn btn-sm btn-ir mt-2">Ver montos y abonos en Pagos <i class="bi bi-arrow-right ms-1"></i></a>
             @endif
         </div>
     </div>

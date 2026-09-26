@@ -65,16 +65,20 @@
 <div class="card p-3">
     <div class="table-responsive">
         <table class="table align-middle">
-            <thead><tr><th>Alumno</th><th>Taller</th><th>Concepto</th><th>Total</th><th>Abonado</th><th>Saldo</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead>
+            <thead><tr><th>Alumno</th><th>Taller</th><th class="text-end">Debe pagar</th><th class="text-end">Ya pagó</th><th class="text-end">Le falta</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead>
             <tbody>
             @forelse($pagos as $p)
                 <tr>
                     <td class="fw-semibold">{{ $p->alumno->nombre ?? '—' }}</td>
-                    <td>{{ $p->alumnoTaller->especialidad->nombre ?? '—' }}</td>
-                    <td>{{ $p->concepto ?? '—' }}</td>
-                    <td>S/ {{ number_format($p->monto_total, 2) }}</td>
-                    <td>S/ {{ number_format($p->monto_total - $p->saldo, 2) }}</td>
-                    <td class="{{ $p->saldo > 0 ? 'text-danger fw-semibold' : 'text-success' }}">S/ {{ number_format($p->saldo, 2) }}</td>
+                    <td>
+                        <div>{{ $p->alumnoTaller->especialidad->nombre ?? '—' }}</div>
+                        @if($p->concepto && $p->concepto !== 'Mensualidad '.($p->alumnoTaller->especialidad->nombre ?? ''))
+                            <div class="small text-muted">{{ $p->concepto }}</div>
+                        @endif
+                    </td>
+                    <td class="text-end">S/ {{ number_format($p->monto_total, 2) }}</td>
+                    <td class="text-end">S/ {{ number_format($p->monto_total - $p->saldo, 2) }}</td>
+                    <td class="text-end {{ $p->saldo > 0 ? 'text-danger fw-semibold' : 'text-success' }}">S/ {{ number_format($p->saldo, 2) }}</td>
                     <td>
                         <span class="badge {{ ['pendiente'=>'bg-danger','a_cuenta'=>'bg-warning text-dark','pagado'=>'bg-success'][$p->estado] ?? 'bg-secondary' }}">
                             {{ $p->estadoLabel() }}
@@ -90,7 +94,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="8" class="text-center text-muted py-4">No hay pagos registrados para este filtro.</td></tr>
+                <tr><td colspan="7" class="text-center text-muted py-4">No hay pagos registrados para este filtro.</td></tr>
             @endforelse
             </tbody>
         </table>

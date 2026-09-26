@@ -15,7 +15,7 @@
 @section('contenido')
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <div>
-        <a href="{{ route('horarios.index') }}" class="text-muted small"><i class="bi bi-arrow-left"></i> Volver a Horarios</a>
+        <a href="{{ route('horarios.index') }}" class="btn btn-sm btn-volver"><i class="bi bi-arrow-left me-1"></i> Volver a Horarios</a>
         <h5 class="fw-semibold mb-0 mt-1">Horarios por Alumno — {{ \App\Models\Pago::MESES[$mes] }} {{ $anio }}</h5>
         <small class="text-muted">Cada mes dividido en 4 semanas, igual que tu cuadro de control</small>
     </div>

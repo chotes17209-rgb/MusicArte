@@ -6,6 +6,18 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('titulo', 'Panel') - MusicArte</title>
     <link rel="icon" href="{{ asset('images/logo.png') }}">
+    <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
+    <meta name="theme-color" content="#2a1e63">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="MusicArte">
+    <link rel="apple-touch-icon" href="{{ asset('images/app-icon-192.png') }}">
+    <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
+    <meta name="theme-color" content="#2a1e63">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="MusicArte">
+    <link rel="apple-touch-icon" href="{{ asset('images/app-icon-192.png') }}">
 
     <!-- Bootstrap 5 -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
@@ -212,6 +224,56 @@
         }
         .toggler-mobile { display: none; }
         @media (max-width: 991px) { .toggler-mobile { display: inline-flex; } }
+
+        /* ==============================================================
+         * Facil de entender (sin cambiar la logica de ninguna pantalla)
+         * ============================================================== */
+
+        /* Encabezados de tabla legibles (no en mayusculas diminutas). */
+        .table thead th { text-transform: none; letter-spacing: 0; font-size: .8rem; font-weight: 700; color: #4a4a5e; }
+        .table tbody td.fw-semibold, .table tbody td:first-child { color: var(--ma-texto); }
+
+        /* Botones de accion en las tablas: icono + texto, con color segun lo que hacen. */
+        .table .btn-icon { width: auto; height: 32px; padding: 0 .65rem; gap: .35rem; font-size: .78rem; font-weight: 600; border: 0; }
+        .table .btn-icon:has(.bi-eye)::after { content: "Ver"; }
+        .table .btn-icon:has(.bi-pencil)::after { content: "Editar"; }
+        .table .btn-icon:has(.bi-trash)::after { content: "Eliminar"; }
+        .table .btn-icon:has(.bi-cash-stack)::after { content: "Abonos"; }
+        .table .btn-icon:has(.bi-file-earmark-pdf)::after { content: "PDF"; }
+        .table .btn-icon:has(.bi-eye) { background: #e7f0fd; color: #1d5fa8; }
+        .table .btn-icon:has(.bi-pencil) { background: var(--ma-morado-suave); color: var(--ma-morado); }
+        .table .btn-icon:has(.bi-trash) { background: #fdecee; color: #c0283a !important; }
+        .table .btn-icon:has(.bi-cash-stack) { background: #e3f5ea; color: #17803d; }
+        .table .btn-icon:has(.bi-file-earmark-pdf) { background: #f1f1f6; color: #4a4a5e; }
+        .table .btn-icon:hover { filter: brightness(.95); transform: translateY(-1px); }
+        .table td:has(.btn-icon) { white-space: nowrap; }
+        .table td.text-end, .table th.text-end { white-space: nowrap; }
+
+        /* Enlaces de navegacion ("Volver a...", "Ver historial...") como botones visibles. */
+        .btn-volver { background: #fff; border: 1px solid var(--ma-borde); color: #4a4a5e; }
+        .btn-volver:hover { background: var(--ma-morado-suave); color: var(--ma-morado); border-color: #dcd6f5; }
+        .btn-ir { background: var(--ma-morado-suave); color: var(--ma-morado); border: 1px solid #dcd6f5; }
+        .btn-ir:hover { background: var(--ma-morado); color: #fff; border-color: var(--ma-morado); }
+
+        /* Fila destacada (ej. el periodo en curso). */
+        .table tr.fila-actual > * { background: #f7f5ff; }
+        .table tr.fila-actual > td:first-child { box-shadow: inset 3px 0 0 var(--ma-morado); }
+
+        /* Celular: cada fila de tabla se ve como una tarjeta con "Campo: valor". */
+        @media (max-width: 767px) {
+            table.tabla-tarjetas thead { display: none; }
+            table.tabla-tarjetas, table.tabla-tarjetas tbody, table.tabla-tarjetas tr, table.tabla-tarjetas td { display: block; width: 100%; }
+            table.tabla-tarjetas tbody tr { background: #fff; border: 1px solid var(--ma-borde); border-radius: 14px; margin-bottom: .75rem; padding: .6rem .85rem; box-shadow: var(--ma-sombra); }
+            table.tabla-tarjetas tbody tr:hover > * { background: transparent; }
+            table.tabla-tarjetas td { border: 0 !important; padding: .3rem 0 !important; }
+            table.tabla-tarjetas td[data-label] { position: relative; padding-left: 42% !important; text-align: right !important; min-height: 1.9rem; }
+            table.tabla-tarjetas td[data-label]::before { content: attr(data-label); position: absolute; left: 0; top: .35rem; width: 40%; text-align: left; font-size: .78rem; font-weight: 600; color: var(--ma-texto-suave); }
+            table.tabla-tarjetas td.td-titulo { padding-left: 0 !important; text-align: left !important; font-size: 1rem; font-weight: 700; padding-bottom: .45rem !important; margin-bottom: .2rem; border-bottom: 1px solid #f0f0f5 !important; }
+            table.tabla-tarjetas td.td-titulo::before, table.tabla-tarjetas td.td-acciones::before { display: none; }
+            table.tabla-tarjetas td.td-acciones { padding-left: 0 !important; text-align: left !important; white-space: normal; padding-top: .6rem !important; margin-top: .3rem; border-top: 1px solid #f0f0f5 !important; }
+            table.tabla-tarjetas td.td-acciones .btn { margin: 0 .25rem .25rem 0 !important; }
+            .card:has(> .table-responsive > table.tabla-tarjetas), .card:has(> table.tabla-tarjetas) { background: transparent; border: 0; box-shadow: none; padding: 0 !important; }
+        }
 
         ::-webkit-scrollbar { height: 8px; width: 8px; }
         ::-webkit-scrollbar-thumb { background: #d7d3ee; border-radius: 10px; }
@@ -451,6 +513,32 @@
         const iconInicial = document.getElementById('iconCollapseSidebar');
         if (iconInicial) iconInicial.className = 'bi bi-chevron-right';
     }
+
+    // En celular las tablas se muestran como tarjetas: cada celda recibe
+    // el nombre de su columna (data-label) para mostrar "Campo: valor".
+    // Tambien corre sobre tablas que se recargan por AJAX (filtros).
+    function maTablasTarjetas() {
+        document.querySelectorAll('table.table:not(.tablero-tabla)').forEach(tabla => {
+            const columnas = [...tabla.querySelectorAll('thead tr:last-child th')].map(th => th.textContent.replace(/\s+/g, ' ').trim());
+            if (!columnas.length) return;
+            tabla.classList.add('tabla-tarjetas');
+            tabla.querySelectorAll('tbody tr').forEach(tr => {
+                const celdas = [...tr.children];
+                if (celdas.length !== columnas.length || celdas[0].dataset.label !== undefined || celdas[0].classList.contains('td-titulo')) return;
+                celdas.forEach((td, i) => {
+                    if (i === 0) { td.classList.add('td-titulo'); return; }
+                    if (/^acci/i.test(columnas[i]) || (!columnas[i] && td.querySelector('.btn'))) { td.classList.add('td-acciones'); return; }
+                    td.dataset.label = columnas[i];
+                });
+            });
+        });
+    }
+    let _maTarjetasPendiente = null;
+    new MutationObserver(() => {
+        clearTimeout(_maTarjetasPendiente);
+        _maTarjetasPendiente = setTimeout(maTablasTarjetas, 50);
+    }).observe(document.body, { childList: true, subtree: true });
+    window.addEventListener('DOMContentLoaded', maTablasTarjetas);
 
     // Muestra automaticamente el popup de avisos urgentes al cargar el dashboard
     @if(($avisosFlotantes ?? collect())->where('tipo', 'urgente')->count() > 0 && request()->routeIs('dashboard'))

@@ -4,7 +4,7 @@
 @section('contenido')
 <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
     <div>
-        <a href="{{ route('horarios.index', ['periodo_id' => $periodo?->id]) }}" class="text-muted small"><i class="bi bi-arrow-left"></i> Volver a Horarios</a>
+        <a href="{{ route('horarios.index', ['periodo_id' => $periodo?->id]) }}" class="btn btn-sm btn-volver"><i class="bi bi-arrow-left me-1"></i> Volver a Horarios</a>
         <h5 class="fw-semibold mb-0 mt-1">Tablero de Horarios por Maestro</h5>
         <small class="text-muted">Igual que el cuadro físico de salón — cambia el periodo para ver cómo variaron maestros y horarios de un mes a otro</small>
     </div>
@@ -35,7 +35,7 @@
             <div class="col-12 {{ $maestros->count() > 1 ? 'col-xl-6' : '' }}">
                 @include('horarios._grid-maestro', ['maestro' => $maestro, 'horarios' => $horarios])
                 <div class="text-end mb-2">
-                    <a href="{{ route('maestros.show', ['maestro' => $maestro, 'periodo_id' => $periodo->id]) }}" class="small">Ver perfil de {{ $maestro->nombre }} &rarr;</a>
+                    <a href="{{ route('maestros.show', ['maestro' => $maestro, 'periodo_id' => $periodo->id]) }}" class="btn btn-sm btn-ir">Ver perfil de {{ $maestro->nombre }} <i class="bi bi-arrow-right ms-1"></i></a>
                 </div>
             </div>
         @endforeach

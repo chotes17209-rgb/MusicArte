@@ -4,7 +4,7 @@
 @section('contenido')
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <div>
-        <a href="{{ route('reportes.index') }}" class="text-muted small"><i class="bi bi-arrow-left"></i> Volver a Reportes</a>
+        <a href="{{ route('reportes.index') }}" class="btn btn-sm btn-volver"><i class="bi bi-arrow-left me-1"></i> Volver a Reportes</a>
         <h5 class="fw-semibold mb-0 mt-1">Ingresos vs Egresos {{ $anio }}</h5>
     </div>
     <div class="d-flex gap-2">
