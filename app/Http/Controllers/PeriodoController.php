@@ -6,7 +6,9 @@ use App\Models\Alumno;
 use App\Models\AlumnoPeriodo;
 use App\Models\AlumnoTaller;
 use App\Models\Periodo;
+use App\Services\PaseDePeriodoService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class PeriodoController extends Controller
@@ -135,10 +137,11 @@ class PeriodoController extends Controller
      * quedan explicitamente inactivos en el nuevo periodo, sin borrar su
      * historial del periodo anterior (regla 4).
      *
-     * IMPORTANTE: esto solo marca la continuidad del alumno. Para asignarle
-     * taller/horario dentro del nuevo periodo se usa la pantalla de
-     * "Editar alumno -> Talleres" (Fase 2), asi no se copian horarios que
-     * el usuario no confirmo.
+     * Con "copiar_talleres" (marcado por defecto), a cada alumno que
+     * continua se le copian sus talleres del periodo anterior: maestro,
+     * dias y horas, modalidad y mensualidad, con sus clases y su pago
+     * pendiente del nuevo mes. Luego cualquier cambio (otro maestro, otra
+     * modalidad) se hace en "Editar alumno -> Talleres".
      */
     public function pasarAlumnos(Request $request, Periodo $periodo)
     {
@@ -146,6 +149,7 @@ class PeriodoController extends Controller
             'periodo_anterior_id' => 'required|exists:periodos,id',
             'alumno_ids' => 'array',
             'alumno_ids.*' => 'exists:alumnos,id',
+            'copiar_talleres' => 'nullable|boolean',
         ], [
             'periodo_anterior_id.required' => 'Selecciona el periodo anterior.',
         ]);
@@ -166,17 +170,35 @@ class PeriodoController extends Controller
             )
             ->unique();
 
-        foreach ($candidatosIds as $alumnoId) {
-            AlumnoPeriodo::updateOrCreate(
-                ['alumno_id' => $alumnoId, 'periodo_id' => $periodo->id],
-                ['estado' => $seleccionados->contains($alumnoId) ? 'activo' : 'inactivo']
-            );
+        $copiar = $request->boolean('copiar_talleres', true);
+        $origen = Periodo::findOrFail($data['periodo_anterior_id']);
+        $totales = ['talleres' => 0, 'clases' => 0, 'pagos' => 0];
+
+        DB::transaction(function () use ($candidatosIds, $seleccionados, $periodo, $origen, $copiar, &$totales) {
+            foreach ($candidatosIds as $alumnoId) {
+                $continua = $seleccionados->contains($alumnoId);
+
+                AlumnoPeriodo::updateOrCreate(
+                    ['alumno_id' => $alumnoId, 'periodo_id' => $periodo->id],
+                    ['estado' => $continua ? 'activo' : 'inactivo']
+                );
+
+                if ($continua && $copiar) {
+                    foreach (PaseDePeriodoService::copiarTalleres(Alumno::find($alumnoId), $origen, $periodo) as $clave => $n) {
+                        $totales[$clave] += $n;
+                    }
+                }
+            }
+        });
+
+        $mensaje = "{$seleccionados->count()} alumno(s) pasaron activos a {$periodo->nombre}.";
+        if ($copiar && $totales['talleres']) {
+            $mensaje .= " Se copiaron {$totales['talleres']} talleres con {$totales['clases']} clases y se crearon {$totales['pagos']} mensualidades pendientes.";
+        } elseif ($copiar) {
+            $mensaje .= ' Ya tenían sus talleres en este periodo; no se copió nada nuevo.';
         }
 
-        return response()->json([
-            'ok' => true,
-            'message' => "{$seleccionados->count()} alumno(s) pasaron activos al periodo {$periodo->nombre}.",
-        ]);
+        return response()->json(['ok' => true, 'message' => $mensaje, 'data' => $totales]);
     }
 
     private function validarDatos(Request $request, $ignoreId = null): array

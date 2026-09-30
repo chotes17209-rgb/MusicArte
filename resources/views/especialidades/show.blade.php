@@ -20,15 +20,17 @@
             <h6 class="seccion-titulo">Alumnos {{ $periodo ? 'de '.$periodo->nombre : '' }}</h6>
             <div class="table-responsive">
                 <table class="table align-middle">
-                    <thead><tr><th>Alumno</th><th>Maestro</th></tr></thead>
+                    <thead><tr><th>Alumno</th><th>Maestro</th><th>Modalidad</th><th class="text-end">Mensualidad</th></tr></thead>
                     <tbody>
                     @forelse($talleres as $t)
                         <tr>
                             <td class="fw-semibold"><a href="{{ route('alumnos.show', $t->alumno_id) }}" class="text-body">{{ $t->alumno->nombre ?? '—' }}</a></td>
                             <td>{{ $t->maestro->nombre ?? '—' }}</td>
+                            <td class="text-muted">{{ $t->modalidadLabel() ?? '—' }}</td>
+                            <td class="text-end">{{ $t->monto_mensual !== null ? 'S/ '.number_format($t->monto_mensual, 2) : '—' }}</td>
                         </tr>
                     @empty
-                        <tr><td colspan="2"><div class="vacio">No hay alumnos en este periodo.</div></td></tr>
+                        <tr><td colspan="4"><div class="vacio">No hay alumnos en este periodo.</div></td></tr>
                     @endforelse
                     </tbody>
                 </table>

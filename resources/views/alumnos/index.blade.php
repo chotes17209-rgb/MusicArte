@@ -202,6 +202,7 @@
                             <small class="text-muted" id="alumno_periodo_duracion"></small>
                         </div>
                     </div>
+                    @include('alumnos._mensualidad', ['prefijo' => 'alumno', 'tamano' => ''])
                     <div class="mb-1">
                         <label class="form-label small fw-semibold">Días y horario de clase</label>
                         <div class="table-responsive">
@@ -293,6 +294,7 @@
                                 </select>
                             </div>
                         </div>
+                        @include('alumnos._mensualidad', ['prefijo' => 'taller', 'tamano' => 'form-select-sm'])
                         <div class="mb-2">
                             <label class="form-label small fw-semibold">Días y horario de este taller</label>
                             <div class="table-responsive">
@@ -492,6 +494,14 @@
                     </div>
                     <div id="pase_lista_alumnos" class="border rounded p-2" style="max-height:320px; overflow-y:auto;"></div>
                 </div>
+
+                <div class="form-check form-switch mt-3">
+                    <input class="form-check-input" type="checkbox" id="pase_copiar_talleres" checked>
+                    <label class="form-check-label" for="pase_copiar_talleres">
+                        <span class="fw-semibold">Copiar sus talleres al nuevo periodo</span>
+                        <span class="d-block small text-muted">Mismo maestro, días y horas, modalidad y mensualidad. Se crean sus clases y su mensualidad pendiente del nuevo mes. Si alguien cambia, se edita solo a ese alumno.</span>
+                    </label>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
@@ -550,6 +560,38 @@
         }
     }
 
+    /* ---------------------------------------------------------------
+     * Modalidad y mensualidad del taller. La mensualidad se escribe a
+     * mano; la modalidad se sugiere al marcar los dias de clase.
+     * ------------------------------------------------------------- */
+    function reiniciarMensualidad(prefijo, veces = '', monto = '') {
+        document.getElementById(prefijo + '_veces_semana').value = veces ?? '';
+        document.getElementById(prefijo + '_monto_mensual').value = monto === null || monto === '' ? '' : Number(monto).toFixed(2);
+    }
+
+    ['alumno', 'taller'].forEach(prefijo => {
+        for (let d = 1; d <= 7; d++) {
+            document.getElementById(`${prefijo}_dia_${d}`).addEventListener('change', () => {
+                const marcados = [...Array(7).keys()].filter(i => document.getElementById(`${prefijo}_dia_${i + 1}`).checked).length;
+                if (marcados >= 1 && marcados <= 5) document.getElementById(prefijo + '_veces_semana').value = marcados;
+            });
+        }
+    });
+
+    /** Revisa que haya mensualidad cuando el taller tiene periodo (sin ella no se puede crear su pago). */
+    function mensualidadValida(prefijo, periodoId) {
+        if (!periodoId || document.getElementById(prefijo + '_monto_mensual').value !== '') return true;
+        Swal.fire({ icon: 'warning', title: 'Falta la mensualidad', text: 'Escribe cuánto pagará al mes por este taller según la modalidad que eligió.' });
+        document.getElementById(prefijo + '_monto_mensual').focus();
+        return false;
+    }
+
+    function datosMensualidad(prefijo) {
+        const veces = document.getElementById(prefijo + '_veces_semana').value;
+        const monto = document.getElementById(prefijo + '_monto_mensual').value;
+        return { veces_semana: veces || null, monto_mensual: monto === '' ? null : monto };
+    }
+
     function diaCorto(n) {
         return ({1: 'Lun', 2: 'Mar', 3: 'Mie', 4: 'Jue', 5: 'Vie', 6: 'Sab', 7: 'Dom'})[n] || '';
     }
@@ -565,6 +607,7 @@
             document.getElementById('alumno_dia_' + diaNum + '_fin').disabled = true;
             document.getElementById('alumno_dia_' + diaNum + '_fin').value = '';
         }
+        reiniciarMensualidad('alumno');
         document.getElementById('bloquePrimerTaller').classList.remove('d-none');
         document.getElementById('bloqueTalleresExistente').classList.add('d-none');
         document.getElementById('tituloModalAlumno').innerText = 'Nuevo Alumno';
@@ -608,6 +651,9 @@
                     <div class="fw-semibold">${t.especialidad?.nombre ?? 'Taller'} ${estadoBadge}</div>
                     <div class="small text-muted">Maestro: ${t.maestro?.nombre ?? 'Sin asignar'} · Periodo: ${t.periodo?.nombre ?? 'Sin periodo'}</div>
                     <div class="small text-muted">${dias}</div>
+                    <div class="small mt-1">${t.monto_mensual !== null && t.monto_mensual !== undefined
+                        ? `<span class="fw-semibold">S/ ${Number(t.monto_mensual).toFixed(2)} al mes</span>${t.veces_semana ? ` · ${t.veces_semana === 1 ? '1 vez' : t.veces_semana + ' veces'} por semana` : ''}`
+                        : '<span class="text-danger">Sin mensualidad: edítalo para asignarla</span>'}</div>
                 </div>
                 <div class="text-end">
                     <button type="button" class="btn btn-sm btn-light btn-icon" onclick="mostrarFormTaller(${t.id})"><i class="bi bi-pencil"></i></button>
@@ -642,6 +688,7 @@
             document.getElementById('taller_dia_' + d + '_fin').disabled = true;
             document.getElementById('taller_dia_' + d + '_fin').value = '';
         }
+        reiniciarMensualidad('taller');
 
         if (!tallerId) return;
 
@@ -666,6 +713,7 @@
             if (hi) { hi.disabled = false; hi.value = h.hora_inicio.substring(0, 5); }
             if (hf) { hf.disabled = false; hf.value = h.hora_fin.substring(0, 5); }
         });
+        reiniciarMensualidad('taller', t.veces_semana, t.monto_mensual);
     }
 
     async function guardarTaller() {
@@ -697,6 +745,8 @@
             return;
         }
 
+        if (!mensualidadValida('taller', document.getElementById('taller_periodo_id').value)) return;
+
         const tallerId = document.getElementById('taller_id').value;
         const payload = {
             especialidad_id: document.getElementById('taller_especialidad_id').value,
@@ -704,6 +754,7 @@
             periodo_id: document.getElementById('taller_periodo_id').value || null,
             salon: document.getElementById('taller_salon').value,
             estado: document.getElementById('taller_estado').value,
+            ...datosMensualidad('taller'),
         };
         if (horarios.length) payload.horarios = horarios;
 
@@ -811,9 +862,12 @@
                 return;
             }
 
+            if (document.getElementById('alumno_especialidad_id').value && !mensualidadValida('alumno', periodoId)) return;
             if (document.getElementById('alumno_especialidad_id').value) {
                 payload.especialidad_id = document.getElementById('alumno_especialidad_id').value;
                 payload.maestro_id = document.getElementById('alumno_maestro_id').value || null;
+                Object.assign(payload, datosMensualidad('alumno'));
+                if (periodoId) payload.periodo_id = periodoId;
             }
             if (periodoId && horariosDias.length) {
                 payload.periodo_id = periodoId;
@@ -1069,11 +1123,12 @@
         }
 
         const seleccionados = Array.from(document.querySelectorAll('.pase-alumno-checkbox:checked')).map(cb => cb.value);
+        const copiarTalleres = document.getElementById('pase_copiar_talleres').checked;
 
         const confirmacion = await Swal.fire({
             icon: 'question',
             title: 'Confirmar pase de alumnos',
-            text: `${seleccionados.length} alumno(s) pasaran activos al nuevo periodo. Los no marcados quedaran inactivos ese mes. ¿Continuar?`,
+            text: `${seleccionados.length} alumno(s) pasarán activos al nuevo periodo${copiarTalleres ? ' con sus talleres y mensualidad' : ''}. Los no marcados quedarán inactivos ese mes. ¿Continuar?`,
             showCancelButton: true,
             confirmButtonText: 'Si, pasar alumnos',
             cancelButtonText: 'Cancelar',
@@ -1083,10 +1138,11 @@
         const res = await maFetch(`/periodos/${periodoNuevoId}/pasar-alumnos`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ periodo_anterior_id: periodoAnteriorId, alumno_ids: seleccionados }),
+            body: JSON.stringify({ periodo_anterior_id: periodoAnteriorId, alumno_ids: seleccionados, copiar_talleres: copiarTalleres ? 1 : 0 }),
         });
         if (res && res.ok) {
-            maToast('success', res.message);
+            maToast('success', res.message, 'Alumnos pasados');
+            buscarAlumnosReactivo();
             bootstrap.Modal.getInstance(document.getElementById('modalPaseAlumnos')).hide();
         }
     }

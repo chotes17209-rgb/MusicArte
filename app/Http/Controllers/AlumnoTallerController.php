@@ -27,11 +27,13 @@ class AlumnoTallerController extends Controller
                 'periodo_id' => $data['periodo_id'] ?? null,
                 'salon' => $data['salon'] ?? null,
                 'estado' => $data['estado'] ?? 'activo',
-            ]);
+            ] + AlumnoTaller::resolverMensualidad($data, $request->input('horarios')));
 
             if ($request->filled('horarios')) {
                 HorarioService::generar($taller, $request->input('horarios'));
             }
+
+            $taller->sincronizarPago();
 
             return $taller;
         });
@@ -62,11 +64,13 @@ class AlumnoTallerController extends Controller
                 'periodo_id' => $data['periodo_id'] ?? null,
                 'salon' => $data['salon'] ?? null,
                 'estado' => $data['estado'] ?? $alumnoTaller->estado,
-            ]);
+            ] + AlumnoTaller::resolverMensualidad($data, $request->input('horarios')));
 
             if ($request->filled('horarios')) {
                 HorarioService::generar($alumnoTaller, $request->input('horarios'));
             }
+
+            $alumnoTaller->sincronizarPago();
         });
 
         $alumno = $alumnoTaller->alumno;
@@ -121,8 +125,12 @@ class AlumnoTallerController extends Controller
             'periodo_id' => 'nullable|exists:periodos,id',
             'salon' => 'nullable|string|max:50',
             'estado' => 'nullable|in:activo,inactivo',
+            'veces_semana' => 'nullable|integer|between:1,7',
+            'monto_mensual' => 'nullable|required_with:periodo_id|numeric|min:0|max:99999',
         ], [
             'especialidad_id.required' => 'Selecciona el taller (especialidad).',
+            'monto_mensual.required_with' => 'Escribe la mensualidad que pagará el alumno por este taller.',
+            'monto_mensual.numeric' => 'La mensualidad debe ser un monto válido.',
         ]);
     }
 }

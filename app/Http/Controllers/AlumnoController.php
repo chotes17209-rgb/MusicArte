@@ -236,6 +236,10 @@ class AlumnoController extends Controller
             'especialidad_id' => 'required|exists:especialidades,id',
             'maestro_id' => 'nullable|exists:maestros,id',
             'periodo_id' => 'nullable|exists:periodos,id',
+            'veces_semana' => 'nullable|integer|between:1,7',
+            'monto_mensual' => 'nullable|required_with:periodo_id|numeric|min:0|max:99999',
+        ], [
+            'monto_mensual.required_with' => 'Escribe la mensualidad que pagará el alumno por este taller.',
         ]);
 
         $taller = AlumnoTaller::create([
@@ -244,11 +248,13 @@ class AlumnoController extends Controller
             'maestro_id' => $data['maestro_id'] ?? null,
             'periodo_id' => $data['periodo_id'] ?? null,
             'estado' => 'activo',
-        ]);
+        ] + AlumnoTaller::resolverMensualidad($data, $request->input('horarios')));
 
         if ($request->filled('horarios')) {
             HorarioService::generar($taller, $request->input('horarios'));
         }
+
+        $taller->sincronizarPago();
     }
 
     private function validarDatos(Request $request): array

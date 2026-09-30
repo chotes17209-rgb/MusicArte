@@ -66,7 +66,12 @@ class PagoController extends Controller
     /** Talleres activos de un alumno especifico, para el selector del modal (AJAX). */
     public function talleresDeAlumno(Alumno $alumno)
     {
-        $talleres = $alumno->talleres()->with('especialidad', 'maestro')->get();
+        // Del mas reciente al mas antiguo: cada mes es un taller distinto.
+        $talleres = $alumno->talleres()->with('especialidad', 'maestro', 'periodo')
+            ->leftJoin('periodos', 'periodos.id', '=', 'alumno_talleres.periodo_id')
+            ->orderByDesc('periodos.anio')->orderByDesc('periodos.mes')->orderByDesc('alumno_talleres.id')
+            ->select('alumno_talleres.*')
+            ->get();
 
         return response()->json(['ok' => true, 'data' => $talleres]);
     }
@@ -76,6 +81,18 @@ class PagoController extends Controller
     public function store(Request $request)
     {
         $data = $this->validarDatos($request);
+
+        // La mensualidad de cada taller se crea sola al inscribirlo: no se duplica.
+        $existente = ! empty($data['alumno_taller_id'])
+            ? Pago::where('alumno_taller_id', $data['alumno_taller_id'])->where('mes', $data['mes'])->where('anio', $data['anio'])->first()
+            : null;
+        if ($existente) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Ese taller ya tiene su mensualidad de '.Pago::MESES[$data['mes']].' (S/ '.number_format($existente->monto_total, 2).'). Registra el abono en ese pago en lugar de crear otro.',
+            ], 422);
+        }
+
         $data['saldo'] = $data['monto_total'];
         $data['estado'] = $data['monto_total'] <= 0 ? 'pagado' : 'pendiente';
 

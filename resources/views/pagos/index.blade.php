@@ -331,15 +331,33 @@
         select.innerHTML = '<option value="">-- Sin taller especifico --</option>';
         if (res && res.ok) {
             res.data.forEach(t => {
-                const nombre = (t.especialidad ? t.especialidad.nombre : 'Taller') + (t.maestro ? ' — ' + t.maestro.nombre : '');
+                const partes = [t.especialidad ? t.especialidad.nombre : 'Taller'];
+                if (t.maestro) partes.push(t.maestro.nombre);
+                if (t.periodo) partes.push(t.periodo.nombre);
+                if (t.monto_mensual !== null) partes.push('S/ ' + Number(t.monto_mensual).toFixed(2));
                 const opt = document.createElement('option');
                 opt.value = t.id;
-                opt.text = nombre;
+                opt.text = partes.join(' — ');
+                opt.dataset.monto = t.monto_mensual ?? '';
+                opt.dataset.mes = t.periodo?.mes ?? '';
+                opt.dataset.anio = t.periodo?.anio ?? '';
+                opt.dataset.concepto = 'Mensualidad ' + (t.especialidad?.nombre ?? '');
                 if (seleccionarId && Number(seleccionarId) === t.id) opt.selected = true;
                 select.appendChild(opt);
             });
         }
     }
+
+    // Pago nuevo: al elegir el taller se completan mes, monto y concepto con su mensualidad.
+    document.getElementById('pago_alumno_taller_id').addEventListener('change', function () {
+        if (document.getElementById('pago_id').value) return;
+        const opt = this.selectedOptions[0];
+        if (!opt || !opt.value) return;
+        if (opt.dataset.monto !== '') document.getElementById('pago_monto_total').value = Number(opt.dataset.monto).toFixed(2);
+        if (opt.dataset.mes) document.getElementById('pago_mes').value = opt.dataset.mes;
+        if (opt.dataset.anio) document.getElementById('pago_anio').value = opt.dataset.anio;
+        if (!document.getElementById('pago_concepto').value) document.getElementById('pago_concepto').value = opt.dataset.concepto;
+    });
 
     async function editarPago(id) {
         const res = await maFetch(`/pagos/${id}/edit`);
