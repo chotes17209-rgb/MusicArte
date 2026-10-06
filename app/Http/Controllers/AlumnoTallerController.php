@@ -56,15 +56,27 @@ class AlumnoTallerController extends Controller
     {
         $data = $this->validarTaller($request);
         $periodoAnteriorId = $alumnoTaller->periodo_id;
+        $estadoAnterior = $alumnoTaller->estado;
+        $estadoNuevo = $data['estado'] ?? $estadoAnterior;
 
-        DB::transaction(function () use ($alumnoTaller, $data, $request) {
+        DB::transaction(function () use ($alumnoTaller, $data, $request, $estadoAnterior, $estadoNuevo) {
             $alumnoTaller->update([
                 'especialidad_id' => $data['especialidad_id'],
                 'maestro_id' => $data['maestro_id'] ?? null,
                 'periodo_id' => $data['periodo_id'] ?? null,
                 'salon' => $data['salon'] ?? null,
-                'estado' => $data['estado'] ?? $alumnoTaller->estado,
             ] + AlumnoTaller::resolverMensualidad($data, $request->input('horarios')));
+
+            if ($estadoNuevo === 'inactivo') {
+                // Pasarlo a inactivo es lo mismo que darlo de baja.
+                $alumnoTaller->darDeBaja();
+
+                return;
+            }
+
+            if ($estadoAnterior === 'inactivo') {
+                $alumnoTaller->reactivar();
+            }
 
             if ($request->filled('horarios')) {
                 HorarioService::generar($alumnoTaller, $request->input('horarios'));
@@ -89,23 +101,15 @@ class AlumnoTallerController extends Controller
     }
 
     /**
-     * "Quitar" un taller no borra el historial: lo marca inactivo, apaga
-     * sus horarios semanales (para que dejen de generar clases nuevas) y
-     * cancela las clases futuras que aun no se hayan dictado. Las clases
-     * ya realizadas y los pagos asociados quedan intactos.
+     * "Quitar" un taller no borra el historial: lo da de baja (ver
+     * AlumnoTaller::darDeBaja). Las clases dictadas y los pagos con
+     * abonos quedan intactos.
      */
     public function destroy(AlumnoTaller $alumnoTaller)
     {
         $periodoId = $alumnoTaller->periodo_id;
 
-        DB::transaction(function () use ($alumnoTaller) {
-            $alumnoTaller->update(['estado' => 'inactivo']);
-            $alumnoTaller->horarios()->update(['activo' => false]);
-            $alumnoTaller->clases()
-                ->where('fecha', '>=', now()->toDateString())
-                ->where('estado', 'programada')
-                ->update(['estado' => 'cancelada']);
-        });
+        DB::transaction(fn () => $alumnoTaller->darDeBaja());
 
         $alumno = $alumnoTaller->alumno;
         $alumno->sincronizarTallerPrincipal();

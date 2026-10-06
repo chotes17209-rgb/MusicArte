@@ -56,6 +56,41 @@ class AlumnoTaller extends Model
     }
 
     /**
+     * Da de baja el taller sin borrar su historial: queda inactivo, sus
+     * horarios dejan de generar clases, se cancelan las clases que aun no
+     * se dictaron (programadas y sin asistencia marcada) y, si no llego a
+     * tener ninguna clase, se elimina su mensualidad sin abonos (por
+     * ejemplo, si se paso de periodo por error). Lo ya dictado y lo ya
+     * pagado se conserva, y si estudio parte del mes su deuda se mantiene.
+     */
+    public function darDeBaja(): void
+    {
+        $this->update(['estado' => 'inactivo']);
+        $this->horarios()->update(['activo' => false]);
+        $this->clases()->where('estado', 'programada')->whereDoesntHave('asistencia')
+            ->update(['estado' => 'cancelada']);
+
+        $tuvoClases = $this->clases()->where(fn ($q) => $q->where('estado', 'realizada')->orWhereHas('asistencia'))->exists();
+        if (! $tuvoClases) {
+            $this->pagos()->whereDoesntHave('abonos')->delete();
+        }
+    }
+
+    /**
+     * Revierte una baja: el taller vuelve a estar activo con sus horarios,
+     * las clases canceladas que faltan dictar vuelven a programarse y se
+     * recrea su mensualidad.
+     */
+    public function reactivar(): void
+    {
+        $this->update(['estado' => 'activo']);
+        $this->horarios()->update(['activo' => true]);
+        $this->clases()->where('estado', 'cancelada')->whereDate('fecha', '>=', now()->toDateString())
+            ->update(['estado' => 'programada']);
+        $this->sincronizarPago();
+    }
+
+    /**
      * Deja el pago del mes de este taller igual a su mensualidad: si no
      * existe lo crea (pendiente) y si cambio el monto lo actualiza, sin
      * tocar los abonos ya registrados. Solo aplica a talleres activos,

@@ -132,6 +132,39 @@ class Alumno extends Model
         ])->saveQuietly();
     }
 
+    /** Talleres del alumno en periodos que aun no terminan (el actual y los siguientes). */
+    public function talleresVigentes()
+    {
+        return $this->talleres()->whereHas('periodo', fn ($q) => $q->whereDate('fecha_fin', '>=', now()->toDateString()));
+    }
+
+    /**
+     * Cambia el estado del alumno (interruptor "Alumno activo"). Al
+     * desactivarlo se le da de baja en los periodos vigentes (sus
+     * talleres, clases pendientes y mensualidad sin abonos); al volver a
+     * activarlo se recuperan esos talleres. Los periodos ya terminados no
+     * se tocan: son historial.
+     *
+     * @return int cantidad de talleres afectados
+     */
+    public function cambiarEstado(bool $activo): int
+    {
+        $talleres = $this->talleresVigentes()->where('estado', $activo ? 'inactivo' : 'activo')->get();
+
+        foreach ($talleres as $taller) {
+            $activo ? $taller->reactivar() : $taller->darDeBaja();
+        }
+
+        $this->forceFill(['activo' => $activo])->saveQuietly();
+
+        foreach ($talleres->pluck('periodo_id')->unique() as $periodoId) {
+            $this->sincronizarEstadoPeriodo($periodoId);
+        }
+        $this->sincronizarTallerPrincipal();
+
+        return $talleres->count();
+    }
+
     /**
      * Mantiene sincronizado alumno_periodo para un periodo especifico: el
      * alumno queda "activo" en ese periodo si tiene al menos un taller

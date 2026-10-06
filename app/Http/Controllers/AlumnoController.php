@@ -240,9 +240,26 @@ class AlumnoController extends Controller
     public function update(Request $request, Alumno $alumno)
     {
         $data = $this->validarDatos($request);
-        $alumno->update($data);
+        $nuevoEstado = array_key_exists('activo', $data) ? (bool) $data['activo'] : $alumno->activo;
+        $cambioEstado = $nuevoEstado !== $alumno->activo;
+        unset($data['activo']);
 
-        return response()->json(['ok' => true, 'message' => 'Datos del alumno actualizados.', 'data' => $alumno]);
+        $mensaje = 'Datos del alumno actualizados.';
+
+        DB::transaction(function () use ($alumno, $data, $cambioEstado, $nuevoEstado, &$mensaje) {
+            $alumno->update($data);
+
+            if (! $cambioEstado) {
+                return;
+            }
+
+            $talleres = $alumno->cambiarEstado($nuevoEstado);
+            $mensaje = $nuevoEstado
+                ? 'Alumno activado.'.($talleres ? " Se recuperaron {$talleres} taller(es) del periodo actual." : ' Agrégale un taller para inscribirlo en el periodo.')
+                : 'Alumno inactivo.'.($talleres ? " Se dio de baja en {$talleres} taller(es) del periodo actual: sus clases pendientes se cancelaron y, si aún no tuvo clases, se quitó su mensualidad sin pagar." : '');
+        });
+
+        return response()->json(['ok' => true, 'message' => $mensaje, 'data' => $alumno->fresh()]);
     }
 
     public function destroy(Alumno $alumno)
