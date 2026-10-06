@@ -64,7 +64,9 @@
                 <div class="timeline-item mb-3 pb-3 {{ !$loop->last ? 'border-bottom' : '' }}">
                     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
                         <div class="fw-semibold">{{ $item['periodo']->nombre }}</div>
-                        @if($item['estado'] === 'activo')
+                        @if($item['estado'] === 'activo' && $item['periodo']->haTerminado())
+                            <span class="badge bg-secondary">Estudió este periodo · finalizado</span>
+                        @elseif($item['estado'] === 'activo')
                             <span class="badge bg-success">Activo este periodo</span>
                         @elseif($item['estado'] === 'inactivo')
                             <span class="badge bg-secondary">Inactivo este periodo</span>

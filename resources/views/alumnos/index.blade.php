@@ -524,6 +524,7 @@
 <script>
     const modalAlumno = new bootstrap.Modal('#modalAlumno');
     let talleresAlumnoActual = [];
+    const HOY = @json(now()->toDateString());
 
     /* ---------------------------------------------------------------
      * 2.1 Edad automatica
@@ -632,7 +633,9 @@
      * Seccion 3 y 4: gestion de multiples talleres por alumno.
      * ------------------------------------------------------------- */
     function renderListaTalleres(talleres) {
-        talleresAlumnoActual = talleres || [];
+        // Del periodo mas reciente al mas antiguo: lo vigente queda arriba.
+        talleresAlumnoActual = (talleres || []).slice().sort((a, b) =>
+            (b.periodo?.fecha_inicio ?? '9999').localeCompare(a.periodo?.fecha_inicio ?? '9999') || b.id - a.id);
         const cont = document.getElementById('listaTalleresAlumno');
 
         if (!talleresAlumnoActual.length) {
@@ -644,9 +647,13 @@
             const dias = (t.horarios || [])
                 .map(h => `${diaCorto(h.dia_semana)} ${h.hora_inicio.substring(0, 5)}-${h.hora_fin.substring(0, 5)}`)
                 .join(' · ') || 'Sin horario asignado';
-            const estadoBadge = t.estado === 'activo'
-                ? '<span class="badge bg-success">Activo</span>'
-                : '<span class="badge bg-secondary">Inactivo</span>';
+            // Un taller de un periodo que ya termino es historial: se muestra "Finalizado".
+            const terminado = t.periodo && (t.periodo.fecha_fin ?? '').substring(0, 10) < HOY;
+            const estadoBadge = terminado
+                ? '<span class="badge bg-secondary">Finalizado</span>'
+                : (t.estado === 'activo'
+                    ? '<span class="badge bg-success">Activo</span>'
+                    : '<span class="badge bg-secondary">Inactivo</span>');
 
             return `
             <div class="border rounded p-2 d-flex justify-content-between align-items-start">

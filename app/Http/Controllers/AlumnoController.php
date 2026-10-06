@@ -147,7 +147,9 @@ class AlumnoController extends Controller
     private function aplicarFiltros(Request $request)
     {
         $query = Alumno::with(['especialidad', 'maestro'])
-            ->withCount(['talleres as talleres_activos_count' => fn ($q) => $q->where('estado', 'activo')]);
+            // Con un periodo elegido, solo cuenta los talleres de ese periodo.
+            ->withCount(['talleres as talleres_activos_count' => fn ($q) => $q->where('estado', 'activo')
+                ->when($request->filled('periodo_id'), fn ($t) => $t->where('periodo_id', $request->periodo_id))]);
 
         // 1.3 Busqueda automatica/reactiva: nombre, dni o tutor. Sin
         // distinguir mayusculas ni tildes ("aless" encuentra "Alessandro",

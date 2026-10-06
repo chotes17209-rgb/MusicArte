@@ -23,7 +23,7 @@
                         <span class="text-muted">Sin taller</span>
                     @endif
                     @if($a->talleres_activos_count > 1)
-                        <div class="small text-muted">{{ $a->talleres_activos_count }} talleres en total</div>
+                        <div class="small text-muted">Lleva {{ $a->talleres_activos_count }} talleres</div>
                     @endif
                 </td>
                 <td>
