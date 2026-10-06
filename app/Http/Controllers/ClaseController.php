@@ -21,7 +21,7 @@ class ClaseController extends Controller
     /** Feed de eventos que consume FullCalendar via AJAX (?start=&end=). */
     public function eventos(Request $request)
     {
-        $query = Clase::with(['alumno', 'maestro', 'especialidad', 'asistencia']);
+        $query = Clase::with(['alumno', 'maestro', 'especialidad', 'asistencia'])->sinBajas();
 
         if ($request->filled('start') && $request->filled('end')) {
             $query->whereDate('fecha', '>=', substr($request->start, 0, 10))

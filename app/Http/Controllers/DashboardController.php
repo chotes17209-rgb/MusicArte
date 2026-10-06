@@ -20,7 +20,7 @@ class DashboardController extends Controller
         $kpis = [
             'alumnos_activos' => Alumno::activos()->count(),
             'maestros_activos' => Maestro::where('activo', true)->count(),
-            'clases_hoy' => Clase::whereDate('fecha', $hoy)->count(),
+            'clases_hoy' => Clase::sinBajas()->whereDate('fecha', $hoy)->count(),
             'clases_hoy_realizadas' => Clase::whereDate('fecha', $hoy)->where('estado', 'realizada')->count(),
         ];
 
@@ -44,6 +44,7 @@ class DashboardController extends Controller
         $kpis['alumnos_con_saldo'] = Alumno::whereHas('pagos', fn ($q) => $q->where('mes', $mesP)->where('anio', $anioP)->where('saldo', '>', 0))->count();
 
         $clasesHoy = Clase::with(['alumno', 'maestro', 'especialidad'])
+            ->sinBajas()
             ->whereDate('fecha', $hoy)
             ->orderBy('hora_inicio')
             ->get();

@@ -15,6 +15,7 @@ class AsistenciaController extends Controller
         $fecha = $request->get('fecha', now()->toDateString());
 
         $clases = Clase::with(['alumno', 'maestro', 'especialidad', 'asistencia'])
+            ->sinBajas()
             ->whereDate('fecha', $fecha);
 
         // 16. Filtro por maestro: solo mostrar los alumnos/clases de ese maestro.

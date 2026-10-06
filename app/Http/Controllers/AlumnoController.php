@@ -202,14 +202,21 @@ class AlumnoController extends Controller
             $query->where('activo', $request->estado === 'activo');
         }
 
-        // 1.1 Filtro por periodo/mes: alumno inscrito en el periodo (tiene
-        // un taller de ese periodo) o con algun horario programado en el.
+        // 1.1 Filtro por periodo/mes: los alumnos que estudian en ese periodo
+        // (taller u horario activo, o marcados activos al pasarlos). Los dados
+        // de baja no aparecen, salvo que se filtre por "Inactivos".
         if ($request->filled('periodo_id')) {
             $periodoId = $request->periodo_id;
-            $query->where(function ($q) use ($periodoId) {
-                $q->whereHas('talleres', fn ($t) => $t->where('periodo_id', $periodoId))
-                    ->orWhereHas('horarios', fn ($h) => $h->where('periodo_id', $periodoId));
-            });
+
+            if ($request->estado === 'inactivo') {
+                $query->where(fn ($q) => $q->whereHas('talleres', fn ($t) => $t->where('periodo_id', $periodoId))
+                    ->orWhereHas('historialPeriodos', fn ($h) => $h->where('periodo_id', $periodoId)));
+            } else {
+                $query->where(fn ($q) => $q->whereHas('talleres', fn ($t) => $t->where('periodo_id', $periodoId)->where('estado', 'activo'))
+                    ->orWhereHas('horarios', fn ($h) => $h->where('periodo_id', $periodoId)->where('activo', true))
+                    ->orWhereHas('historialPeriodos', fn ($h) => $h->where('periodo_id', $periodoId)->where('estado', 'activo')))
+                    ->whereDoesntHave('historialPeriodos', fn ($h) => $h->where('periodo_id', $periodoId)->where('estado', 'inactivo'));
+            }
         }
 
         return $query;

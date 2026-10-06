@@ -47,6 +47,18 @@ class Clase extends Model
         return $this->belongsTo(Especialidad::class);
     }
 
+    /**
+     * Oculta las clases canceladas por la baja de su taller (alumno que se
+     * retiro o se paso de periodo por error): ya no son parte del periodo.
+     * Las demas canceladas (feriado, aviso del maestro) se siguen viendo.
+     */
+    public function scopeSinBajas($query)
+    {
+        return $query->where(fn ($q) => $q->where('estado', '!=', 'cancelada')
+            ->orWhereNull('alumno_taller_id')
+            ->orWhereHas('alumnoTaller', fn ($t) => $t->where('estado', 'activo')));
+    }
+
     public function asistencia()
     {
         return $this->hasOne(Asistencia::class);
