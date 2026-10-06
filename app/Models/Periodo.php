@@ -90,20 +90,29 @@ class Periodo extends Model
     }
 
     /**
-     * Para un periodo ya terminado: a que periodo siguiente paso cada alumno
-     * (el primero posterior donde tiene un taller activo).
+     * A que periodo siguiente paso cada alumno: el primero posterior donde
+     * tiene un taller activo o quedo activo al pasarlo.
      *
      * @return Collection<int, string> alumno_id => nombre del periodo
      */
     public function siguientePeriodoDe(Collection $alumnoIds): Collection
     {
-        return AlumnoTaller::with('periodo')
-            ->whereIn('alumno_id', $alumnoIds)->where('estado', 'activo')
-            ->whereHas('periodo', fn ($q) => $q->whereDate('fecha_inicio', '>', $this->fecha_fin->toDateString()))
-            ->get()
-            ->sortBy(fn ($t) => $t->periodo->fecha_inicio)
+        $posteriores = static::where('fecha_inicio', '>', $this->fecha_inicio)->orderBy('fecha_inicio')->get()->keyBy('id');
+        if ($posteriores->isEmpty()) {
+            return collect();
+        }
+
+        // Un alumno paso a un periodo posterior si tiene ahi un taller activo
+        // o si se le marco activo al pasarlo (aunque no se copiaran talleres).
+        $porTaller = AlumnoTaller::whereIn('alumno_id', $alumnoIds)->where('estado', 'activo')
+            ->whereIn('periodo_id', $posteriores->keys())->get(['alumno_id', 'periodo_id']);
+        $porPase = AlumnoPeriodo::whereIn('alumno_id', $alumnoIds)->where('estado', 'activo')
+            ->whereIn('periodo_id', $posteriores->keys())->get(['alumno_id', 'periodo_id']);
+
+        return $porTaller->concat($porPase)
+            ->sortBy(fn ($r) => $posteriores[$r->periodo_id]->fecha_inicio)
             ->unique('alumno_id')
-            ->mapWithKeys(fn ($t) => [$t->alumno_id => $t->periodo->nombre]);
+            ->mapWithKeys(fn ($r) => [$r->alumno_id => $posteriores[$r->periodo_id]->nombre]);
     }
 
     public function horarios()
