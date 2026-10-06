@@ -18,8 +18,20 @@ class AlumnoTaller extends Model
 
     protected $fillable = [
         'alumno_id', 'especialidad_id', 'maestro_id', 'periodo_id', 'salon', 'estado',
-        'veces_semana', 'monto_mensual',
+        'veces_semana', 'monto_mensual', 'nota_mensualidad',
     ];
+
+    /** Nota de la mensualidad antes del ultimo cambio (para actualizar la observacion del pago). */
+    protected ?string $notaPrevia = null;
+
+    protected static function booted(): void
+    {
+        static::updating(function (self $taller) {
+            if ($taller->isDirty('nota_mensualidad')) {
+                $taller->notaPrevia = $taller->getOriginal('nota_mensualidad');
+            }
+        });
+    }
 
     protected function casts(): array
     {
@@ -49,9 +61,12 @@ class AlumnoTaller extends Model
 
         $monto = $data['monto_mensual'] ?? null;
 
+        $nota = trim((string) ($data['nota_mensualidad'] ?? ''));
+
         return [
             'veces_semana' => $veces ? (int) $veces : null,
-            'monto_mensual' => ($monto === null || $monto === '') ? null : round((float) $monto, 2),
+            'monto_mensual' => ($monto === null || $monto === '') ? null : number_format((float) $monto, 2, '.', ''),
+            'nota_mensualidad' => $nota !== '' ? $nota : null,
         ];
     }
 
@@ -109,7 +124,15 @@ class AlumnoTaller extends Model
             'anio' => $periodo->anio,
         ]);
 
-        if ($pago->exists && (float) $pago->monto_total === (float) $this->monto_mensual) {
+        // La nota de la mensualidad pasa a la observacion del pago, salvo que
+        // alli ya se haya escrito otra cosa a mano.
+        $notaAnterior = $this->notaPrevia ?? $this->getOriginal('nota_mensualidad');
+        $automatica = blank($pago->observacion) || str_starts_with($pago->observacion, 'Importado de ');
+        $observacion = $automatica || $pago->observacion === $notaAnterior || $pago->observacion === $this->nota_mensualidad
+            ? $this->nota_mensualidad
+            : $pago->observacion;
+
+        if ($pago->exists && (float) $pago->monto_total === (float) $this->monto_mensual && $pago->observacion === $observacion) {
             return $pago;
         }
 
@@ -117,6 +140,7 @@ class AlumnoTaller extends Model
             'alumno_id' => $this->alumno_id,
             'concepto' => $pago->concepto ?: 'Mensualidad '.($this->especialidad->nombre ?? ''),
             'monto_total' => $this->monto_mensual,
+            'observacion' => $observacion,
         ]);
 
         if (! $pago->exists) {

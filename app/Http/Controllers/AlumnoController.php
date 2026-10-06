@@ -313,6 +313,7 @@ class AlumnoController extends Controller
             'periodo_id' => 'nullable|exists:periodos,id',
             'veces_semana' => 'nullable|integer|between:1,7',
             'monto_mensual' => 'nullable|required_with:periodo_id|numeric|min:0|max:99999',
+            'nota_mensualidad' => 'nullable|string|max:255',
         ], [
             'monto_mensual.required_with' => 'Escribe la mensualidad que pagará el alumno por este taller.',
         ]);

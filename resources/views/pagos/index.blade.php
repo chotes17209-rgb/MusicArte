@@ -74,6 +74,9 @@
                         @if($p->concepto && $p->concepto !== 'Mensualidad '.($p->alumnoTaller->especialidad->nombre ?? ''))
                             <div class="small text-muted">{{ $p->concepto }}</div>
                         @endif
+                        @if($p->observacion)
+                            <div class="small text-muted fst-italic"><i class="bi bi-sticky me-1"></i>{{ \Illuminate\Support\Str::limit($p->observacion, 70) }}</div>
+                        @endif
                     </td>
                     <td class="text-end">S/ {{ number_format($p->monto_total, 2) }}</td>
                     <td class="text-end">S/ {{ number_format($p->monto_total - $p->saldo, 2) }}</td>

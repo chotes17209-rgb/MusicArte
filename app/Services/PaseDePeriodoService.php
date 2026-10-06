@@ -41,6 +41,7 @@ class PaseDePeriodoService
                 'estado' => 'activo',
                 'veces_semana' => $anterior->veces_semana,
                 'monto_mensual' => $anterior->monto_mensual,
+                'nota_mensualidad' => $anterior->nota_mensualidad,
             ]);
             $resultado['talleres']++;
 

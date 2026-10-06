@@ -568,7 +568,8 @@
      * Modalidad y mensualidad del taller. La mensualidad se escribe a
      * mano; la modalidad se sugiere al marcar los dias de clase.
      * ------------------------------------------------------------- */
-    function reiniciarMensualidad(prefijo, veces = '', monto = '') {
+    function reiniciarMensualidad(prefijo, veces = '', monto = '', nota = '') {
+        document.getElementById(prefijo + '_nota_mensualidad').value = nota ?? '';
         document.getElementById(prefijo + '_veces_semana').value = veces ?? '';
         document.getElementById(prefijo + '_monto_mensual').value = monto === null || monto === '' ? '' : Number(monto).toFixed(2);
     }
@@ -593,7 +594,8 @@
     function datosMensualidad(prefijo) {
         const veces = document.getElementById(prefijo + '_veces_semana').value;
         const monto = document.getElementById(prefijo + '_monto_mensual').value;
-        return { veces_semana: veces || null, monto_mensual: monto === '' ? null : monto };
+        const nota = document.getElementById(prefijo + '_nota_mensualidad').value.trim();
+        return { veces_semana: veces || null, monto_mensual: monto === '' ? null : monto, nota_mensualidad: nota || null };
     }
 
     function diaCorto(n) {
@@ -672,6 +674,7 @@
                     <div class="small mt-1">${t.monto_mensual !== null && t.monto_mensual !== undefined
                         ? `<span class="fw-semibold">S/ ${Number(t.monto_mensual).toFixed(2)} al mes</span>${t.veces_semana ? ` · ${t.veces_semana === 1 ? '1 vez' : t.veces_semana + ' veces'} por semana` : ''}`
                         : '<span class="text-danger">Sin mensualidad: edítalo para asignarla</span>'}</div>
+                    ${t.nota_mensualidad ? `<div class="small text-muted fst-italic"><i class="bi bi-sticky me-1"></i>${maEscapar(t.nota_mensualidad)}</div>` : ''}
                 </div>
                 <div class="text-end">
                     <button type="button" class="btn btn-sm btn-light btn-icon" onclick="mostrarFormTaller(${t.id})"><i class="bi bi-pencil"></i></button>
@@ -731,7 +734,7 @@
             if (hi) { hi.disabled = false; hi.value = h.hora_inicio.substring(0, 5); }
             if (hf) { hf.disabled = false; hf.value = h.hora_fin.substring(0, 5); }
         });
-        reiniciarMensualidad('taller', t.veces_semana, t.monto_mensual);
+        reiniciarMensualidad('taller', t.veces_semana, t.monto_mensual, t.nota_mensualidad);
     }
 
     async function guardarTaller() {

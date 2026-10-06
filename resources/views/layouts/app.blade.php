@@ -740,6 +740,13 @@
         warning: { icono: 'bi-exclamation-triangle-fill', titulo: 'Atención' },
         info: { icono: 'bi-info-circle-fill', titulo: 'Aviso' },
     };
+    /** Escapa texto escrito por el usuario antes de insertarlo como HTML. */
+    function maEscapar(texto) {
+        const div = document.createElement('div');
+        div.textContent = texto ?? '';
+        return div.innerHTML;
+    }
+
     function maToast(tipo, mensaje, titulo = null) {
         const t = _TOAST_TIPOS[tipo] || _TOAST_TIPOS.info;
         const cont = document.getElementById('maToasts');
