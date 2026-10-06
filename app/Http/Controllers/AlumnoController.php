@@ -127,8 +127,10 @@ class AlumnoController extends Controller
         $inactivosEnPeriodo = \App\Models\AlumnoPeriodo::where('periodo_id', $periodo->id)
             ->whereIn('alumno_id', $ids)->where('estado', 'inactivo')->pluck('alumno_id')->flip();
 
+        $inactivosGeneral = $alumnos->where('activo', false)->pluck('id')->flip();
+
         if (! $periodo->haTerminado()) {
-            return $ids->mapWithKeys(fn ($id) => [$id => isset($inactivosEnPeriodo[$id])
+            return $ids->mapWithKeys(fn ($id) => [$id => isset($inactivosEnPeriodo[$id]) || isset($inactivosGeneral[$id])
                 ? ['texto' => 'Inactivo este mes', 'clase' => 'bg-secondary']
                 : ['texto' => 'Activo', 'clase' => 'bg-success']])->all();
         }
@@ -241,7 +243,10 @@ class AlumnoController extends Controller
     {
         $data = $this->validarDatos($request);
         $nuevoEstado = array_key_exists('activo', $data) ? (bool) $data['activo'] : $alumno->activo;
-        $cambioEstado = $nuevoEstado !== $alumno->activo;
+        // Inactivo con talleres aun activos en el periodo vigente tambien se
+        // aplica (pudo quedar desactivado antes sin darse de baja del periodo).
+        $cambioEstado = $nuevoEstado !== $alumno->activo
+            || (! $nuevoEstado && $alumno->talleresVigentes()->where('estado', 'activo')->exists());
         unset($data['activo']);
 
         $mensaje = 'Datos del alumno actualizados.';
