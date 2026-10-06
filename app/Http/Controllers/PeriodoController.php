@@ -89,7 +89,14 @@ class PeriodoController extends Controller
     public function update(Request $request, Periodo $periodo)
     {
         $data = $this->validarDatos($request, $periodo->id);
-        $periodo->update($data);
+        $periodo->fill($data);
+
+        // Si se extiende la fecha de fin, vuelve a cerrarse solo cuando venza la nueva fecha.
+        if (! $periodo->haTerminado()) {
+            $periodo->cerrado_en = null;
+        }
+
+        $periodo->save();
 
         return response()->json(['ok' => true, 'message' => 'Periodo actualizado correctamente.', 'data' => $periodo]);
     }
@@ -169,6 +176,12 @@ class PeriodoController extends Controller
                     ->pluck('alumno_id')
             )
             ->unique();
+
+        // Quienes continuan vuelven a estar activos si el nuevo periodo aun no termina
+        // (al cerrarse el periodo anterior pudieron quedar inactivos).
+        if (! $periodo->haTerminado()) {
+            Alumno::whereIn('id', $seleccionados)->update(['activo' => true]);
+        }
 
         $copiar = $request->boolean('copiar_talleres', true);
         $origen = Periodo::findOrFail($data['periodo_anterior_id']);

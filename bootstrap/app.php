@@ -16,6 +16,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // X-Forwarded-Proto: https hacia Laravel.
         $middleware->trustProxies(at: '*');
 
+        $middleware->web(append: [
+            \App\Http\Middleware\CerrarPeriodosVencidos::class,
+        ]);
+
         $middleware->alias([
             'role' => \App\Http\Middleware\EnsureRole::class,
             'pagos.auth' => \App\Http\Middleware\EnsurePagosAuth::class,

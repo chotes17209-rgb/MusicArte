@@ -21,8 +21,9 @@ class Alumno extends Model
     {
         return [
             'activo' => 'boolean',
-            'fecha_nacimiento' => 'date',
-            'fecha_ingreso' => 'date',
+            // date:Y-m-d para que el formulario de edicion (input type=date) reciba la fecha tal cual.
+            'fecha_nacimiento' => 'date:Y-m-d',
+            'fecha_ingreso' => 'date:Y-m-d',
         ];
     }
 
@@ -154,5 +155,11 @@ class Alumno extends Model
             ['alumno_id' => $this->id, 'periodo_id' => $periodoId],
             ['estado' => $activo ? 'activo' : 'inactivo']
         );
+
+        // Si estudia en un periodo que aun no termina, vuelve a estar activo
+        // (pudo quedar inactivo al cerrarse el periodo anterior).
+        if ($activo && ! $this->activo && Periodo::whereKey($periodoId)->whereDate('fecha_fin', '>=', now()->toDateString())->exists()) {
+            $this->forceFill(['activo' => true])->saveQuietly();
+        }
     }
 }

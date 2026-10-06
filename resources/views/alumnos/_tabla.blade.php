@@ -31,7 +31,9 @@
                     @if($a->celular)<div class="small text-muted"><i class="bi bi-telephone me-1"></i>{{ $a->celular }}</div>@endif
                 </td>
                 <td>
-                    @if($a->activo)
+                    @if(isset($estados[$a->id]))
+                        <span class="badge {{ $estados[$a->id]['clase'] }}">{{ $estados[$a->id]['texto'] }}</span>
+                    @elseif($a->activo)
                         <span class="badge bg-success">Activo</span>
                     @else
                         <span class="badge bg-secondary">Inactivo</span>

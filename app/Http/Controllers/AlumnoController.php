@@ -26,6 +26,7 @@ class AlumnoController extends Controller
         $query = $this->aplicarFiltros($request);
 
         $alumnos = $query->orderBy('nombre')->paginate(15)->withQueryString();
+        $estados = $this->estadosEnPeriodo($alumnos->getCollection(), $request->periodo_id);
 
         $especialidades = Especialidad::where('activo', true)->orderBy('nombre')->get();
         $maestros = Maestro::where('activo', true)->orderBy('nombre')->get();
@@ -34,7 +35,7 @@ class AlumnoController extends Controller
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
                 'ok' => true,
-                'html' => view('alumnos._tabla', compact('alumnos'))->render(),
+                'html' => view('alumnos._tabla', compact('alumnos', 'estados'))->render(),
             ]);
         }
 
@@ -43,7 +44,7 @@ class AlumnoController extends Controller
         // lista trae TODOS los periodos, activos e inactivos, para el CRUD.
         $todosPeriodos = Periodo::orderByDesc('anio')->orderByDesc('mes')->get();
 
-        return view('alumnos.index', compact('alumnos', 'especialidades', 'maestros', 'periodos', 'todosPeriodos'));
+        return view('alumnos.index', compact('alumnos', 'estados', 'especialidades', 'maestros', 'periodos', 'todosPeriodos'));
     }
 
     /**
@@ -106,6 +107,39 @@ class AlumnoController extends Controller
         $periodo = $request->filled('periodo_id') ? Periodo::find($request->periodo_id) : null;
 
         return view('alumnos.imprimir', compact('alumnos', 'especialidad', 'maestro', 'periodo'));
+    }
+
+    /**
+     * Estado de cada alumno EN el periodo que se esta viendo (no su estado
+     * general). En un periodo ya terminado se indica a que periodo paso o
+     * que ahi termino; en uno vigente, si esta activo o no ese mes.
+     *
+     * @return array<int, array{texto: string, clase: string}> alumno_id => estado
+     */
+    private function estadosEnPeriodo($alumnos, $periodoId): array
+    {
+        $periodo = $periodoId ? Periodo::find($periodoId) : null;
+        if (! $periodo || $alumnos->isEmpty()) {
+            return [];
+        }
+
+        $ids = $alumnos->pluck('id');
+        $inactivosEnPeriodo = \App\Models\AlumnoPeriodo::where('periodo_id', $periodo->id)
+            ->whereIn('alumno_id', $ids)->where('estado', 'inactivo')->pluck('alumno_id')->flip();
+
+        if (! $periodo->haTerminado()) {
+            return $ids->mapWithKeys(fn ($id) => [$id => isset($inactivosEnPeriodo[$id])
+                ? ['texto' => 'Inactivo este mes', 'clase' => 'bg-secondary']
+                : ['texto' => 'Activo', 'clase' => 'bg-success']])->all();
+        }
+
+        $siguiente = $periodo->siguientePeriodoDe($ids);
+
+        return $ids->mapWithKeys(fn ($id) => [$id => match (true) {
+            isset($inactivosEnPeriodo[$id]) => ['texto' => 'No estudió este mes', 'clase' => 'bg-secondary'],
+            $siguiente->has($id) => ['texto' => 'Pasó a '.$siguiente[$id], 'clase' => 'bg-info'],
+            default => ['texto' => 'Terminó aquí', 'clase' => 'bg-warning'],
+        }])->all();
     }
 
     private function aplicarFiltros(Request $request)

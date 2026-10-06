@@ -379,7 +379,10 @@
                     <td>
                         @if($p->activo)
                             <span class="badge bg-success">Activo</span>
-                            <div class="small text-muted">Se puede inscribir alumnos</div>
+                            <div class="small text-muted">{{ $p->haTerminado() ? 'Ya terminó, pero se reabrió a mano' : 'Se puede inscribir alumnos' }}</div>
+                        @elseif($p->haTerminado())
+                            <span class="badge bg-secondary">Finalizado</span>
+                            <div class="small text-muted">{{ $p->cerrado_en ? 'Se cerró solo el '.$p->cerrado_en->format('d/m/Y') : 'Solo historial' }}</div>
                         @else
                             <span class="badge bg-secondary">Cerrado</span>
                             <div class="small text-muted">Solo historial</div>
@@ -795,12 +798,12 @@
 
         document.getElementById('alumno_id').value = d.id;
         document.getElementById('alumno_nombre').value = d.nombre;
-        document.getElementById('alumno_fecha_nacimiento').value = d.fecha_nacimiento ?? '';
+        document.getElementById('alumno_fecha_nacimiento').value = (d.fecha_nacimiento ?? '').substring(0, 10);
         document.getElementById('alumno_edad').value = d.fecha_nacimiento ? calcularEdadDesdeFecha(d.fecha_nacimiento) : (d.edad ?? '');
         document.getElementById('alumno_dni').value = d.dni ?? '';
         document.getElementById('alumno_tutor').value = d.tutor ?? '';
         document.getElementById('alumno_celular').value = d.celular ?? '';
-        document.getElementById('alumno_fecha_ingreso').value = d.fecha_ingreso ?? '';
+        document.getElementById('alumno_fecha_ingreso').value = (d.fecha_ingreso ?? '').substring(0, 10);
         document.getElementById('alumno_activo').checked = !!d.activo;
         document.getElementById('alumno_diagnostico').value = d.diagnostico ?? '';
         document.getElementById('alumno_observaciones').value = d.observaciones ?? '';

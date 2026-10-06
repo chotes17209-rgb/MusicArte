@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class Periodo extends Model
@@ -22,7 +24,68 @@ class Periodo extends Model
             'fecha_inicio' => 'date',
             'fecha_fin' => 'date',
             'activo' => 'boolean',
+            'cerrado_en' => 'datetime',
         ];
+    }
+
+    /** Ya paso su fecha de fin. */
+    public function haTerminado(): bool
+    {
+        return $this->fecha_fin->lt(now()->startOfDay());
+    }
+
+    /**
+     * Cierra los periodos cuya fecha de fin ya paso: quedan inactivos (solo
+     * historial) y los alumnos que estudiaban en ellos y no pasaron a un
+     * periodo vigente quedan inactivos. Cada periodo se cierra una sola vez
+     * (cerrado_en), asi que si se reabre a mano no se vuelve a cerrar.
+     *
+     * @return int cantidad de periodos cerrados
+     */
+    public static function cerrarVencidos(): int
+    {
+        $vencidos = static::where('activo', true)->whereNull('cerrado_en')
+            ->whereDate('fecha_fin', '<', now()->toDateString())
+            ->get();
+
+        foreach ($vencidos as $periodo) {
+            DB::transaction(function () use ($periodo) {
+                $periodo->forceFill(['activo' => false, 'cerrado_en' => now()])->save();
+
+                $alumnosDelPeriodo = AlumnoTaller::where('periodo_id', $periodo->id)
+                    ->where('estado', 'activo')->distinct()->pluck('alumno_id');
+                $noContinuan = $alumnosDelPeriodo->diff(static::alumnosConPeriodoVigente($alumnosDelPeriodo));
+
+                Alumno::whereIn('id', $noContinuan)->update(['activo' => false]);
+            });
+        }
+
+        return $vencidos->count();
+    }
+
+    /** De estos alumnos, los que tienen un taller activo en un periodo que aun no termina. */
+    public static function alumnosConPeriodoVigente(Collection $alumnoIds): Collection
+    {
+        return AlumnoTaller::whereIn('alumno_id', $alumnoIds)->where('estado', 'activo')
+            ->whereHas('periodo', fn ($q) => $q->whereDate('fecha_fin', '>=', now()->toDateString()))
+            ->distinct()->pluck('alumno_id');
+    }
+
+    /**
+     * Para un periodo ya terminado: a que periodo siguiente paso cada alumno
+     * (el primero posterior donde tiene un taller activo).
+     *
+     * @return Collection<int, string> alumno_id => nombre del periodo
+     */
+    public function siguientePeriodoDe(Collection $alumnoIds): Collection
+    {
+        return AlumnoTaller::with('periodo')
+            ->whereIn('alumno_id', $alumnoIds)->where('estado', 'activo')
+            ->whereHas('periodo', fn ($q) => $q->whereDate('fecha_inicio', '>', $this->fecha_fin->toDateString()))
+            ->get()
+            ->sortBy(fn ($t) => $t->periodo->fecha_inicio)
+            ->unique('alumno_id')
+            ->mapWithKeys(fn ($t) => [$t->alumno_id => $t->periodo->nombre]);
     }
 
     public function horarios()
