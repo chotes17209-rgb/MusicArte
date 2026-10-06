@@ -204,22 +204,13 @@ class PeriodoController extends Controller
             }
         });
 
-        // El periodo anterior termina al pasar sus alumnos al siguiente: se
-        // cierra y quienes no continuan quedan inactivos.
-        $cerrarOrigen = $origen->activo && $origen->fecha_inicio->lt($periodo->fecha_inicio);
-        if ($cerrarOrigen) {
-            $origen->cerrar();
-        }
-
         $mensaje = "{$seleccionados->count()} alumno(s) pasaron activos a {$periodo->nombre}.";
         if ($copiar && $totales['talleres']) {
             $mensaje .= " Se copiaron {$totales['talleres']} talleres con {$totales['clases']} clases y se crearon {$totales['pagos']} mensualidades pendientes.";
         } elseif ($copiar) {
             $mensaje .= ' Ya tenían sus talleres en este periodo; no se copió nada nuevo.';
         }
-        if ($cerrarOrigen) {
-            $mensaje .= " {$origen->nombre} quedó finalizado.";
-        }
+        $mensaje .= " En su historial, {$origen->nombre} ya aparece como inactivo.";
 
         return response()->json(['ok' => true, 'message' => $mensaje, 'data' => $totales]);
     }

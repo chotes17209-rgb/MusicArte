@@ -5,7 +5,7 @@
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <div>
         <h5 class="fw-semibold mb-0">Historial de actividad por periodo</h5>
-        <small class="text-muted">En que meses estuvo activo o inactivo cada alumno</small>
+        <small class="text-muted">Qué meses estudió cada alumno. Solo su periodo actual aparece activo: al pasar al siguiente, el anterior queda inactivo.</small>
     </div>
     <a href="{{ route('alumnos.index') }}" class="btn btn-light btn-sm">
         <i class="bi bi-arrow-left me-1"></i> Volver a Alumnos
@@ -30,6 +30,12 @@
             </thead>
             <tbody>
             @forelse($alumnos as $a)
+                @php
+                    // Solo su periodo mas reciente cuenta como activo; los anteriores
+                    // quedan inactivos en su historial (paso al siguiente o termino).
+                    $actual = $periodos->reverse()->first(fn ($p) => ($registros[$a->id][$p->id]->estado ?? null) === 'activo');
+                    $actualId = $actual && ! $actual->finalizado() ? $actual->id : null;
+                @endphp
                 <tr class="fila-historial" data-nombre="{{ Str::lower($a->nombre) }}">
                     <td class="fw-semibold"><a href="{{ route('alumnos.show', $a) }}" class="text-decoration-none">{{ $a->nombre }}</a></td>
                     @foreach($periodos as $p)
@@ -37,8 +43,10 @@
                         <td class="text-center">
                             @if(!$registro)
                                 <span class="celda-mes vacia" title="No estuvo matriculado"></span>
-                            @elseif($registro->estado === 'activo')
+                            @elseif($registro->estado === 'activo' && $p->id === $actualId)
                                 <span class="celda-mes activa" title="Activo en {{ $p->nombre }}"><i class="bi bi-check-lg"></i></span>
+                            @elseif($registro->estado === 'activo')
+                                <span class="celda-mes pasada" title="Estudió en {{ $p->nombre }} · ya inactivo"><i class="bi bi-check-lg"></i></span>
                             @else
                                 <span class="celda-mes inactiva" title="Inactivo en {{ $p->nombre }}">–</span>
                             @endif
@@ -52,7 +60,8 @@
         </table>
     </div>
     <div class="d-flex flex-wrap gap-3 small text-muted mt-3">
-        <span><span class="celda-mes activa"><i class="bi bi-check-lg"></i></span> Activo ese mes</span>
+        <span><span class="celda-mes activa"><i class="bi bi-check-lg"></i></span> Activo ahora</span>
+        <span><span class="celda-mes pasada"><i class="bi bi-check-lg"></i></span> Estudió ese mes (ya inactivo)</span>
         <span><span class="celda-mes inactiva">–</span> Inscrito pero inactivo</span>
         <span><span class="celda-mes vacia"></span> No estuvo matriculado</span>
     </div>

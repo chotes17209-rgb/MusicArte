@@ -367,6 +367,7 @@
         .celda-mes { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 22px; border-radius: 5px; font-size: .78rem; vertical-align: middle; }
         .celda-mes.activa { background: var(--verde-suave); color: var(--verde); }
         .celda-mes.inactiva { background: #f0f0ec; color: var(--texto-3); }
+        .celda-mes.pasada { background: #f0f0ec; color: var(--texto-2); }
         .celda-mes.vacia { border: 1px dashed var(--borde); }
         table.historial td, table.historial th { text-align: center; }
         table.historial td:first-child, table.historial th:first-child { text-align: left; }

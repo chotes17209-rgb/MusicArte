@@ -643,12 +643,20 @@
             return;
         }
 
+        // Inicio del periodo mas reciente donde tiene un taller activo: lo anterior ya es historial.
+        const inicioActual = talleresAlumnoActual
+            .filter(t => t.estado === 'activo' && t.periodo)
+            .map(t => (t.periodo.fecha_inicio ?? '').substring(0, 10))
+            .sort().pop() ?? '';
+
         cont.innerHTML = talleresAlumnoActual.map(t => {
             const dias = (t.horarios || [])
                 .map(h => `${diaCorto(h.dia_semana)} ${h.hora_inicio.substring(0, 5)}-${h.hora_fin.substring(0, 5)}`)
                 .join(' · ') || 'Sin horario asignado';
             // Un taller de un periodo que ya termino es historial: se muestra "Finalizado".
-            const terminado = t.periodo && ((t.periodo.fecha_fin ?? '').substring(0, 10) < HOY || (!t.periodo.activo && t.periodo.cerrado_en));
+            const terminado = t.periodo && ((t.periodo.fecha_fin ?? '').substring(0, 10) < HOY
+                || (!t.periodo.activo && t.periodo.cerrado_en)
+                || (t.periodo.fecha_inicio ?? '').substring(0, 10) < inicioActual);
             const estadoBadge = terminado
                 ? '<span class="badge bg-secondary">Finalizado</span>'
                 : (t.estado === 'activo'
@@ -1138,7 +1146,7 @@
         const confirmacion = await Swal.fire({
             icon: 'question',
             title: 'Confirmar pase de alumnos',
-            text: `${seleccionados.length} alumno(s) pasarán activos al nuevo periodo${copiarTalleres ? ' con sus talleres y mensualidad' : ''}. El periodo anterior quedará finalizado y los no marcados quedarán inactivos. ¿Continuar?`,
+            text: `${seleccionados.length} alumno(s) pasarán activos al nuevo periodo${copiarTalleres ? ' con sus talleres y mensualidad' : ''}. En su historial, el periodo anterior quedará como inactivo. Los no marcados quedarán inactivos en el nuevo periodo. ¿Continuar?`,
             showCancelButton: true,
             confirmButtonText: 'Si, pasar alumnos',
             cancelButtonText: 'Cancelar',

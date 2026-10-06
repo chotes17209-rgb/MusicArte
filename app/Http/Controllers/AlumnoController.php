@@ -87,6 +87,18 @@ class AlumnoController extends Controller
             ];
         });
 
+        // Al pasar a un periodo nuevo, los anteriores quedan inactivos en su
+        // historial: se anota a que periodo paso (el activo mas cercano posterior).
+        $posterior = null;
+        $lineaDeTiempo = $lineaDeTiempo->map(function ($item) use (&$posterior) {
+            $item['paso_a'] = $posterior;
+            if ($item['estado'] === 'activo') {
+                $posterior = $item['periodo']->nombre;
+            }
+
+            return $item;
+        });
+
         $pagos = $alumno->pagos()->orderByDesc('anio')->orderByDesc('mes')->limit(12)->get();
         $tallerActual = $alumno->talleres()->where('estado', 'activo')->with(['especialidad', 'maestro', 'periodo'])->get();
 
@@ -129,18 +141,16 @@ class AlumnoController extends Controller
 
         $inactivosGeneral = $alumnos->where('activo', false)->pluck('id')->flip();
 
-        if (! $periodo->finalizado()) {
-            return $ids->mapWithKeys(fn ($id) => [$id => isset($inactivosEnPeriodo[$id]) || isset($inactivosGeneral[$id])
-                ? ['texto' => 'Inactivo este mes', 'clase' => 'bg-secondary']
-                : ['texto' => 'Activo', 'clase' => 'bg-success']])->all();
-        }
-
+        // Quien ya paso a un periodo posterior queda inactivo en este, aunque el mes no haya terminado.
         $siguiente = $periodo->siguientePeriodoDe($ids);
+        $finalizado = $periodo->finalizado();
 
         return $ids->mapWithKeys(fn ($id) => [$id => match (true) {
-            isset($inactivosEnPeriodo[$id]) => ['texto' => 'No estudió este mes', 'clase' => 'bg-secondary'],
-            $siguiente->has($id) => ['texto' => 'Pasó a '.$siguiente[$id], 'clase' => 'bg-info'],
-            default => ['texto' => 'Terminó aquí', 'clase' => 'bg-warning'],
+            isset($inactivosEnPeriodo[$id]) => ['texto' => $finalizado ? 'No estudió este mes' : 'Inactivo este mes', 'clase' => 'bg-secondary'],
+            $siguiente->has($id) => ['texto' => 'Inactivo · pasó a '.$siguiente[$id], 'clase' => 'bg-secondary'],
+            $finalizado => ['texto' => 'Inactivo · no continuó', 'clase' => 'bg-warning'],
+            isset($inactivosGeneral[$id]) => ['texto' => 'Inactivo este mes', 'clase' => 'bg-secondary'],
+            default => ['texto' => 'Activo', 'clase' => 'bg-success'],
         }])->all();
     }
 
