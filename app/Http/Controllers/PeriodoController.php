@@ -91,8 +91,8 @@ class PeriodoController extends Controller
         $data = $this->validarDatos($request, $periodo->id);
         $periodo->fill($data);
 
-        // Si se extiende la fecha de fin, vuelve a cerrarse solo cuando venza la nueva fecha.
-        if (! $periodo->haTerminado()) {
+        // Reabierto o con la fecha de fin extendida: vuelve a cerrarse solo cuando venza.
+        if ($periodo->activo && ! $periodo->haTerminado()) {
             $periodo->cerrado_en = null;
         }
 
@@ -204,11 +204,21 @@ class PeriodoController extends Controller
             }
         });
 
+        // El periodo anterior termina al pasar sus alumnos al siguiente: se
+        // cierra y quienes no continuan quedan inactivos.
+        $cerrarOrigen = $origen->activo && $origen->fecha_inicio->lt($periodo->fecha_inicio);
+        if ($cerrarOrigen) {
+            $origen->cerrar();
+        }
+
         $mensaje = "{$seleccionados->count()} alumno(s) pasaron activos a {$periodo->nombre}.";
         if ($copiar && $totales['talleres']) {
             $mensaje .= " Se copiaron {$totales['talleres']} talleres con {$totales['clases']} clases y se crearon {$totales['pagos']} mensualidades pendientes.";
         } elseif ($copiar) {
             $mensaje .= ' Ya tenían sus talleres en este periodo; no se copió nada nuevo.';
+        }
+        if ($cerrarOrigen) {
+            $mensaje .= " {$origen->nombre} quedó finalizado.";
         }
 
         return response()->json(['ok' => true, 'message' => $mensaje, 'data' => $totales]);

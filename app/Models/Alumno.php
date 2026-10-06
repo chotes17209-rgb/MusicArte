@@ -132,10 +132,10 @@ class Alumno extends Model
         ])->saveQuietly();
     }
 
-    /** Talleres del alumno en periodos que aun no terminan (el actual y los siguientes). */
+    /** Talleres del alumno en periodos vigentes (abiertos y que aun no terminan). */
     public function talleresVigentes()
     {
-        return $this->talleres()->whereHas('periodo', fn ($q) => $q->whereDate('fecha_fin', '>=', now()->toDateString()));
+        return $this->talleres()->whereHas('periodo', fn ($q) => $q->vigentes());
     }
 
     /**
@@ -191,7 +191,7 @@ class Alumno extends Model
 
         // Si estudia en un periodo que aun no termina, vuelve a estar activo
         // (pudo quedar inactivo al cerrarse el periodo anterior).
-        if ($activo && ! $this->activo && Periodo::whereKey($periodoId)->whereDate('fecha_fin', '>=', now()->toDateString())->exists()) {
+        if ($activo && ! $this->activo && Periodo::whereKey($periodoId)->vigentes()->exists()) {
             $this->forceFill(['activo' => true])->saveQuietly();
         }
     }

@@ -34,11 +34,39 @@ class Periodo extends Model
         return $this->fecha_fin->lt(now()->startOfDay());
     }
 
+    /** Termino: paso su fecha de fin o se cerro (al pasar sus alumnos al siguiente periodo). */
+    public function finalizado(): bool
+    {
+        return $this->haTerminado() || (! $this->activo && $this->cerrado_en !== null);
+    }
+
+    /** Periodos donde hoy se puede estudiar: activos y que aun no terminan. */
+    public function scopeVigentes($query)
+    {
+        return $query->where('activo', true)->whereDate('fecha_fin', '>=', now()->toDateString());
+    }
+
     /**
-     * Cierra los periodos cuya fecha de fin ya paso: quedan inactivos (solo
-     * historial) y los alumnos que estudiaban en ellos y no pasaron a un
-     * periodo vigente quedan inactivos. Cada periodo se cierra una sola vez
-     * (cerrado_en), asi que si se reabre a mano no se vuelve a cerrar.
+     * Cierra el periodo: queda inactivo (solo historial) y sus alumnos que
+     * no continuan en otro periodo vigente quedan inactivos.
+     */
+    public function cerrar(): void
+    {
+        DB::transaction(function () {
+            $this->forceFill(['activo' => false, 'cerrado_en' => now()])->save();
+
+            $alumnosDelPeriodo = AlumnoTaller::where('periodo_id', $this->id)
+                ->where('estado', 'activo')->distinct()->pluck('alumno_id');
+            $noContinuan = $alumnosDelPeriodo->diff(static::alumnosConPeriodoVigente($alumnosDelPeriodo));
+
+            Alumno::whereIn('id', $noContinuan)->update(['activo' => false]);
+        });
+    }
+
+    /**
+     * Cierra los periodos cuya fecha de fin ya paso. Cada periodo se cierra
+     * una sola vez (cerrado_en), asi que si se reabre a mano no se vuelve a
+     * cerrar.
      *
      * @return int cantidad de periodos cerrados
      */
@@ -48,26 +76,16 @@ class Periodo extends Model
             ->whereDate('fecha_fin', '<', now()->toDateString())
             ->get();
 
-        foreach ($vencidos as $periodo) {
-            DB::transaction(function () use ($periodo) {
-                $periodo->forceFill(['activo' => false, 'cerrado_en' => now()])->save();
-
-                $alumnosDelPeriodo = AlumnoTaller::where('periodo_id', $periodo->id)
-                    ->where('estado', 'activo')->distinct()->pluck('alumno_id');
-                $noContinuan = $alumnosDelPeriodo->diff(static::alumnosConPeriodoVigente($alumnosDelPeriodo));
-
-                Alumno::whereIn('id', $noContinuan)->update(['activo' => false]);
-            });
-        }
+        $vencidos->each->cerrar();
 
         return $vencidos->count();
     }
 
-    /** De estos alumnos, los que tienen un taller activo en un periodo que aun no termina. */
+    /** De estos alumnos, los que tienen un taller activo en un periodo vigente. */
     public static function alumnosConPeriodoVigente(Collection $alumnoIds): Collection
     {
         return AlumnoTaller::whereIn('alumno_id', $alumnoIds)->where('estado', 'activo')
-            ->whereHas('periodo', fn ($q) => $q->whereDate('fecha_fin', '>=', now()->toDateString()))
+            ->whereHas('periodo', fn ($q) => $q->vigentes())
             ->distinct()->pluck('alumno_id');
     }
 
@@ -107,7 +125,11 @@ class Periodo extends Model
     {
         $hoy = now()->toDateString();
 
-        return static::whereDate('fecha_inicio', '<=', $hoy)->whereDate('fecha_fin', '>=', $hoy)->orderBy('fecha_inicio')->first()
+        // Primero los periodos abiertos: uno cerrado antes de tiempo (al pasar
+        // sus alumnos) cede su lugar al siguiente.
+        return static::where('activo', true)->whereDate('fecha_inicio', '<=', $hoy)->whereDate('fecha_fin', '>=', $hoy)->orderBy('fecha_inicio')->first()
+            ?? static::where('activo', true)->whereDate('fecha_inicio', '>', $hoy)->orderBy('fecha_inicio')->first()
+            ?? static::whereDate('fecha_inicio', '<=', $hoy)->whereDate('fecha_fin', '>=', $hoy)->orderBy('fecha_inicio')->first()
             ?? static::whereDate('fecha_inicio', '>', $hoy)->orderBy('fecha_inicio')->first()
             ?? static::where('activo', true)->orderByDesc('anio')->orderByDesc('mes')->first()
             ?? static::orderByDesc('anio')->orderByDesc('mes')->first();

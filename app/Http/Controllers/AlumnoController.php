@@ -129,7 +129,7 @@ class AlumnoController extends Controller
 
         $inactivosGeneral = $alumnos->where('activo', false)->pluck('id')->flip();
 
-        if (! $periodo->haTerminado()) {
+        if (! $periodo->finalizado()) {
             return $ids->mapWithKeys(fn ($id) => [$id => isset($inactivosEnPeriodo[$id]) || isset($inactivosGeneral[$id])
                 ? ['texto' => 'Inactivo este mes', 'clase' => 'bg-secondary']
                 : ['texto' => 'Activo', 'clase' => 'bg-success']])->all();

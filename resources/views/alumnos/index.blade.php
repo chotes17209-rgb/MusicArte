@@ -380,9 +380,9 @@
                         @if($p->activo)
                             <span class="badge bg-success">Activo</span>
                             <div class="small text-muted">{{ $p->haTerminado() ? 'Ya terminó, pero se reabrió a mano' : 'Se puede inscribir alumnos' }}</div>
-                        @elseif($p->haTerminado())
+                        @elseif($p->finalizado())
                             <span class="badge bg-secondary">Finalizado</span>
-                            <div class="small text-muted">{{ $p->cerrado_en ? 'Se cerró solo el '.$p->cerrado_en->format('d/m/Y') : 'Solo historial' }}</div>
+                            <div class="small text-muted">{{ $p->cerrado_en ? 'Se cerró el '.$p->cerrado_en->format('d/m/Y') : 'Solo historial' }}</div>
                         @else
                             <span class="badge bg-secondary">Cerrado</span>
                             <div class="small text-muted">Solo historial</div>
@@ -648,7 +648,7 @@
                 .map(h => `${diaCorto(h.dia_semana)} ${h.hora_inicio.substring(0, 5)}-${h.hora_fin.substring(0, 5)}`)
                 .join(' · ') || 'Sin horario asignado';
             // Un taller de un periodo que ya termino es historial: se muestra "Finalizado".
-            const terminado = t.periodo && (t.periodo.fecha_fin ?? '').substring(0, 10) < HOY;
+            const terminado = t.periodo && ((t.periodo.fecha_fin ?? '').substring(0, 10) < HOY || (!t.periodo.activo && t.periodo.cerrado_en));
             const estadoBadge = terminado
                 ? '<span class="badge bg-secondary">Finalizado</span>'
                 : (t.estado === 'activo'
@@ -1138,7 +1138,7 @@
         const confirmacion = await Swal.fire({
             icon: 'question',
             title: 'Confirmar pase de alumnos',
-            text: `${seleccionados.length} alumno(s) pasarán activos al nuevo periodo${copiarTalleres ? ' con sus talleres y mensualidad' : ''}. Los no marcados quedarán inactivos ese mes. ¿Continuar?`,
+            text: `${seleccionados.length} alumno(s) pasarán activos al nuevo periodo${copiarTalleres ? ' con sus talleres y mensualidad' : ''}. El periodo anterior quedará finalizado y los no marcados quedarán inactivos. ¿Continuar?`,
             showCancelButton: true,
             confirmButtonText: 'Si, pasar alumnos',
             cancelButtonText: 'Cancelar',
