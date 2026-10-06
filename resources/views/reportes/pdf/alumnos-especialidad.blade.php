@@ -19,7 +19,7 @@
             <td class="fuerte">{{ $fila['especialidad']->nombre ?? '—' }}</td>
             <td class="muted">{{ $fila['maestros']->implode(', ') ?: '—' }}</td>
             <td class="der fuerte">{{ $fila['alumnos'] }}</td>
-            <td><div class="barra"><div style="width: {{ round($fila['alumnos'] / $max * 100) }}%; background: {{ $fila['especialidad']->color ?? '#3d2c8d' }}"></div></div></td>
+            <td><div class="barra"><div style="width: {{ round($fila['alumnos'] / $max * 100) }}%; background: {{ $fila['especialidad']->color ?? '#800080' }}"></div></div></td>
             <td class="der">{{ $totalTalleres ? round($fila['alumnos'] / $totalTalleres * 100, 1) : 0 }}%</td>
         </tr>
     @empty

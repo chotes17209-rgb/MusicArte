@@ -68,7 +68,7 @@ class Clase extends Model
     public function toCalendarEvent(): array
     {
         $colores = [
-            'programada' => $this->especialidad->color ?? '#3d2c8d',
+            'programada' => $this->especialidad->color ?? '#800080',
             'realizada' => '#2e7d32',
             'cancelada' => '#b71c1c',
         ];
@@ -78,8 +78,8 @@ class Clase extends Model
             'title' => $this->alumno->nombre.' - '.($this->especialidad->nombre ?? ''),
             'start' => $this->fecha->format('Y-m-d').'T'.$this->hora_inicio,
             'end' => $this->fecha->format('Y-m-d').'T'.$this->hora_fin,
-            'backgroundColor' => $colores[$this->estado] ?? '#3d2c8d',
-            'borderColor' => $colores[$this->estado] ?? '#3d2c8d',
+            'backgroundColor' => $colores[$this->estado] ?? '#800080',
+            'borderColor' => $colores[$this->estado] ?? '#800080',
             'extendedProps' => [
                 'alumno' => $this->alumno->nombre,
                 'maestro' => $this->maestro->nombre ?? 'Sin asignar',
@@ -88,7 +88,7 @@ class Clase extends Model
                 'estado' => $this->estado,
                 'notas' => $this->notas,
                 'asistencia' => $this->asistencia->estado ?? null,
-                'color' => $this->especialidad->color ?? '#3d2c8d',
+                'color' => $this->especialidad->color ?? '#800080',
             ],
         ];
     }

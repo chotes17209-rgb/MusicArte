@@ -6,14 +6,14 @@
     <style>
         * { box-sizing: border-box; }
         body { font-family: Arial, Helvetica, sans-serif; color: #222; padding: 24px; }
-        .header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 3px solid #3d2c8d; padding-bottom: 10px; margin-bottom: 14px; }
-        .header h1 { color: #3d2c8d; font-size: 20px; margin: 0; }
+        .header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 3px solid #800080; padding-bottom: 10px; margin-bottom: 14px; }
+        .header h1 { color: #800080; font-size: 20px; margin: 0; }
         .header small { color: #666; }
         .filtros { font-size: 12px; color: #444; margin-bottom: 14px; }
         .filtros span { display: inline-block; background: #f1eefb; border: 1px solid #dcd4f5; border-radius: 6px; padding: 3px 10px; margin-right: 6px; }
         table { width: 100%; border-collapse: collapse; font-size: 12px; }
         th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
-        th { background: #3d2c8d; color: #fff; }
+        th { background: #800080; color: #fff; }
         tr:nth-child(even) { background: #f7f6fc; }
         .estado-activo { color: #157347; font-weight: bold; }
         .estado-inactivo { color: #b02a37; font-weight: bold; }
@@ -26,7 +26,7 @@
     </style>
 </head>
 <body onload="window.print()">
-    <button class="btn-imprimir" onclick="window.print()" style="padding:8px 16px;background:#3d2c8d;color:#fff;border:none;border-radius:6px;cursor:pointer;">Imprimir</button>
+    <button class="btn-imprimir" onclick="window.print()" style="padding:8px 16px;background:#800080;color:#fff;border:none;border-radius:6px;cursor:pointer;">Imprimir</button>
 
     <div class="header">
         <div>

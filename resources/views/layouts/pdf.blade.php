@@ -12,10 +12,10 @@
         @page { margin: 92px 36px 50px 36px; }
         * { box-sizing: border-box; }
         body { font-family: 'DejaVu Sans', sans-serif; font-size: 9.5px; color: #1d1c1a; margin: 0; }
-        .cab { position: fixed; top: -72px; left: 0; right: 0; height: 58px; border-bottom: 2px solid #3d2c8d; }
+        .cab { position: fixed; top: -72px; left: 0; right: 0; height: 58px; border-bottom: 2px solid #800080; }
         .cab td { vertical-align: middle; }
         .cab .logo { width: 44px; height: 44px; border-radius: 8px; }
-        .cab .marca { font-size: 14px; font-weight: bold; color: #3d2c8d; }
+        .cab .marca { font-size: 14px; font-weight: bold; color: #800080; }
         .cab .marca-sub { font-size: 8.5px; color: #8a8880; }
         .cab .titulo { font-size: 13px; font-weight: bold; text-align: right; }
         .cab .subtitulo { font-size: 9px; color: #55534d; text-align: right; }
@@ -27,11 +27,11 @@
         .resumen .etq { font-size: 8px; color: #8a8880; text-transform: uppercase; letter-spacing: .4px; }
         .resumen .val { font-size: 15px; font-weight: bold; margin-top: 2px; }
         .resumen .det { font-size: 8px; color: #8a8880; }
-        h2 { font-size: 11px; margin: 14px 0 6px; color: #3d2c8d; }
-        .tabla th { background: #3d2c8d; color: #fff; font-size: 8.5px; text-align: left; padding: 5px 6px; font-weight: bold; }
+        h2 { font-size: 11px; margin: 14px 0 6px; color: #800080; }
+        .tabla th { background: #800080; color: #fff; font-size: 8.5px; text-align: left; padding: 5px 6px; font-weight: bold; }
         .tabla td { padding: 4px 6px; border-bottom: 1px solid #ecebe7; vertical-align: top; }
         .tabla tr:nth-child(even) td { background: #fafaf8; }
-        .tabla tfoot td { font-weight: bold; background: #f1eff8 !important; border-top: 1.5px solid #3d2c8d; }
+        .tabla tfoot td { font-weight: bold; background: #f7ecf7 !important; border-top: 1.5px solid #800080; }
         .der, .tabla th.der { text-align: right; }
         .centro { text-align: center; }
         .muted { color: #8a8880; }
@@ -40,7 +40,7 @@
         .ambar { color: #946200; }
         .fuerte { font-weight: bold; }
         .barra { height: 6px; background: #ecebe7; border-radius: 3px; }
-        .barra div { height: 6px; border-radius: 3px; background: #3d2c8d; }
+        .barra div { height: 6px; border-radius: 3px; background: #800080; }
         .estado { display: inline-block; padding: 1px 5px; border-radius: 3px; font-size: 8px; font-weight: bold; }
         .estado.pagado, .estado.dictada, .estado.asistio { background: #eaf5ee; color: #1d7a46; }
         .estado.pendiente, .estado.cancelada, .estado.falto { background: #fdeeec; color: #b42318; }

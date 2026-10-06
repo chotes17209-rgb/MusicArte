@@ -5,9 +5,9 @@
 @section('estilos')
     .ficha td { padding: 5px 0; border-bottom: 1px solid #ecebe7; }
     .ficha td:first-child { color: #8a8880; width: 34%; }
-    .destacado { margin: 14px 0; padding: 12px; border: 1.5px solid #3d2c8d; background: #f5f3fb; text-align: center; }
+    .destacado { margin: 14px 0; padding: 12px; border: 1.5px solid #800080; background: #faf1fa; text-align: center; }
     .destacado .etq { font-size: 8.5px; color: #55534d; text-transform: uppercase; letter-spacing: .4px; }
-    .destacado .val { font-size: 22px; font-weight: bold; color: #3d2c8d; margin-top: 2px; }
+    .destacado .val { font-size: 22px; font-weight: bold; color: #800080; margin-top: 2px; }
     .montos td { width: 50%; padding: 8px 10px; border: 1px solid #e6e5e0; background: #fafaf8; }
     .montos .etq { font-size: 8px; color: #8a8880; text-transform: uppercase; }
     .montos .val { font-size: 13px; font-weight: bold; margin-top: 2px; }

@@ -18,7 +18,7 @@
     .grafico-meses { display: flex; align-items: flex-end; gap: .75rem; height: 150px; padding-top: 1.25rem; }
     .grafico-meses .col-mes { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; min-width: 0; }
     .grafico-meses .valor { font-size: .78rem; font-weight: 600; margin-bottom: .3rem; font-variant-numeric: tabular-nums; }
-    .grafico-meses .barra-v { width: 100%; max-width: 34px; border-radius: 4px 4px 0 0; background: #d9d4ee; }
+    .grafico-meses .barra-v { width: 100%; max-width: 34px; border-radius: 4px 4px 0 0; background: #e8c6e8; }
     .grafico-meses .col-mes:last-child .barra-v { background: var(--acento); }
     .grafico-meses .mes { font-size: .72rem; color: var(--texto-3); margin-top: .4rem; white-space: nowrap; }
     .card-titulo { display: flex; justify-content: space-between; align-items: center; gap: .5rem; margin-bottom: .75rem; }

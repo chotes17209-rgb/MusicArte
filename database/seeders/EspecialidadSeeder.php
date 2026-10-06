@@ -18,7 +18,7 @@ class EspecialidadSeeder extends Seeder
             ['nombre' => 'Canto', 'color' => '#d81b60', 'precio_mensual' => 150.0, 'activo' => true],
             ['nombre' => 'Flauta', 'color' => '#2980b9', 'precio_mensual' => 230.0, 'activo' => true],
             ['nombre' => 'Guitarra', 'color' => '#c0392b', 'precio_mensual' => 230.0, 'activo' => true],
-            ['nombre' => 'Piano', 'color' => '#3d2c8d', 'precio_mensual' => 230.0, 'activo' => true],
+            ['nombre' => 'Piano', 'color' => '#800080', 'precio_mensual' => 230.0, 'activo' => true],
             ['nombre' => 'Saxofon', 'color' => '#8e44ad', 'precio_mensual' => 280.0, 'activo' => true],
             ['nombre' => 'Violin', 'color' => '#16a085', 'precio_mensual' => 230.0, 'activo' => true],
         ];

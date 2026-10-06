@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
-        :root { --acento: #3d2c8d; --acento-hover: #30226f; --borde: #e6e5e0; --borde-fuerte: #d4d3cd; --texto: #1d1c1a; --texto-2: #55534d; --texto-3: #8a8880; }
+        :root { --acento: #800080; --acento-hover: #660066; --borde: #e6e5e0; --borde-fuerte: #d4d3cd; --texto: #1d1c1a; --texto-2: #55534d; --texto-3: #8a8880; }
         body {
             font-family: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
             font-size: .875rem; color: var(--texto); background: #f6f6f4;
@@ -24,7 +24,7 @@
             -webkit-font-smoothing: antialiased;
         }
         .marca { display: flex; flex-direction: column; align-items: center; text-align: center; gap: .7rem; margin-bottom: 1.5rem; }
-        .marca img { width: 104px; height: 104px; border-radius: 50%; object-fit: cover; background: #fff; box-shadow: 0 0 0 5px #fff, 0 0 0 6px var(--borde), 0 12px 30px rgba(61,44,141,.18); }
+        .marca img { width: 104px; height: 104px; border-radius: 50%; object-fit: cover; background: #fff; box-shadow: 0 0 0 5px #fff, 0 0 0 6px var(--borde), 0 12px 30px rgba(128,0,128,.18); }
         .marca strong { display: block; font-size: 1.35rem; font-weight: 600; line-height: 1.1; color: var(--acento); letter-spacing: -.01em; }
         .marca span { display: block; font-size: .8rem; color: var(--texto-3); margin-top: .15rem; }
         .panel { width: 100%; max-width: 380px; background: #fff; border: 1px solid var(--borde); border-radius: 10px; padding: 1.75rem; }
@@ -32,9 +32,9 @@
         .panel p.sub { color: var(--texto-3); margin: 0 0 1.25rem; }
         .form-label { font-size: .8125rem; font-weight: 500; color: var(--texto-2); margin-bottom: .3rem; }
         .form-control { font-size: .875rem; padding: .5rem .75rem; border: 1px solid var(--borde-fuerte); border-radius: 6px; }
-        .form-control:focus { border-color: var(--acento); box-shadow: 0 0 0 3px rgba(61,44,141,.12); }
+        .form-control:focus { border-color: var(--acento); box-shadow: 0 0 0 3px rgba(128,0,128,.12); }
         .form-check-input:checked { background-color: var(--acento); border-color: var(--acento); }
-        .form-check-input:focus { box-shadow: 0 0 0 3px rgba(61,44,141,.12); }
+        .form-check-input:focus { box-shadow: 0 0 0 3px rgba(128,0,128,.12); }
         .btn-ingresar { background: var(--acento); border: 1px solid var(--acento); color: #fff; font-weight: 500; font-size: .875rem; padding: .55rem; border-radius: 6px; }
         .btn-ingresar:hover, .btn-ingresar:focus { background: var(--acento-hover); border-color: var(--acento-hover); color: #fff; }
         .alert { font-size: .8125rem; border-radius: 8px; background: #fdeeec; border: 1px solid #f3c7c1; color: #7a1a12; padding: .6rem .8rem; }

@@ -14,7 +14,7 @@
     <title>@yield('titulo', 'Panel') · MusicArte</title>
     <link rel="icon" href="{{ asset('images/logo.png') }}">
     <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
-    <meta name="theme-color" content="#1c1a26">
+    <meta name="theme-color" content="#800080">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="MusicArte">
@@ -46,9 +46,9 @@
             --texto: #1d1c1a;
             --texto-2: #55534d;
             --texto-3: #8a8880;
-            --acento: #3d2c8d;
-            --acento-hover: #30226f;
-            --acento-suave: #f1eff8;
+            --acento: #800080;
+            --acento-hover: #660066;
+            --acento-suave: #f7ecf7;
             --verde: #1d7a46;   --verde-suave: #eaf5ee;
             --rojo: #b42318;    --rojo-suave: #fdeeec;
             --ambar: #946200;   --ambar-suave: #fdf4e1;
@@ -100,7 +100,7 @@
         .sidebar {
             width: var(--sidebar-ancho); height: 100vh; position: fixed; top: 0; left: 0; z-index: 1030;
             display: flex; flex-direction: column;
-            background: #1c1a26; border-right: 1px solid #1c1a26;
+            background: linear-gradient(180deg, #2f0b2f 0%, #240824 100%); border-right: 1px solid #240824;
             transition: transform .2s ease, width .2s ease;
         }
         .sidebar .logo-box { display: flex; align-items: center; gap: .75rem; padding: 0 1rem; height: 64px; border-bottom: 1px solid rgba(255,255,255,.07); flex: 0 0 auto; text-decoration: none; }
@@ -117,9 +117,9 @@
         .sidebar .nav-link i { font-size: 1rem; width: 18px; text-align: center; color: rgba(255,255,255,.42); flex-shrink: 0; }
         .sidebar .nav-link:hover { background: rgba(255,255,255,.06); color: #fff; }
         .sidebar .nav-link:hover i { color: rgba(255,255,255,.75); }
-        .sidebar .nav-link.active { background: rgba(255,255,255,.1); color: #fff; }
-        .sidebar .nav-link.active i { color: #b9aef0; }
-        .sidebar .nav-link.active::before { content: ""; position: absolute; left: -.6rem; top: 7px; bottom: 7px; width: 3px; border-radius: 0 3px 3px 0; background: #b9aef0; }
+        .sidebar .nav-link.active { background: rgba(233,166,233,.16); color: #fff; }
+        .sidebar .nav-link.active i { color: #e9a6e9; }
+        .sidebar .nav-link.active::before { content: ""; position: absolute; left: -.6rem; top: 7px; bottom: 7px; width: 3px; border-radius: 0 3px 3px 0; background: #e9a6e9; }
         .sidebar-pie { flex: 0 0 auto; border-top: 1px solid rgba(255,255,255,.07); padding: .5rem .6rem; }
         .btn-collapse-sidebar {
             display: flex; align-items: center; gap: .65rem; width: 100%; padding: .45rem .65rem; border: 0; background: transparent;
@@ -200,11 +200,11 @@
         .form-control-sm, .form-select-sm { min-height: 30px; padding: .25rem .55rem; font-size: .78rem; }
         .form-select-sm { padding-right: 1.8rem; }
         .form-control::placeholder { color: #a3a19a; }
-        .form-control:focus, .form-select:focus { border-color: var(--acento); box-shadow: 0 0 0 3px rgba(61,44,141,.12); }
+        .form-control:focus, .form-select:focus { border-color: var(--acento); box-shadow: 0 0 0 3px rgba(128,0,128,.12); }
         .form-control-color { padding: .25rem; }
         .form-check-input { border-color: var(--borde-fuerte); }
         .form-check-input:checked { background-color: var(--acento); border-color: var(--acento); }
-        .form-check-input:focus { box-shadow: 0 0 0 3px rgba(61,44,141,.12); border-color: var(--acento); }
+        .form-check-input:focus { box-shadow: 0 0 0 3px rgba(128,0,128,.12); border-color: var(--acento); }
         .form-label { font-size: .8125rem; font-weight: 500; color: var(--texto-2); margin-bottom: .3rem; }
         .form-text { font-size: .75rem; color: var(--texto-3); }
         .input-group-text { font-size: .8125rem; background: var(--superficie-2); border-color: var(--borde-fuerte); color: var(--texto-2); }
@@ -257,7 +257,7 @@
         .table td:has(.btn-icon) { white-space: nowrap; }
         /* Dentro de una tabla, el boton principal se vuelve secundario para no repetir 20 botones de color. */
         .table .btn-morado, .table .btn-primary { background: var(--superficie); color: var(--acento); border-color: var(--borde-fuerte); }
-        .table .btn-morado:hover, .table .btn-primary:hover { background: var(--acento-suave); color: var(--acento); border-color: #cfc8ea; }
+        .table .btn-morado:hover, .table .btn-primary:hover { background: var(--acento-suave); color: var(--acento); border-color: #e0b8e0; }
 
         /* ---------------- Estados (badges) ---------------- */
         .badge { font-size: .72rem; font-weight: 500; letter-spacing: 0; border-radius: 4px; padding: .22rem .45rem; }
@@ -376,7 +376,7 @@
         .topbar { gap: 1rem; }
         .buscador { position: relative; flex: 1 1 auto; max-width: 420px; margin: 0 auto 0 1rem; }
         .buscador input { width: 100%; height: 36px; padding: 0 4.5rem 0 2.2rem; border: 1px solid var(--borde); border-radius: 8px; background: var(--superficie-2); font-size: .8125rem; color: var(--texto); transition: border-color .12s, background .12s, box-shadow .12s; }
-        .buscador input:focus { outline: 0; background: var(--superficie); border-color: var(--acento); box-shadow: 0 0 0 3px rgba(61,44,141,.12); }
+        .buscador input:focus { outline: 0; background: var(--superficie); border-color: var(--acento); box-shadow: 0 0 0 3px rgba(128,0,128,.12); }
         .buscador input::-webkit-search-cancel-button { display: none; }
         .buscador-icono { position: absolute; left: .75rem; top: 50%; transform: translateY(-50%); color: var(--texto-3); font-size: .85rem; pointer-events: none; }
         .buscador-atajo { position: absolute; right: .5rem; top: 50%; transform: translateY(-50%); font-size: .68rem; font-family: inherit; color: var(--texto-3); background: var(--superficie); border: 1px solid var(--borde); border-radius: 4px; padding: .1rem .35rem; pointer-events: none; }
@@ -470,6 +470,27 @@
         .cuadro-alumno .edad { color: var(--texto-3); }
         .cuadro-alumno .inst { color: var(--texto-3); font-size: .9em; font-style: italic; }
         .cuadro-alumno.inactivo { text-decoration: line-through; opacity: .6; }
+
+        /* ---------------- Barra superior en el color de la marca ---------------- */
+        .topbar { background: var(--acento); border-bottom-color: var(--acento-hover); box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 6px 18px rgba(128,0,128,.18); }
+        .topbar-titulo { color: #fff; }
+        .topbar .btn-topbar { color: rgba(255,255,255,.88); }
+        .topbar .btn-topbar:hover, .topbar .btn-topbar[aria-expanded="true"] { background: rgba(255,255,255,.14); border-color: transparent; color: #fff; }
+        .topbar .btn-topbar .contador { box-shadow: 0 0 0 2px var(--acento); }
+        .topbar .usuario-menu:hover, .topbar .usuario-menu[aria-expanded="true"] { background: rgba(255,255,255,.14); border-color: transparent; }
+        .topbar .usuario-menu .nombre { color: #fff; }
+        .topbar .usuario-menu .rol, .topbar .usuario-menu > .bi-chevron-down { color: rgba(255,255,255,.72) !important; }
+        .topbar .avatar { background: #fff; color: var(--acento); }
+        .topbar .logo-movil img { box-shadow: 0 0 0 2px rgba(255,255,255,.55); }
+        .topbar .buscador input { background: rgba(255,255,255,.14); border-color: rgba(255,255,255,.18); color: #fff; }
+        .topbar .buscador input::placeholder { color: rgba(255,255,255,.75); }
+        .topbar .buscador-icono { color: rgba(255,255,255,.8); }
+        .topbar .buscador-atajo { background: transparent; border-color: rgba(255,255,255,.35); color: rgba(255,255,255,.8); }
+        .topbar .buscador input:focus { background: #fff; border-color: #fff; color: var(--texto); box-shadow: 0 0 0 3px rgba(255,255,255,.25); }
+        .topbar .buscador:focus-within .buscador-icono, .topbar .buscador:focus-within .buscador-atajo { color: var(--texto-3); border-color: var(--borde); }
+        .topbar .periodo-pill { background: rgba(255,255,255,.14); border-color: rgba(255,255,255,.22); color: #fff; }
+        .topbar .periodo-pill:hover, .topbar .periodo-pill[aria-expanded="true"] { background: rgba(255,255,255,.22); border-color: rgba(255,255,255,.35); }
+        .topbar .periodo-pill > .bi-calendar-range { color: #fff; }
 
         /* ---------------- Celular ---------------- */
         @media (max-width: 991px) {

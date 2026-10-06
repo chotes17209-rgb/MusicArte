@@ -64,7 +64,7 @@
                 <div class="row">
                     <div class="col-6 mb-3">
                         <label class="form-label small fw-semibold">Color en calendario</label>
-                        <input type="color" class="form-control form-control-color w-100" id="especialidad_color" value="#3d2c8d">
+                        <input type="color" class="form-control form-control-color w-100" id="especialidad_color" value="#800080">
                     </div>
                     @auth @if(auth()->user()->esAdmin())
                     <div class="col-6 mb-3">
@@ -97,7 +97,7 @@
     function nuevaEspecialidad() {
         document.getElementById('formEspecialidad').reset();
         document.getElementById('especialidad_id').value = '';
-        document.getElementById('especialidad_color').value = '#3d2c8d';
+        document.getElementById('especialidad_color').value = '#800080';
         document.getElementById('tituloModalEspecialidad').innerText = 'Nueva Especialidad';
     }
 

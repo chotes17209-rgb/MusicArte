@@ -247,7 +247,7 @@
             eventTimeFormat: { hour: 'numeric', minute: '2-digit', hour12: true },
             eventClassNames: info => ['clase', info.event.extendedProps.estado],
             eventDidMount: function (info) {
-                const c = info.event.extendedProps.color || '#3d2c8d';
+                const c = info.event.extendedProps.color || '#800080';
                 info.el.style.setProperty('--c', c);
                 info.el.style.setProperty('--c-fondo', c + '1f');
                 const p = info.event.extendedProps;
