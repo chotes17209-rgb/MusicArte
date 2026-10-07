@@ -1,6 +1,14 @@
 @extends('layouts.app')
 @section('titulo', 'Asistencia')
 
+@push('estilos')
+<style>
+    /* Estado de asistencia bien visible de un vistazo. */
+    .estado-grande .badge { font-size: .95rem; font-weight: 600; padding: .45rem .85rem; border-radius: 8px; }
+    .estado-grande .badge::before { width: 8px; height: 8px; }
+</style>
+@endpush
+
 @section('contenido')
 @php $nombresEstado = ['asistio' => 'Asistió', 'falto' => 'Faltó', 'justificado' => 'Faltó con aviso', 'tardanza' => 'Tardanza']; @endphp
 <x-page-head titulo="Asistencia" subtitulo="Marca con un toque si cada alumno asistió o faltó. Usa «Más» para faltas con aviso, tardanzas u observaciones.">
@@ -32,7 +40,7 @@
                     <td class="text-nowrap">{{ \Carbon\Carbon::parse($c->hora_inicio)->format('g:i a') }}</td>
                     <td class="fw-semibold">{{ $c->alumno->nombre }}</td>
                     <td>{{ $c->especialidad->nombre ?? '—' }} <span class="text-muted">· {{ $c->maestro->nombre ?? '—' }}</span></td>
-                    <td>
+                    <td class="estado-grande">
                         <span id="badge-asistencia-{{ $c->id }}"
                             class="badge {{ $c->asistencia ? ['asistio'=>'bg-success','falto'=>'bg-danger','justificado'=>'bg-warning','tardanza'=>'bg-info'][$c->asistencia->estado] : 'bg-secondary' }}">
                             {{ $c->asistencia ? ($nombresEstado[$c->asistencia->estado] ?? ucfirst($c->asistencia->estado)) : 'Sin marcar' }}
