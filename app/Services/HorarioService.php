@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\AlumnoTaller;
-use App\Models\Clase;
 use App\Models\Horario;
 use App\Models\Periodo;
 use Illuminate\Validation\ValidationException;
@@ -48,24 +47,28 @@ class HorarioService
 
         $diasEnviados = collect($validado['horarios'])->pluck('dia_semana')->all();
 
+        // Si el taller ya tenia horario en este periodo, es un cambio: las
+        // clases nuevas se crean desde hoy (no se inventan clases pasadas).
+        $esCambio = Horario::where('alumno_taller_id', $taller->id)->where('periodo_id', $periodo->id)->exists();
+        $desde = $esCambio ? now() : null;
+
         // Si se quito un dia de clase (se desmarco el checkbox), el horario
         // de ese dia para este taller+periodo se desactiva -- no se borra,
         // para no perder el historial de que ese dia SI se dicto en su
-        // momento, pero deja de generar clases nuevas.
+        // momento. Al desactivarlo se quitan sus clases pendientes (ver
+        // Horario::booted), uno por uno para que se apliquen esos eventos.
         Horario::where('alumno_taller_id', $taller->id)
             ->where('periodo_id', $periodo->id)
             ->whereNotIn('dia_semana', $diasEnviados)
-            ->update(['activo' => false]);
+            ->where('activo', true)
+            ->get()
+            ->each(fn (Horario $h) => $h->update(['activo' => false]));
 
         foreach ($validado['horarios'] as $h) {
             // La unicidad es por taller + PERIODO + dia. Esto es clave para
             // el historial: si el mismo taller se reutiliza para pasar a un
-            // alumno a un nuevo periodo (cambiando su periodo_id o su
-            // maestro), NO se pisa el horario del periodo anterior -- se
-            // crea uno nuevo para el nuevo periodo, y el anterior queda
-            // intacto para siempre poder consultar "con que maestro estuvo
-            // en tal mes" sin importar si se edito el mismo taller o se
-            // creo uno nuevo.
+            // alumno a un nuevo periodo, NO se pisa el horario del periodo
+            // anterior -- se crea uno nuevo para el nuevo periodo.
             $horario = Horario::updateOrCreate(
                 ['alumno_taller_id' => $taller->id, 'periodo_id' => $periodo->id, 'dia_semana' => $h['dia_semana']],
                 [
@@ -79,35 +82,7 @@ class HorarioService
                 ]
             );
 
-            for ($fecha = $periodo->fecha_inicio->copy(); $fecha->lte($periodo->fecha_fin); $fecha->addDay()) {
-                if ($fecha->isoWeekday() != $h['dia_semana']) {
-                    continue;
-                }
-
-                $existe = Clase::where('horario_id', $horario->id)
-                    ->whereDate('fecha', $fecha->toDateString())
-                    ->exists();
-
-                if ($existe) {
-                    continue;
-                }
-
-                Clase::create([
-                    'horario_id' => $horario->id,
-                    'alumno_taller_id' => $taller->id,
-                    'alumno_id' => $taller->alumno_id,
-                    'maestro_id' => $horario->maestro_id,
-                    'especialidad_id' => $horario->especialidad_id,
-                    'periodo_id' => $periodo->id,
-                    'fecha' => $fecha->toDateString(),
-                    'hora_inicio' => $horario->hora_inicio,
-                    'hora_fin' => $horario->hora_fin,
-                    'salon' => $horario->salon,
-                    'estado' => 'programada',
-                ]);
-
-                $creadas++;
-            }
+            $creadas += $horario->generarClases($desde);
         }
 
         return $creadas;

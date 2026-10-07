@@ -178,6 +178,7 @@ class HorarioController extends Controller
         $data['especialidad_id'] = $data['especialidad_id'] ?? $alumno->especialidad_id;
 
         $horario = Horario::create($data);
+        $horario->generarClases(now());
 
         return response()->json(['ok' => true, 'message' => 'Horario creado correctamente.', 'data' => $horario]);
     }
@@ -190,9 +191,10 @@ class HorarioController extends Controller
     public function update(Request $request, Horario $horario)
     {
         $data = $this->validarDatos($request);
+        // Al guardar, sus clases pendientes se ajustan solas (ver Horario::booted).
         $horario->update($data);
 
-        return response()->json(['ok' => true, 'message' => 'Horario actualizado correctamente.', 'data' => $horario]);
+        return response()->json(['ok' => true, 'message' => 'Horario actualizado. Sus próximas clases ya se ajustaron.', 'data' => $horario]);
     }
 
     public function destroy(Horario $horario)

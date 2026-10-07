@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
 
 class Horario extends Model
 {
@@ -60,5 +61,98 @@ class Horario extends Model
     public function diaLabel(): string
     {
         return self::DIAS[$this->dia_semana] ?? '';
+    }
+
+    /**
+     * Las clases del calendario siguen al horario. Si se cambia el dia, se
+     * desactiva o se elimina, sus clases pendientes (de hoy en adelante, sin
+     * asistencia marcada) se quitan y, si sigue activo, se generan las del
+     * dia nuevo. Si solo cambia la hora, el maestro o el salon, las clases
+     * pendientes se actualizan. Lo ya dictado o marcado no se toca.
+     */
+    protected static function booted(): void
+    {
+        static::updated(function (self $horario) {
+            $cambioDia = $horario->wasChanged(['dia_semana', 'periodo_id']);
+
+            if (! $horario->activo || $cambioDia) {
+                $horario->quitarClasesPendientes();
+            } elseif ($horario->wasChanged(['hora_inicio', 'hora_fin', 'maestro_id', 'especialidad_id', 'salon'])) {
+                // Las que siguen con la hora anterior (una clase movida a mano se respeta).
+                $horario->clasesPendientes()
+                    ->where('hora_inicio', $horario->getOriginal('hora_inicio'))
+                    ->update(['hora_inicio' => $horario->hora_inicio, 'hora_fin' => $horario->hora_fin]);
+                $horario->clasesPendientes()->update([
+                    'maestro_id' => $horario->maestro_id,
+                    'especialidad_id' => $horario->especialidad_id,
+                    'salon' => $horario->salon,
+                ]);
+            }
+
+            if ($horario->activo && ($cambioDia || $horario->wasChanged('activo'))) {
+                $horario->generarClases(now());
+            }
+        });
+
+        static::deleting(fn (self $horario) => $horario->quitarClasesPendientes());
+    }
+
+    /** Clases de hoy en adelante que aun no se dictan ni tienen asistencia. */
+    public function clasesPendientes()
+    {
+        return $this->clases()->where('estado', 'programada')
+            ->whereDate('fecha', '>=', now()->toDateString())
+            ->whereDoesntHave('asistencia');
+    }
+
+    public function quitarClasesPendientes(): int
+    {
+        return $this->clasesPendientes()->delete();
+    }
+
+    /**
+     * Crea en el calendario las clases que faltan de este horario dentro de
+     * su periodo (desde la fecha indicada, o desde el inicio del periodo).
+     *
+     * @return int cantidad de clases creadas
+     */
+    public function generarClases(?Carbon $desde = null): int
+    {
+        $periodo = $this->periodo;
+        if (! $periodo || ! $this->activo) {
+            return 0;
+        }
+
+        $inicio = $periodo->fecha_inicio->copy();
+        if ($desde && $desde->copy()->startOfDay()->gt($inicio)) {
+            $inicio = $desde->copy()->startOfDay();
+        }
+
+        $existentes = $this->clases()->whereBetween('fecha', [$inicio->toDateString(), $periodo->fecha_fin->toDateString()])
+            ->pluck('fecha')->map(fn ($f) => Carbon::parse($f)->toDateString())->flip();
+
+        $creadas = 0;
+        for ($fecha = $inicio->copy(); $fecha->lte($periodo->fecha_fin); $fecha->addDay()) {
+            if ($fecha->isoWeekday() != $this->dia_semana || isset($existentes[$fecha->toDateString()])) {
+                continue;
+            }
+
+            Clase::create([
+                'horario_id' => $this->id,
+                'alumno_taller_id' => $this->alumno_taller_id,
+                'alumno_id' => $this->alumno_id,
+                'maestro_id' => $this->maestro_id,
+                'especialidad_id' => $this->especialidad_id,
+                'periodo_id' => $periodo->id,
+                'fecha' => $fecha->toDateString(),
+                'hora_inicio' => $this->hora_inicio,
+                'hora_fin' => $this->hora_fin,
+                'salon' => $this->salon,
+                'estado' => 'programada',
+            ]);
+            $creadas++;
+        }
+
+        return $creadas;
     }
 }
