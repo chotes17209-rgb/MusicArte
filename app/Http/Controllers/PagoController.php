@@ -101,6 +101,14 @@ class PagoController extends Controller
         return response()->json(['ok' => true, 'message' => 'Pago registrado correctamente.', 'data' => $pago]);
     }
 
+    /** Ver: detalle del pago con su taller, mensualidad y todos sus abonos. */
+    public function show(Pago $pago)
+    {
+        $pago->load(['alumno', 'alumnoTaller.especialidad', 'alumnoTaller.maestro', 'alumnoTaller.periodo', 'abonos']);
+
+        return view('pagos.show', compact('pago'));
+    }
+
     public function edit(Pago $pago)
     {
         return response()->json(['ok' => true, 'data' => $pago->load('abonos', 'alumno', 'alumnoTaller.especialidad', 'alumnoTaller.maestro')]);

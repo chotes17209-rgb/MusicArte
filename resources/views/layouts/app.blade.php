@@ -55,7 +55,7 @@
             --azul: #1f5fae;    --azul-suave: #eaf1fb;
             --radio: 8px;
             --radio-sm: 6px;
-            --sidebar-ancho: 232px;
+            --sidebar-ancho: 252px;
 
             /* Compatibilidad con clases viejas de las vistas. */
             --ma-morado: var(--acento);
@@ -80,6 +80,9 @@
             --bs-secondary-color: var(--texto-3);
             --bs-border-radius: var(--radio-sm);
         }
+        /* Base de tamaño: todo el sistema (textos, botones, campos, tablas)
+           se mide en rem a partir de aquí, así crece en proporción. */
+        html { font-size: 18px; }
         html, body { overflow-x: hidden; }
         body { background: var(--fondo); color: var(--texto); -webkit-font-smoothing: antialiased; font-size: .875rem; line-height: 1.5; }
         h1, h2, h3, h4, h5, h6 { color: var(--texto); font-weight: 600; letter-spacing: -.01em; }
@@ -187,7 +190,7 @@
         .btn-danger { --bs-btn-bg: var(--rojo); --bs-btn-border-color: var(--rojo); --bs-btn-hover-bg: #962016; --bs-btn-hover-border-color: #962016; }
         .btn-outline-danger { --bs-btn-color: var(--rojo); --bs-btn-border-color: #f1c6c1; --bs-btn-hover-bg: var(--rojo-suave); --bs-btn-hover-color: var(--rojo); --bs-btn-hover-border-color: #eab0a9; }
         .btn-outline-success { --bs-btn-color: var(--verde); --bs-btn-border-color: #bfe0cb; --bs-btn-hover-bg: var(--verde-suave); --bs-btn-hover-color: var(--verde); --bs-btn-hover-border-color: #a8d5b8; }
-        .btn-icon { width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radio-sm); }
+        .btn-icon { width: 2rem; height: 2rem; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radio-sm); }
         .btn-close { opacity: .45; }
         .btn-close:hover { opacity: .8; }
 
@@ -241,7 +244,7 @@
 
         /* Acciones de fila: botones sobrios con texto (el color solo marca lo destructivo). */
         .table .btn-icon {
-            width: auto; height: 28px; padding: 0 .55rem; gap: .3rem; font-size: .75rem; font-weight: 500;
+            width: auto; height: 1.75rem; padding: 0 .55rem; gap: .3rem; font-size: .75rem; font-weight: 500;
             background: var(--superficie); border: 1px solid var(--borde-fuerte); color: var(--texto-2);
         }
         .table .btn-icon i { font-size: .8rem; }
@@ -858,7 +861,7 @@
 
     // ---------- Ventana "Ver": perfiles y detalles sin salir de la pantalla ----------
     // Cualquier enlace a /alumnos/{id} o /maestros/{id} se abre en la ventana.
-    const _VISTA_RUTAS = /^\/(alumnos|maestros|especialidades|egresos|caja-chica|recitales|avisos|planilla|periodos|horarios|usuarios)\/\d+\/?$/;
+    const _VISTA_RUTAS = /^\/(pagos|alumnos|maestros|especialidades|egresos|caja-chica|recitales|avisos|planilla|periodos|horarios|usuarios)\/\d+\/?$/;
     let _vistaModal = null, _vistaHistorial = [];
 
     function _esRutaVista(href) {

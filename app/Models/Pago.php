@@ -62,6 +62,17 @@ class Pago extends Model
         return self::ESTADOS[$this->estado] ?? $this->estado;
     }
 
+    /**
+     * Observacion para mostrar: sin la marca tecnica que dejo la importacion
+     * del Excel ("Importado de ADMINISTRACION_2026.xlsx (hoja PAGOS, fila N)").
+     */
+    public function observacionVisible(): ?string
+    {
+        $texto = trim(preg_replace('/\s*\|?\s*Importado de [^|]*$/u', '', (string) $this->observacion), " |");
+
+        return $texto !== '' ? $texto : null;
+    }
+
     public function scopePendientes($query)
     {
         return $query->where('saldo', '>', 0);

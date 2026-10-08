@@ -117,6 +117,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('pagos.auth')->group(function () {
         Route::get('/pagos', [PagoController::class, 'index'])->name('pagos.index');
         Route::get('/alumnos/{alumno}/talleres-pago', [PagoController::class, 'talleresDeAlumno'])->name('pagos.talleresAlumno');
+        Route::get('/pagos/{pago}', [PagoController::class, 'show'])->whereNumber('pago')->name('pagos.show');
         Route::get('/pagos/{pago}/edit', [PagoController::class, 'edit'])->name('pagos.edit');
         Route::get('/pagos/{pago}/recibo', [ReciboController::class, 'pdf'])->name('pagos.recibo');
         Route::get('/pagos/abonos/{abono}/recibo', [ReciboController::class, 'pdfAbono'])->name('pagos.abonos.recibo');

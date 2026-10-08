@@ -17,6 +17,7 @@
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         :root { --acento: #800080; --acento-hover: #660066; --borde: #e6e5e0; --borde-fuerte: #d4d3cd; --texto: #1d1c1a; --texto-2: #55534d; --texto-3: #8a8880; }
+        html { font-size: 18px; }
         body {
             font-family: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
             font-size: .875rem; color: var(--texto); background: #f6f6f4;

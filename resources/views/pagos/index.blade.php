@@ -74,8 +74,8 @@
                         @if($p->concepto && $p->concepto !== 'Mensualidad '.($p->alumnoTaller->especialidad->nombre ?? ''))
                             <div class="small text-muted">{{ $p->concepto }}</div>
                         @endif
-                        @if($p->observacion)
-                            <div class="small text-muted fst-italic"><i class="bi bi-sticky me-1"></i>{{ \Illuminate\Support\Str::limit($p->observacion, 70) }}</div>
+                        @if($p->observacionVisible())
+                            <div class="small text-muted fst-italic"><i class="bi bi-sticky me-1"></i>{{ \Illuminate\Support\Str::limit($p->observacionVisible(), 70) }}</div>
                         @endif
                     </td>
                     <td class="text-end">S/ {{ number_format($p->monto_total, 2) }}</td>
@@ -87,10 +87,10 @@
                         </span>
                     </td>
                     <td class="text-end">
-                        <button class="btn btn-sm btn-light btn-icon" title="Ver / registrar abonos" onclick="abrirAbonos({{ $p->id }})"><i class="bi bi-cash-stack"></i></button>
+                        <a href="{{ route('pagos.show', $p) }}" class="btn btn-sm btn-light btn-icon" title="Ver detalle"><i class="bi bi-eye"></i></a>
+                        <button class="btn btn-sm btn-light btn-icon" title="Registrar abonos" onclick="abrirAbonos({{ $p->id }})"><i class="bi bi-cash-stack"></i></button>
                         <a href="{{ route('pagos.recibo', $p) }}" target="_blank" class="btn btn-sm btn-light btn-icon" title="Estado de cuenta PDF"><i class="bi bi-file-earmark-pdf"></i></a>
                         @auth @if(auth()->user()->esAdmin())
-                        <button class="btn btn-sm btn-light btn-icon" onclick="editarPago({{ $p->id }})" title="Editar"><i class="bi bi-pencil"></i></button>
                         <button class="btn btn-sm btn-light btn-icon text-danger" onclick="eliminarPago({{ $p->id }}, '{{ $p->alumno->nombre ?? '' }}')" title="Eliminar"><i class="bi bi-trash"></i></button>
                         @endif @endauth
                     </td>
@@ -361,23 +361,6 @@
         if (opt.dataset.anio) document.getElementById('pago_anio').value = opt.dataset.anio;
         if (!document.getElementById('pago_concepto').value) document.getElementById('pago_concepto').value = opt.dataset.concepto;
     });
-
-    async function editarPago(id) {
-        const res = await maFetch(`/pagos/${id}/edit`);
-        if (!res) return;
-        const d = res.data;
-        document.getElementById('pago_id').value = d.id;
-        document.getElementById('pago_alumno_id').value = d.alumno_id;
-        await cargarTalleresDelAlumno(d.alumno_taller_id);
-        document.getElementById('pago_concepto').value = d.concepto ?? '';
-        document.getElementById('pago_mes').value = d.mes;
-        document.getElementById('pago_anio').value = d.anio;
-        document.getElementById('pago_fecha_pago').value = d.fecha_pago ? d.fecha_pago.substring(0,10) : '';
-        document.getElementById('pago_monto_total').value = d.monto_total;
-        document.getElementById('pago_observacion').value = d.observacion ?? '';
-        document.getElementById('tituloModalPago').innerText = 'Editar Pago';
-        modalPago.show();
-    }
 
     document.getElementById('formPago').addEventListener('submit', async (e) => {
         e.preventDefault();
