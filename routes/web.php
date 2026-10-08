@@ -66,6 +66,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('maestros', MaestroController::class)->except(['create']);
     Route::resource('alumnos', AlumnoController::class)->except(['create']);
     Route::post('/alumnos/{alumno}/talleres', [AlumnoTallerController::class, 'store'])->name('alumnos.talleres.store');
+    Route::post('/alumnos/{alumno}/matricula', [AlumnoController::class, 'matricula'])->name('alumnos.matricula');
     Route::put('/alumnos/talleres/{alumnoTaller}', [AlumnoTallerController::class, 'update'])->name('alumnos.talleres.update');
     Route::delete('/alumnos/talleres/{alumnoTaller}', [AlumnoTallerController::class, 'destroy'])->name('alumnos.talleres.destroy');
     Route::get('/horarios/mensual', [HorarioController::class, 'vistaMensual'])->name('horarios.mensual');

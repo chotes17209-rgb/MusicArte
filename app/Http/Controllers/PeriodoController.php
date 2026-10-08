@@ -185,7 +185,7 @@ class PeriodoController extends Controller
 
         $copiar = $request->boolean('copiar_talleres', true);
         $origen = Periodo::findOrFail($data['periodo_anterior_id']);
-        $totales = ['talleres' => 0, 'clases' => 0, 'pagos' => 0];
+        $totales = ['talleres' => 0, 'clases' => 0, 'pagos' => 0, 'matriculas' => 0];
 
         DB::transaction(function () use ($candidatosIds, $seleccionados, $periodo, $origen, $copiar, &$totales) {
             foreach ($candidatosIds as $alumnoId) {
@@ -195,6 +195,17 @@ class PeriodoController extends Controller
                     ['alumno_id' => $alumnoId, 'periodo_id' => $periodo->id],
                     ['estado' => $continua ? 'activo' : 'inactivo']
                 );
+
+                // Año nuevo: la matricula se vuelve a pagar. Se crea pendiente con
+                // el mismo monto del año anterior (se puede cambiar al editar al alumno).
+                if ($continua && $periodo->anio > $origen->anio) {
+                    $alumno = Alumno::find($alumnoId);
+                    $anterior = $alumno->matriculaDe($origen->anio);
+                    if ($anterior && ! $alumno->matriculaDe($periodo->anio)) {
+                        $alumno->registrarMatricula($periodo->anio, $anterior->monto_total, null, $periodo->mes);
+                        $totales['matriculas']++;
+                    }
+                }
 
                 if ($continua && $copiar) {
                     foreach (PaseDePeriodoService::copiarTalleres(Alumno::find($alumnoId), $origen, $periodo) as $clave => $n) {
@@ -211,6 +222,9 @@ class PeriodoController extends Controller
             $mensaje .= ' Ya tenían sus talleres en este periodo; no se copió nada nuevo.';
         }
         $mensaje .= " En su historial, {$origen->nombre} ya aparece como inactivo.";
+        if ($totales['matriculas']) {
+            $mensaje .= " Se crearon {$totales['matriculas']} matrículas {$periodo->anio} pendientes.";
+        }
 
         return response()->json(['ok' => true, 'message' => $mensaje, 'data' => $totales]);
     }

@@ -14,7 +14,7 @@
 @section('contenido')
 <table class="ficha">
     <tr><td>Alumno</td><td class="fuerte">{{ $pago->alumno->nombre }}</td></tr>
-    <tr><td>Taller</td><td>{{ $pago->alumnoTaller->especialidad->nombre ?? ($pago->alumno->especialidad->nombre ?? '—') }}@if($pago->alumnoTaller?->maestro) <span class="muted">· {{ $pago->alumnoTaller->maestro->nombre }}</span>@endif</td></tr>
+    <tr><td>{{ $pago->esMatricula() ? 'Concepto' : 'Taller' }}</td><td>{{ $pago->esMatricula() ? $pago->tallerLabel() : ($pago->alumnoTaller->especialidad->nombre ?? ($pago->alumno->especialidad->nombre ?? '—')) }}@if($pago->alumnoTaller?->maestro) <span class="muted">· {{ $pago->alumnoTaller->maestro->nombre }}</span>@endif</td></tr>
     <tr><td>Concepto</td><td>{{ $pago->concepto ?? 'Mensualidad' }}</td></tr>
     <tr><td>Periodo</td><td>{{ $pago->mesLabel() }} {{ $pago->anio }}</td></tr>
     <tr><td>Estado</td><td><span class="estado {{ $pago->estado }}">{{ $pago->estadoLabel() }}</span></td></tr>

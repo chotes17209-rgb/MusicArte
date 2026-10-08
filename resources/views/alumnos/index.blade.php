@@ -1,6 +1,12 @@
 @extends('layouts.app')
 @section('titulo', 'Alumnos')
 
+@push('estilos')
+<style>
+    .caja-matricula { border: 1px solid var(--borde); border-left: 3px solid var(--acento); border-radius: var(--radio-sm); background: var(--acento-suave); padding: .75rem .9rem; }
+</style>
+@endpush
+
 @section('contenido')
 
 {{-- ======================================================
@@ -194,7 +200,7 @@
                             <select class="form-select" id="alumno_periodo_id">
                                 <option value="">-- No programar clases ahora --</option>
                                 @foreach($periodos as $p)
-                                    <option value="{{ $p->id }}"
+                                    <option value="{{ $p->id }}" data-anio="{{ $p->anio }}"
                                         data-inicio="{{ $p->fecha_inicio->format('d/m/Y') }}"
                                         data-fin="{{ $p->fecha_fin->format('d/m/Y') }}">{{ $p->nombre }}</option>
                                 @endforeach
@@ -227,6 +233,23 @@
                         </div>
                         <small class="text-muted">Cada día puede tener una hora distinta. El salón se asigna desde el módulo de Horarios.</small>
                     </div>
+
+                    {{-- Matricula: se paga una vez por año, aparte de la mensualidad. --}}
+                    <div class="caja-matricula mt-3">
+                        <h6 class="fw-semibold small text-uppercase mb-1"><i class="bi bi-award me-1"></i> Matrícula <span id="alumno_matricula_anio">{{ $anioMatricula }}</span></h6>
+                        <small class="text-muted d-block mb-2">Se paga una sola vez al año, aparte de la mensualidad. Déjalo vacío si no corresponde.</small>
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <label class="form-label small fw-semibold" for="alumno_matricula_monto">Monto</label>
+                                <div class="input-group"><span class="input-group-text">S/</span>
+                                    <input type="number" step="0.01" min="0" class="form-control" id="alumno_matricula_monto" placeholder="0.00"></div>
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label small fw-semibold" for="alumno_matricula_nota">Nota <span class="fw-normal text-muted">(opcional)</span></label>
+                                <input type="text" maxlength="255" class="form-control" id="alumno_matricula_nota" placeholder="Ej.: descuento por hermanos">
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {{-- ======================================================
@@ -236,6 +259,28 @@
                      ====================================================== --}}
                 <div id="bloqueTalleresExistente" class="d-none">
                     <hr>
+                    <div class="caja-matricula mb-3" id="panelMatricula">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <div>
+                                <h6 class="fw-semibold small text-uppercase mb-0"><i class="bi bi-award me-1"></i> Matrícula <span id="matricula_anio_txt"></span></h6>
+                                <div class="small" id="matricula_estado_txt"></div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="btnMatriculaEditar" onclick="mostrarFormMatricula(true)">Registrar matrícula</button>
+                        </div>
+                        <div class="row g-2 mt-1 d-none" id="formMatricula">
+                            <div class="col-md-4">
+                                <div class="input-group input-group-sm"><span class="input-group-text">S/</span>
+                                    <input type="number" step="0.01" min="0" class="form-control" id="matricula_monto" placeholder="Monto"></div>
+                            </div>
+                            <div class="col-md-5">
+                                <input type="text" maxlength="255" class="form-control form-control-sm" id="matricula_nota" placeholder="Nota (opcional)">
+                            </div>
+                            <div class="col-md-3 d-flex gap-1">
+                                <button type="button" class="btn btn-sm btn-light" onclick="mostrarFormMatricula(false)">Cancelar</button>
+                                <button type="button" class="btn btn-sm btn-morado flex-grow-1" onclick="guardarMatricula()">Guardar</button>
+                            </div>
+                        </div>
+                    </div>
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <h6 class="fw-semibold small text-uppercase text-muted mb-0">Talleres del alumno</h6>
                         <button type="button" class="btn btn-sm btn-outline-secondary" id="btnAgregarTaller" onclick="mostrarFormTaller()">
@@ -598,6 +643,64 @@
         return { veces_semana: veces || null, monto_mensual: monto === '' ? null : monto, nota_mensualidad: nota || null };
     }
 
+    /* ---------------------------------------------------------------
+     * Matricula (una vez por año, aparte de la mensualidad).
+     * ------------------------------------------------------------- */
+    let matriculaActual = { anio: null, pago: null };
+
+    function renderMatricula(anio, pago) {
+        matriculaActual = { anio, pago };
+        document.getElementById('matricula_anio_txt').textContent = anio;
+        const estado = document.getElementById('matricula_estado_txt');
+        const boton = document.getElementById('btnMatriculaEditar');
+        if (!pago) {
+            estado.innerHTML = '<span class="text-danger">Aún no registra la matrícula de este año.</span>';
+            boton.textContent = 'Registrar matrícula';
+        } else {
+            const total = Number(pago.monto_total).toFixed(2);
+            const falta = Number(pago.saldo);
+            estado.innerHTML = `S/ ${total} · ` + (falta > 0
+                ? `<span class="text-danger fw-semibold">le falta S/ ${falta.toFixed(2)}</span> <span class="text-muted">(se abona en Pagos)</span>`
+                : '<span class="text-success fw-semibold">pagada</span>')
+                + (pago.observacion ? ` <span class="text-muted fst-italic">· ${maEscapar(pago.observacion)}</span>` : '');
+            boton.textContent = 'Cambiar monto';
+        }
+        mostrarFormMatricula(false);
+    }
+
+    function mostrarFormMatricula(mostrar) {
+        document.getElementById('formMatricula').classList.toggle('d-none', !mostrar);
+        document.getElementById('btnMatriculaEditar').classList.toggle('d-none', mostrar);
+        if (mostrar) {
+            document.getElementById('matricula_monto').value = matriculaActual.pago ? Number(matriculaActual.pago.monto_total).toFixed(2) : '';
+            document.getElementById('matricula_nota').value = matriculaActual.pago?.observacion ?? '';
+            document.getElementById('matricula_monto').focus();
+        }
+    }
+
+    async function guardarMatricula() {
+        const alumnoId = document.getElementById('alumno_id').value;
+        const monto = document.getElementById('matricula_monto').value;
+        if (monto === '') {
+            Swal.fire({ icon: 'warning', title: 'Falta el monto', text: 'Escribe el monto de la matrícula.' });
+            return;
+        }
+        const res = await maFetch(`/alumnos/${alumnoId}/matricula`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ anio: matriculaActual.anio, monto, nota: document.getElementById('matricula_nota').value || null }),
+        });
+        if (res && res.ok) {
+            maToast('success', res.message);
+            renderMatricula(matriculaActual.anio, res.data);
+        }
+    }
+
+    document.getElementById('alumno_periodo_id').addEventListener('change', function () {
+        const anio = this.selectedOptions[0]?.dataset.anio;
+        document.getElementById('alumno_matricula_anio').textContent = anio || @json($anioMatricula);
+    });
+
     function diaCorto(n) {
         return ({1: 'Lun', 2: 'Mar', 3: 'Mie', 4: 'Jue', 5: 'Vie', 6: 'Sab', 7: 'Dom'})[n] || '';
     }
@@ -614,6 +717,7 @@
             document.getElementById('alumno_dia_' + diaNum + '_fin').value = '';
         }
         reiniciarMensualidad('alumno');
+        document.getElementById('alumno_matricula_anio').textContent = @json($anioMatricula);
         document.getElementById('bloquePrimerTaller').classList.remove('d-none');
         document.getElementById('bloqueTalleresExistente').classList.add('d-none');
         document.getElementById('tituloModalAlumno').innerText = 'Nuevo Alumno';
@@ -830,6 +934,7 @@
         document.getElementById('bloqueTalleresExistente').classList.remove('d-none');
         renderListaTalleres(d.talleres);
         mostrarListaTalleres();
+        renderMatricula(d.matricula_anio, d.matricula);
 
         document.getElementById('tituloModalAlumno').innerText = 'Editar Alumno';
         modalAlumno.show();
@@ -851,7 +956,12 @@
             observaciones: document.getElementById('alumno_observaciones').value,
         };
 
-        // El "primer taller" solo aplica al crear un alumno nuevo.
+        // El "primer taller" y la matricula solo aplican al crear un alumno nuevo.
+        if (!id && document.getElementById('alumno_matricula_monto').value !== '') {
+            payload.matricula_monto = document.getElementById('alumno_matricula_monto').value;
+            payload.matricula_nota = document.getElementById('alumno_matricula_nota').value || null;
+            payload.matricula_anio = document.getElementById('alumno_matricula_anio').textContent.trim();
+        }
         if (!id) {
             const periodoId = document.getElementById('alumno_periodo_id').value;
             const horariosDias = [];

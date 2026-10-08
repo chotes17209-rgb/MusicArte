@@ -17,7 +17,7 @@
     @forelse($data as $p)
         <tr>
             <td class="fuerte">{{ $p->alumno->nombre ?? '—' }}</td>
-            <td>{{ $p->alumnoTaller->especialidad->nombre ?? '—' }}</td>
+            <td>{{ $p->tallerLabel() }}</td>
             <td class="muted">{{ $p->alumnoTaller->maestro->nombre ?? '—' }}</td>
             <td><span class="estado {{ $p->estado }}">{{ $estados[$p->estado] ?? $p->estado }}</span></td>
             <td class="der">S/ {{ number_format($p->monto_total, 2) }}</td>

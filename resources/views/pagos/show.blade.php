@@ -26,8 +26,12 @@
             <h6 class="seccion-titulo">Datos del pago</h6>
             <dl class="ficha mb-0">
                 <dt>Alumno</dt><dd>{{ $pago->alumno->nombre ?? '—' }}</dd>
+                @if($pago->esMatricula())
+                    <dt>Concepto</dt><dd><span class="badge bg-primary"><i class="bi bi-award"></i> {{ $pago->tallerLabel() }}</span> <span class="text-muted small">(se paga una vez al año)</span></dd>
+                @else
                 <dt>Taller</dt><dd>{{ $taller->especialidad->nombre ?? '—' }}</dd>
                 <dt>Maestro</dt><dd>{{ $taller->maestro->nombre ?? '—' }}</dd>
+                @endif
                 <dt>Periodo</dt><dd>{{ $taller->periodo->nombre ?? $pago->mesLabel().' '.$pago->anio }}</dd>
                 @if($taller?->modalidadLabel())
                     <dt>Modalidad</dt><dd>{{ $taller->modalidadLabel() }}</dd>

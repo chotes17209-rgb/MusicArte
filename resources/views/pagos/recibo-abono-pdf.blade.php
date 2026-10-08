@@ -22,7 +22,7 @@
 
 <table class="ficha">
     <tr><td>Alumno</td><td class="fuerte">{{ $abono->pago->alumno->nombre }}</td></tr>
-    <tr><td>Taller</td><td>{{ $abono->pago->alumnoTaller->especialidad->nombre ?? ($abono->pago->alumno->especialidad->nombre ?? '—') }}</td></tr>
+    <tr><td>{{ $abono->pago->esMatricula() ? 'Concepto' : 'Taller' }}</td><td>{{ $abono->pago->esMatricula() ? $abono->pago->tallerLabel() : ($abono->pago->alumnoTaller->especialidad->nombre ?? ($abono->pago->alumno->especialidad->nombre ?? '—')) }}</td></tr>
     <tr><td>Concepto</td><td>{{ $abono->pago->concepto ?? 'Mensualidad' }}</td></tr>
     <tr><td>Periodo</td><td>{{ $abono->pago->mesLabel() }} {{ $abono->pago->anio }}</td></tr>
     <tr><td>Fecha del abono</td><td>{{ $abono->fecha->format('d/m/Y') }}</td></tr>

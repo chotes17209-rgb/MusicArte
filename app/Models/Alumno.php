@@ -132,6 +132,49 @@ class Alumno extends Model
         ])->saveQuietly();
     }
 
+    /** Matricula del alumno en un año (se paga una vez por año). */
+    public function matriculaDe(int $anio): ?Pago
+    {
+        return $this->pagos()->matriculas()->where('anio', $anio)->first();
+    }
+
+    /**
+     * Registra (o corrige) la matricula del año: un pago aparte de las
+     * mensualidades, sin taller. Si ya existe, se actualiza su monto y nota
+     * sin tocar sus abonos.
+     */
+    public function registrarMatricula(int $anio, $monto, ?string $nota = null, ?int $mes = null): Pago
+    {
+        $pago = $this->matriculaDe($anio) ?? new Pago([
+            'alumno_id' => $this->id,
+            'tipo' => Pago::TIPO_MATRICULA,
+            'anio' => $anio,
+            'mes' => $mes ?? (now()->year === $anio ? now()->month : 1),
+        ]);
+
+        $monto = number_format((float) $monto, 2, '.', '');
+        $nota = trim((string) $nota) !== '' ? trim($nota) : null;
+
+        $pago->fill([
+            'concepto' => 'Matrícula '.$anio,
+            'monto_total' => $monto,
+            'observacion' => $nota ?? $pago->observacion,
+        ]);
+
+        if (! $pago->exists) {
+            $pago->saldo = $monto;
+            $pago->estado = $monto > 0 ? 'pendiente' : 'pagado';
+            $pago->save();
+
+            return $pago;
+        }
+
+        $pago->save();
+        $pago->recalcular();
+
+        return $pago;
+    }
+
     /** Talleres del alumno en periodos vigentes (abiertos y que aun no terminan). */
     public function talleresVigentes()
     {

@@ -70,8 +70,8 @@
                 <tr>
                     <td class="fw-semibold">{{ $p->alumno->nombre ?? '—' }}</td>
                     <td>
-                        <div>{{ $p->alumnoTaller->especialidad->nombre ?? '—' }}</div>
-                        @if($p->concepto && $p->concepto !== 'Mensualidad '.($p->alumnoTaller->especialidad->nombre ?? ''))
+                        <div>@if($p->esMatricula())<span class="badge bg-primary"><i class="bi bi-award"></i> {{ $p->tallerLabel() }}</span>@else{{ $p->tallerLabel() }}@endif</div>
+                        @if(! $p->esMatricula() && $p->concepto && $p->concepto !== 'Mensualidad '.($p->alumnoTaller->especialidad->nombre ?? ''))
                             <div class="small text-muted">{{ $p->concepto }}</div>
                         @endif
                         @if($p->observacionVisible())
@@ -128,7 +128,7 @@
                         <select class="form-select" id="pago_alumno_taller_id">
                             <option value="">-- Selecciona un alumno primero --</option>
                         </select>
-                        <small class="text-muted">Un alumno puede tener varios talleres; elige a cual corresponde este pago.</small>
+                        <small class="text-muted">Elige el taller (mensualidad) o "Matrícula del año".</small>
                     </div>
                 </div>
                 <div class="row">
@@ -331,7 +331,7 @@
             return;
         }
         const res = await maFetch(`/alumnos/${alumnoId}/talleres-pago`);
-        select.innerHTML = '<option value="">-- Sin taller especifico --</option>';
+        select.innerHTML = '<option value="">-- Sin taller especifico --</option><option value="matricula">Matrícula del año (se paga una vez al año)</option>';
         if (res && res.ok) {
             res.data.forEach(t => {
                 const partes = [t.especialidad ? t.especialidad.nombre : 'Taller'];
@@ -356,6 +356,10 @@
         if (document.getElementById('pago_id').value) return;
         const opt = this.selectedOptions[0];
         if (!opt || !opt.value) return;
+        if (opt.value === 'matricula') {
+            document.getElementById('pago_concepto').value = 'Matrícula ' + document.getElementById('pago_anio').value;
+            return;
+        }
         if (opt.dataset.monto !== '') document.getElementById('pago_monto_total').value = Number(opt.dataset.monto).toFixed(2);
         if (opt.dataset.mes) document.getElementById('pago_mes').value = opt.dataset.mes;
         if (opt.dataset.anio) document.getElementById('pago_anio').value = opt.dataset.anio;
@@ -367,7 +371,8 @@
         const id = document.getElementById('pago_id').value;
         const payload = {
             alumno_id: document.getElementById('pago_alumno_id').value,
-            alumno_taller_id: document.getElementById('pago_alumno_taller_id').value || null,
+            alumno_taller_id: ['', 'matricula'].includes(document.getElementById('pago_alumno_taller_id').value) ? null : document.getElementById('pago_alumno_taller_id').value,
+            tipo: document.getElementById('pago_alumno_taller_id').value === 'matricula' ? 'matricula' : 'mensualidad',
             concepto: document.getElementById('pago_concepto').value,
             mes: document.getElementById('pago_mes').value,
             anio: document.getElementById('pago_anio').value,

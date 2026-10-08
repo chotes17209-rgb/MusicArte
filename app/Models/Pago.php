@@ -12,7 +12,7 @@ class Pago extends Model
     protected $table = 'pagos';
 
     protected $fillable = [
-        'alumno_id', 'alumno_taller_id', 'mes', 'anio', 'concepto', 'monto_total',
+        'alumno_id', 'alumno_taller_id', 'tipo', 'mes', 'anio', 'concepto', 'monto_total',
         'yape_transferencia', 'efectivo', 'tarjeta', 'saldo', 'estado',
         'recibo_nro', 'fecha_pago', 'observacion',
     ];
@@ -34,6 +34,26 @@ class Pago extends Model
         'a_cuenta' => 'A cuenta',
         'pagado' => 'Pagado',
     ];
+
+    /** Tipos de cobro: mensualidad de un taller, o matricula (una vez por año). */
+    const TIPO_MENSUALIDAD = 'mensualidad';
+    const TIPO_MATRICULA = 'matricula';
+
+    public function esMatricula(): bool
+    {
+        return $this->tipo === self::TIPO_MATRICULA;
+    }
+
+    public function scopeMatriculas($query)
+    {
+        return $query->where('tipo', self::TIPO_MATRICULA);
+    }
+
+    /** Lo que se muestra en la columna "Taller": el taller, o "Matrícula" si es la matricula del año. */
+    public function tallerLabel(): string
+    {
+        return $this->esMatricula() ? 'Matrícula '.$this->anio : ($this->alumnoTaller->especialidad->nombre ?? '—');
+    }
 
     public function alumno()
     {

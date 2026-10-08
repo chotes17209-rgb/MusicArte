@@ -82,6 +82,19 @@ class PagoController extends Controller
     {
         $data = $this->validarDatos($request);
 
+        $data['tipo'] = $data['tipo'] ?? Pago::TIPO_MENSUALIDAD;
+
+        // La matricula se paga una sola vez por año.
+        if ($data['tipo'] === Pago::TIPO_MATRICULA) {
+            $data['alumno_taller_id'] = null;
+            if ($existente = Pago::matriculas()->where('alumno_id', $data['alumno_id'])->where('anio', $data['anio'])->first()) {
+                return response()->json([
+                    'ok' => false,
+                    'message' => "Este alumno ya tiene la matrícula {$data['anio']} (S/ ".number_format($existente->monto_total, 2).'). Registra el abono en ese pago.',
+                ], 422);
+            }
+        }
+
         // La mensualidad de cada taller se crea sola al inscribirlo: no se duplica.
         $existente = ! empty($data['alumno_taller_id'])
             ? Pago::where('alumno_taller_id', $data['alumno_taller_id'])->where('mes', $data['mes'])->where('anio', $data['anio'])->first()
@@ -193,6 +206,7 @@ class PagoController extends Controller
             'anio' => 'required|integer|min:2020|max:2100',
             'concepto' => 'nullable|string|max:150',
             'monto_total' => 'required|numeric|min:0',
+            'tipo' => 'nullable|in:mensualidad,matricula',
             'fecha_pago' => 'nullable|date',
             'observacion' => 'nullable|string',
         ], [

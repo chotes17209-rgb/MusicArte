@@ -44,7 +44,10 @@ class AlumnoController extends Controller
         // lista trae TODOS los periodos, activos e inactivos, para el CRUD.
         $todosPeriodos = Periodo::orderByDesc('anio')->orderByDesc('mes')->get();
 
-        return view('alumnos.index', compact('alumnos', 'estados', 'especialidades', 'maestros', 'periodos', 'todosPeriodos'));
+        // Año de la matricula al registrar un alumno: el del periodo con que se trabaja.
+        $anioMatricula = Periodo::seleccionado()->anio ?? now()->year;
+
+        return view('alumnos.index', compact('alumnos', 'estados', 'especialidades', 'maestros', 'periodos', 'todosPeriodos', 'anioMatricula'));
     }
 
     /**
@@ -226,9 +229,26 @@ class AlumnoController extends Controller
     {
         $data = $this->validarDatos($request);
 
-        $alumno = DB::transaction(function () use ($request, $data) {
+        $matricula = $request->validate([
+            'matricula_monto' => 'nullable|numeric|min:0|max:99999',
+            'matricula_nota' => 'nullable|string|max:255',
+            'matricula_anio' => 'nullable|integer|min:2020|max:2100',
+        ]);
+
+        $alumno = DB::transaction(function () use ($request, $data, $matricula) {
             $alumno = Alumno::create($data);
             $this->crearTallerInicial($request, $alumno);
+
+            // Matricula del año (se paga una vez por año), aparte de la mensualidad.
+            if (($matricula['matricula_monto'] ?? null) !== null) {
+                $periodo = $request->filled('periodo_id') ? Periodo::find($request->periodo_id) : null;
+                $alumno->registrarMatricula(
+                    (int) ($matricula['matricula_anio'] ?? $periodo->anio ?? now()->year),
+                    $matricula['matricula_monto'],
+                    $matricula['matricula_nota'] ?? null,
+                    $periodo->mes ?? null,
+                );
+            }
 
             return $alumno;
         });
@@ -255,7 +275,35 @@ class AlumnoController extends Controller
             'talleres.horarios' => fn ($q) => $q->where('activo', true),
         ]);
 
-        return response()->json(['ok' => true, 'data' => $alumno]);
+        $anio = Periodo::seleccionado()->anio ?? now()->year;
+        $data = $alumno->toArray();
+        $data['matricula_anio'] = $anio;
+        $data['matricula'] = $alumno->matriculaDe($anio)?->only(['id', 'monto_total', 'saldo', 'estado', 'observacion']);
+
+        return response()->json(['ok' => true, 'data' => $data]);
+    }
+
+    /**
+     * Registra o corrige la matricula del año de un alumno ya creado. Es un
+     * pago aparte (una sola vez por año); sus abonos se registran en Pagos.
+     */
+    public function matricula(Request $request, Alumno $alumno)
+    {
+        $data = $request->validate([
+            'anio' => 'required|integer|min:2020|max:2100',
+            'monto' => 'required|numeric|min:0|max:99999',
+            'nota' => 'nullable|string|max:255',
+        ], [
+            'monto.required' => 'Escribe el monto de la matrícula.',
+        ]);
+
+        $pago = $alumno->registrarMatricula((int) $data['anio'], $data['monto'], $data['nota'] ?? null);
+
+        return response()->json([
+            'ok' => true,
+            'message' => "Matrícula {$data['anio']} registrada: S/ ".number_format($pago->monto_total, 2).'.',
+            'data' => $pago->only(['id', 'monto_total', 'saldo', 'estado', 'observacion']),
+        ]);
     }
 
     public function update(Request $request, Alumno $alumno)

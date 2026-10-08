@@ -65,7 +65,7 @@
                 <tr>
                     <td class="fw-semibold">{{ $p->alumno->nombre ?? '—' }}</td>
                     <td>
-                        <div>{{ $p->alumnoTaller->especialidad->nombre ?? '—' }}</div>
+                        <div>{{ $p->tallerLabel() }}</div>
                         <div class="small text-muted">{{ $p->alumnoTaller->maestro->nombre ?? '' }}</div>
                     </td>
                     <td class="text-end">S/ {{ number_format($p->monto_total, 2) }}</td>
