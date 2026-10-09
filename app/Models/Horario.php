@@ -65,9 +65,9 @@ class Horario extends Model
 
     /**
      * Las clases del calendario siguen al horario. Si se cambia el dia, se
-     * desactiva o se elimina, sus clases pendientes (de hoy en adelante, sin
-     * asistencia marcada) se quitan y, si sigue activo, se generan las del
-     * dia nuevo. Si solo cambia la hora, el maestro o el salon, las clases
+     * desactiva o se elimina, sus clases pendientes (las del periodo que aun
+     * no tienen asistencia marcada) se quitan y, si sigue activo, se generan
+     * las del dia nuevo en todo su periodo. Si solo cambia la hora, el maestro o el salon, las clases
      * pendientes se actualizan. Lo ya dictado o marcado no se toca.
      */
     protected static function booted(): void
@@ -90,19 +90,21 @@ class Horario extends Model
             }
 
             if ($horario->activo && ($cambioDia || $horario->wasChanged('activo'))) {
-                $horario->generarClases(now());
+                $horario->generarClases();
             }
         });
 
         static::deleting(fn (self $horario) => $horario->quitarClasesPendientes());
     }
 
-    /** Clases de hoy en adelante que aun no se dictan ni tienen asistencia. */
+    /**
+     * Clases del horario que aun no tienen asistencia ni se marcaron como
+     * dictadas (de todo el periodo, tambien dias pasados: la asistencia de un
+     * mes se suele marcar despues).
+     */
     public function clasesPendientes()
     {
-        return $this->clases()->where('estado', 'programada')
-            ->whereDate('fecha', '>=', now()->toDateString())
-            ->whereDoesntHave('asistencia');
+        return $this->clases()->where('estado', 'programada')->whereDoesntHave('asistencia');
     }
 
     public function quitarClasesPendientes(): int

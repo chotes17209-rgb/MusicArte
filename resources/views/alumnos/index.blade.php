@@ -802,6 +802,7 @@
         document.getElementById('taller_id').value = '';
         document.getElementById('taller_especialidad_id').value = '';
         document.getElementById('taller_maestro_id').value = '';
+        document.querySelectorAll('#taller_periodo_id option[data-temporal]').forEach(o => o.remove());
         document.getElementById('taller_periodo_id').value = '';
         document.getElementById('taller_periodo_duracion').innerText = '';
         document.getElementById('taller_salon').value = '';
@@ -827,6 +828,15 @@
         document.getElementById('taller_estado').value = t.estado ?? 'activo';
         if (t.periodo_id) {
             const sel = document.getElementById('taller_periodo_id');
+            // Un periodo ya finalizado no esta en la lista: se agrega para no perderlo al guardar.
+            if (!sel.querySelector(`option[value="${t.periodo_id}"]`) && t.periodo) {
+                const fecha = f => (f ?? '').substring(0, 10).split('-').reverse().join('/');
+                const opt = new Option(`${t.periodo.nombre} (finalizado)`, t.periodo_id);
+                opt.dataset.inicio = fecha(t.periodo.fecha_inicio);
+                opt.dataset.fin = fecha(t.periodo.fecha_fin);
+                opt.dataset.temporal = '1';
+                sel.appendChild(opt);
+            }
             sel.value = t.periodo_id;
             sel.dispatchEvent(new Event('change'));
         }

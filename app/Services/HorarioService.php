@@ -47,11 +47,6 @@ class HorarioService
 
         $diasEnviados = collect($validado['horarios'])->pluck('dia_semana')->all();
 
-        // Si el taller ya tenia horario en este periodo, es un cambio: las
-        // clases nuevas se crean desde hoy (no se inventan clases pasadas).
-        $esCambio = Horario::where('alumno_taller_id', $taller->id)->where('periodo_id', $periodo->id)->exists();
-        $desde = $esCambio ? now() : null;
-
         // Si se quito un dia de clase (se desmarco el checkbox), el horario
         // de ese dia para este taller+periodo se desactiva -- no se borra,
         // para no perder el historial de que ese dia SI se dicto en su
@@ -82,7 +77,7 @@ class HorarioService
                 ]
             );
 
-            $creadas += $horario->generarClases($desde);
+            $creadas += $horario->generarClases();
         }
 
         return $creadas;

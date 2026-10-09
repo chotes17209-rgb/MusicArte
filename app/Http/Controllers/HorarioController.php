@@ -178,7 +178,7 @@ class HorarioController extends Controller
         $data['especialidad_id'] = $data['especialidad_id'] ?? $alumno->especialidad_id;
 
         $horario = Horario::create($data);
-        $horario->generarClases(now());
+        $horario->generarClases();
 
         return response()->json(['ok' => true, 'message' => 'Horario creado correctamente.', 'data' => $horario]);
     }
