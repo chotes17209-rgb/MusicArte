@@ -17,14 +17,12 @@
                     @if($a->edad)<div class="small text-muted fw-normal">{{ mb_strtolower($a->edad) }}</div>@endif
                 </td>
                 <td>
-                    @if($a->especialidad)
-                        <div>{{ $a->especialidad->nombre }} <span class="text-muted">con</span> {{ $a->maestro->nombre ?? '—' }}</div>
-                    @else
-                        <span class="text-muted">Sin taller</span>
-                    @endif
-                    @if($a->talleres_activos_count > 1)
-                        <div class="small text-muted">Lleva {{ $a->talleres_activos_count }} talleres</div>
-                    @endif
+                    {{-- Los talleres del periodo que se esta viendo, con su maestro de ese mes. --}}
+                    @forelse($a->talleres->unique(fn ($t) => $t->especialidad_id.'-'.$t->maestro_id) as $t)
+                        <div>{{ $t->especialidad->nombre ?? '—' }} <span class="text-muted">con</span> {{ $t->maestro->nombre ?? '—' }}</div>
+                    @empty
+                        <span class="text-muted">Sin taller este mes</span>
+                    @endforelse
                 </td>
                 <td>
                     <div>{{ $a->tutor ?? '—' }}</div>

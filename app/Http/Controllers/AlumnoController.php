@@ -185,22 +185,28 @@ class AlumnoController extends Controller
             }
         }
 
+        // Taller y maestro se buscan en los talleres del periodo elegido (o de
+        // los periodos vigentes): un alumno que cambio de maestro ya no
+        // aparece en la lista de su maestro anterior.
+        // (En un mes pasado se consideran todos sus talleres: al importar el
+        // Excel quedaron como historial; en los vigentes, solo los activos.)
+        $delPeriodo = fn ($qt) => $request->filled('periodo_id')
+            ? $qt->where('periodo_id', $request->periodo_id)
+                ->when(! Periodo::find($request->periodo_id)?->finalizado(), fn ($q) => $q->where('estado', 'activo'))
+            : $qt->where('estado', 'activo')->whereHas('periodo', fn ($p) => $p->vigentes());
+
         if ($request->filled('especialidad_id')) {
-            $query->where('especialidad_id', $request->especialidad_id);
+            $especialidadId = $request->especialidad_id;
+            $query->whereHas('talleres', fn ($qt) => $delPeriodo($qt->where('especialidad_id', $especialidadId)));
         }
 
-        // 1.2 Filtro por maestro: revisa tanto el "taller principal" (legado)
-        // como cualquier taller activo del alumno, para cubrir el caso de
-        // alumnos con varios talleres y distintos maestros.
         if ($request->filled('maestro_id')) {
             $maestroId = $request->maestro_id;
-            $query->where(function ($q) use ($maestroId) {
-                $q->where('maestro_id', $maestroId)
-                    ->orWhereHas('talleres', function ($qt) use ($maestroId) {
-                        $qt->where('maestro_id', $maestroId)->where('estado', 'activo');
-                    });
-            });
+            $query->whereHas('talleres', fn ($qt) => $delPeriodo($qt->where('maestro_id', $maestroId)));
         }
+
+        // Talleres que se muestran en la columna "Taller": los de ese periodo.
+        $query->with(['talleres' => fn ($qt) => $delPeriodo($qt)->with(['especialidad', 'maestro'])->orderBy('id')]);
 
         if ($request->filled('estado')) {
             $query->where('activo', $request->estado === 'activo');

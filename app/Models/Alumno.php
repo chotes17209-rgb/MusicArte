@@ -124,7 +124,14 @@ class Alumno extends Model
      */
     public function sincronizarTallerPrincipal(): void
     {
-        $principal = $this->talleres()->where('estado', 'activo')->oldest('id')->first();
+        // El taller "principal" es el del periodo vigente (si no hay, el del
+        // periodo mas reciente); no el mas antiguo, que puede ser de otro mes
+        // y con otro maestro.
+        $principal = $this->talleresVigentes()->where('estado', 'activo')->orderBy('id')->first()
+            ?? $this->talleres()->where('alumno_talleres.estado', 'activo')
+                ->leftJoin('periodos', 'periodos.id', '=', 'alumno_talleres.periodo_id')
+                ->orderByDesc('periodos.fecha_inicio')->orderBy('alumno_talleres.id')
+                ->select('alumno_talleres.*')->first();
 
         $this->forceFill([
             'especialidad_id' => $principal->especialidad_id ?? null,

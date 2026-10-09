@@ -64,6 +64,7 @@ class PaseDePeriodoService
 
         if ($resultado['talleres']) {
             $alumno->sincronizarEstadoPeriodo($destino->id);
+            $alumno->sincronizarTallerPrincipal();
         }
 
         return $resultado;
