@@ -39,18 +39,22 @@
         </div>
 
         <div class="card p-3">
-            <h6 class="fw-semibold mb-3">Talleres activos ahora</h6>
+            <h6 class="fw-semibold mb-3">Talleres de este mes</h6>
             @forelse($tallerActual as $t)
                 <div class="border rounded p-2 mb-2">
                     <div class="fw-semibold">{{ $t->especialidad->nombre ?? '—' }}</div>
                     <div class="small text-muted">
                         <i class="bi bi-person-badge"></i> {{ $t->maestro->nombre ?? 'Sin maestro asignado' }}
+                        @if($t->horarios->isNotEmpty())
+                            @php $dias = $t->horarios->sortBy('dia_semana')->map(fn ($h) => $h->diaLabel())->unique()->values(); @endphp
+                            <br><i class="bi bi-clock"></i> {{ $dias->count() > 1 ? $dias->slice(0, -1)->implode(', ').' y '.$dias->last() : $dias->first() }} · {{ \Carbon\Carbon::parse($t->horarios->sortBy('dia_semana')->first()->hora_inicio)->format('g:i a') }}
+                        @endif
                         @if($t->periodo)<br><i class="bi bi-calendar3"></i> {{ $t->periodo->nombre }}@endif
-                        @if($t->salón)<br><i class="bi bi-door-open"></i> Salón {{ $t->salon }}@endif
+                        @if($t->salon)<br><i class="bi bi-door-open"></i> Salón {{ $t->salon }}@endif
                     </div>
                 </div>
             @empty
-                <p class="text-muted small mb-0">Sin talleres activos actualmente.</p>
+                <p class="text-muted small mb-0">No tiene talleres en el periodo actual.</p>
             @endforelse
         </div>
     </div>
@@ -58,12 +62,13 @@
     <div class="col-lg-8">
         <div class="card p-3 mb-3">
             <h6 class="fw-semibold mb-1">Línea de tiempo por periodo</h6>
-            <small class="text-muted d-block mb-3">Con qué maestro, taller y horario estuvo cada mes — util para reincorporarlo con el mismo maestro.</small>
+            <small class="text-muted d-block mb-3">Qué talleres llevó cada mes, con qué maestro y en qué días — util para reincorporarlo con el mismo maestro.</small>
 
             @forelse($lineaDeTiempo as $item)
                 <div class="timeline-item mb-3 pb-3 {{ !$loop->last ? 'border-bottom' : '' }}">
                     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
-                        <div class="fw-semibold">{{ $item['periodo']->nombre }}</div>
+                        @php $nTalleres = $item['horarios']->where('activo', true)->groupBy(fn ($h) => $h->alumno_taller_id ?? ($h->especialidad_id.'-'.$h->maestro_id))->count(); @endphp
+                        <div class="fw-semibold">{{ $item['periodo']->nombre }}@if($nTalleres) <span class="text-muted fw-normal small">· {{ $nTalleres }} {{ $nTalleres === 1 ? 'taller' : 'talleres' }}</span>@endif</div>
                         @if($item['estado'] === 'activo' && $item['paso_a'])
                             <span class="badge bg-secondary">Inactivo · pasó a {{ $item['paso_a'] }}</span>
                         @elseif($item['estado'] === 'activo' && $item['periodo']->finalizado())
@@ -80,18 +85,39 @@
                     @if($item['horarios']->isEmpty())
                         <p class="text-muted small mb-0">No hay horario detallado registrado para este periodo.</p>
                     @else
+                        @php
+                            // Una fila por taller con sus dias juntos ("Lunes y Miércoles").
+                            // Solo los dias vigentes; si el taller se dio de baja, sus ultimos dias.
+                            $porTaller = $item['horarios']->groupBy(fn ($h) => $h->alumno_taller_id ?? ($h->especialidad_id.'-'.$h->maestro_id))
+                                ->map(function ($hs) {
+                                    $activos = $hs->where('activo', true);
+                                    $mostrar = ($activos->isNotEmpty() ? $activos : $hs)->sortBy('dia_semana')->values();
+                                    $nombres = $mostrar->map(fn ($h) => $h->diaLabel())->unique()->values();
+                                    $horas = $mostrar->map(fn ($h) => \Carbon\Carbon::parse($h->hora_inicio)->format('g:i a'))->unique();
+
+                                    return [
+                                        'h' => $mostrar->first(),
+                                        'baja' => $activos->isEmpty(),
+                                        'dias' => $nombres->count() > 1 ? $nombres->slice(0, -1)->implode(', ').' y '.$nombres->last() : $nombres->first(),
+                                        'hora' => $horas->count() === 1
+                                            ? $horas->first()
+                                            : $mostrar->map(fn ($h) => mb_substr($h->diaLabel(), 0, 3).' '.\Carbon\Carbon::parse($h->hora_inicio)->format('g:i a'))->implode(' · '),
+                                        'salon' => $mostrar->pluck('salon')->filter()->unique()->implode(', '),
+                                    ];
+                                })->sortBy(fn ($t) => $t['h']->especialidad->nombre ?? '');
+                        @endphp
                         <div class="table-responsive">
                             <table class="table table-sm mb-0">
-                                <thead><tr><th>Taller</th><th>Maestro</th><th>Día</th><th>Hora</th><th>Salón</th><th></th></tr></thead>
+                                <thead><tr><th>Taller</th><th>Maestro</th><th>Días</th><th>Hora</th><th>Salón</th><th></th></tr></thead>
                                 <tbody>
-                                @foreach($item['horarios'] as $h)
-                                    <tr class="{{ !$h->activo ? 'text-muted' : '' }}">
-                                        <td>{{ $h->especialidad->nombre ?? '—' }}</td>
-                                        <td>{{ $h->maestro->nombre ?? '—' }}</td>
-                                        <td class="{{ !$h->activo ? 'text-decoration-line-through' : '' }}">{{ $h->diaLabel() }}</td>
-                                        <td class="{{ !$h->activo ? 'text-decoration-line-through' : '' }}">{{ \Carbon\Carbon::parse($h->hora_inicio)->format('H:i') }}</td>
-                                        <td>{{ $h->salon ?? '—' }}</td>
-                                        <td>@if(!$h->activo)<span class="badge bg-light text-muted border">dado de baja</span>@endif</td>
+                                @foreach($porTaller as $t)
+                                    <tr class="{{ $t['baja'] ? 'text-muted' : '' }}">
+                                        <td class="fw-semibold">{{ $t['h']->especialidad->nombre ?? '—' }}</td>
+                                        <td>{{ $t['h']->maestro->nombre ?? '—' }}</td>
+                                        <td>{{ $t['dias'] }}</td>
+                                        <td class="text-nowrap">{{ $t['hora'] }}</td>
+                                        <td>{{ $t['salon'] ?: '—' }}</td>
+                                        <td>@if($t['baja'])<span class="badge bg-light text-muted border">dado de baja</span>@endif</td>
                                     </tr>
                                 @endforeach
                                 </tbody>

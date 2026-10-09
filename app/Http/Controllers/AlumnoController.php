@@ -103,7 +103,8 @@ class AlumnoController extends Controller
         });
 
         $pagos = $alumno->pagos()->orderByDesc('anio')->orderByDesc('mes')->limit(12)->get();
-        $tallerActual = $alumno->talleres()->where('estado', 'activo')->with(['especialidad', 'maestro', 'periodo'])->get();
+        // Solo los talleres del periodo vigente (los de meses anteriores son historial).
+        $tallerActual = $alumno->talleresVigentes()->where('estado', 'activo')->with(['especialidad', 'maestro', 'periodo', 'horarios' => fn ($q) => $q->where('activo', true)])->get();
 
         return view('alumnos.show', compact('alumno', 'lineaDeTiempo', 'pagos', 'tallerActual'));
     }
