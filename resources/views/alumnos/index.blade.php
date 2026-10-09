@@ -233,23 +233,6 @@
                         </div>
                         <small class="text-muted">Cada día puede tener una hora distinta. El salón se asigna desde el módulo de Horarios.</small>
                     </div>
-
-                    {{-- Matricula: se paga una vez por año, aparte de la mensualidad. --}}
-                    <div class="caja-matricula mt-3">
-                        <h6 class="fw-semibold small text-uppercase mb-1"><i class="bi bi-award me-1"></i> Matrícula <span id="alumno_matricula_anio">{{ $anioMatricula }}</span></h6>
-                        <small class="text-muted d-block mb-2">Se paga una sola vez al año, aparte de la mensualidad. Déjalo vacío si no corresponde.</small>
-                        <div class="row g-2">
-                            <div class="col-md-4">
-                                <label class="form-label small fw-semibold" for="alumno_matricula_monto">Monto</label>
-                                <div class="input-group"><span class="input-group-text">S/</span>
-                                    <input type="number" step="0.01" min="0" class="form-control" id="alumno_matricula_monto" placeholder="0.00"></div>
-                            </div>
-                            <div class="col-md-8">
-                                <label class="form-label small fw-semibold" for="alumno_matricula_nota">Nota <span class="fw-normal text-muted">(opcional)</span></label>
-                                <input type="text" maxlength="255" class="form-control" id="alumno_matricula_nota" placeholder="Ej.: descuento por hermanos">
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
                 {{-- ======================================================
@@ -265,23 +248,7 @@
                                 <h6 class="fw-semibold small text-uppercase mb-0"><i class="bi bi-award me-1"></i> Matrícula <span id="matricula_anio_txt"></span></h6>
                                 <div class="small" id="matricula_estado_txt"></div>
                             </div>
-                            <div class="d-flex gap-1">
-                                <a href="#" class="btn btn-sm btn-light d-none" id="matricula_ver_pago" target="_blank" title="El cobro (abonos y recibo) se registra en Pagos"><i class="bi bi-cash-stack me-1"></i> Cobrar en Pagos</a>
-                                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnMatriculaEditar" onclick="mostrarFormMatricula(true)">Registrar matrícula</button>
-                            </div>
-                        </div>
-                        <div class="row g-2 mt-1 d-none" id="formMatricula">
-                            <div class="col-md-4">
-                                <div class="input-group input-group-sm"><span class="input-group-text">S/</span>
-                                    <input type="number" step="0.01" min="0" class="form-control" id="matricula_monto" placeholder="Monto"></div>
-                            </div>
-                            <div class="col-md-5">
-                                <input type="text" maxlength="255" class="form-control form-control-sm" id="matricula_nota" placeholder="Nota (opcional)">
-                            </div>
-                            <div class="col-md-3 d-flex gap-1">
-                                <button type="button" class="btn btn-sm btn-light" onclick="mostrarFormMatricula(false)">Cancelar</button>
-                                <button type="button" class="btn btn-sm btn-morado flex-grow-1" onclick="guardarMatricula()">Guardar</button>
-                            </div>
+                            <a href="#" class="btn btn-sm btn-light d-none" id="matricula_ver_pago" target="_blank" title="El cobro (abonos y recibo) se registra en Pagos"><i class="bi bi-cash-stack me-1"></i> Cobrar en Pagos</a>
                         </div>
                     </div>
                     <div class="d-flex justify-content-between align-items-center mb-2">
@@ -323,7 +290,7 @@
                                 <select class="form-select form-select-sm" id="taller_periodo_id">
                                     <option value="">-- Sin programar clases --</option>
                                     @foreach($periodos as $p)
-                                        <option value="{{ $p->id }}"
+                                        <option value="{{ $p->id }}" data-anio="{{ $p->anio }}"
                                             data-inicio="{{ $p->fecha_inicio->format('d/m/Y') }}"
                                             data-fin="{{ $p->fecha_fin->format('d/m/Y') }}">{{ $p->nombre }}</option>
                                     @endforeach
@@ -651,65 +618,65 @@
      * ------------------------------------------------------------- */
     let matriculaActual = { anio: null, pago: null };
 
+    function textoMatricula(pago, anio) {
+        if (!pago) return `Sin matrícula registrada en ${anio}.`;
+        const total = Number(pago.monto_total), falta = Number(pago.saldo), pagado = total - falta;
+        if (falta <= 0) return `S/ ${total.toFixed(2)} · <span class="badge bg-success">Pagada</span>`;
+        if (pagado > 0) return `S/ ${total.toFixed(2)} · <span class="badge bg-warning">A cuenta</span> falta S/ ${falta.toFixed(2)}`;
+        return `S/ ${total.toFixed(2)} · <span class="badge bg-danger">Pendiente de pago</span>`;
+    }
+
+    // Estado de la matricula del año (arriba de los talleres). Se registra o
+    // cambia en el formulario del taller, al costado de la mensualidad.
     function renderMatricula(anio, pago) {
         matriculaActual = { anio, pago };
         document.getElementById('matricula_anio_txt').textContent = anio;
-        const estado = document.getElementById('matricula_estado_txt');
-        const boton = document.getElementById('btnMatriculaEditar');
         const enlace = document.getElementById('matricula_ver_pago');
         enlace.classList.toggle('d-none', !pago);
-
-        if (!pago) {
-            // Sin matricula: no es un error, solo informativo.
-            estado.innerHTML = '<span class="text-muted">Este alumno no tiene matrícula registrada en ' + anio + '.</span>';
-            boton.textContent = 'Registrar matrícula';
-        } else {
-            const total = Number(pago.monto_total);
-            const falta = Number(pago.saldo);
-            const pagado = total - falta;
-            let txt = `Monto: <strong>S/ ${total.toFixed(2)}</strong> · `;
-            if (falta <= 0) {
-                txt += '<span class="badge bg-success">Pagada</span>';
-            } else if (pagado > 0) {
-                txt += `<span class="badge bg-warning">A cuenta</span> pagó S/ ${pagado.toFixed(2)}, falta S/ ${falta.toFixed(2)}`;
-            } else {
-                txt += '<span class="badge bg-danger">Pendiente de pago</span>';
-            }
-            if (pago.observacion) txt += ` <span class="text-muted fst-italic">· ${maEscapar(pago.observacion)}</span>`;
-            estado.innerHTML = txt;
-            enlace.href = `/pagos/${pago.id}`;
-            boton.textContent = 'Cambiar monto';
-        }
-        mostrarFormMatricula(false);
+        if (pago) enlace.href = `/pagos/${pago.id}`;
+        document.getElementById('matricula_estado_txt').innerHTML = pago
+            ? textoMatricula(pago, anio) + (pago.observacion ? ` <span class="text-muted fst-italic">· ${maEscapar(pago.observacion)}</span>` : '')
+            : `<span class="text-muted">Sin matrícula registrada en ${anio}. Se registra al costado de la mensualidad, en el taller.</span>`;
     }
 
-    function mostrarFormMatricula(mostrar) {
-        document.getElementById('formMatricula').classList.toggle('d-none', !mostrar);
-        document.getElementById('btnMatriculaEditar').parentElement.classList.toggle('d-none', mostrar);
-        if (mostrar) {
-            document.getElementById('matricula_monto').value = matriculaActual.pago ? Number(matriculaActual.pago.monto_total).toFixed(2) : '';
-            document.getElementById('matricula_nota').value = matriculaActual.pago?.observacion ?? '';
-            document.getElementById('matricula_monto').focus();
-        }
+    /** Año de la matricula en el formulario del taller: el del periodo elegido. */
+    function anioMatriculaTaller() {
+        const opt = document.getElementById('taller_periodo_id').selectedOptions[0];
+        return Number(opt?.dataset.anio || matriculaActual.anio || new Date().getFullYear());
     }
 
-    async function guardarMatricula() {
-        const alumnoId = document.getElementById('alumno_id').value;
-        const monto = document.getElementById('matricula_monto').value;
-        if (monto === '') {
-            Swal.fire({ icon: 'warning', title: 'Falta el monto', text: 'Escribe el monto de la matrícula.' });
-            return;
-        }
+    function prepararMatriculaTaller() {
+        const anio = anioMatriculaTaller();
+        const pago = anio === Number(matriculaActual.anio) ? matriculaActual.pago : null;
+        document.getElementById('taller_matricula_anio').textContent = anio;
+        document.getElementById('taller_matricula_monto').value = pago ? Number(pago.monto_total).toFixed(2) : '';
+        document.getElementById('taller_matricula_nota').value = pago?.observacion ?? '';
+        document.getElementById('taller_matricula_estado').innerHTML = pago
+            ? textoMatricula(pago, anio) + ' — se cobra en Pagos.'
+            : 'Déjala vacía si no corresponde o ya la registraste.';
+    }
+
+    /** Guarda la matricula escrita en el formulario del taller (si cambio). */
+    async function guardarMatriculaDelTaller(alumnoId) {
+        const monto = document.getElementById('taller_matricula_monto').value;
+        if (monto === '') return;
+        const anio = anioMatriculaTaller();
+        const nota = document.getElementById('taller_matricula_nota').value.trim() || null;
+        const actual = anio === Number(matriculaActual.anio) ? matriculaActual.pago : null;
+        if (actual && Number(actual.monto_total) === Number(monto) && (actual.observacion ?? null) === nota) return;
+
         const res = await maFetch(`/alumnos/${alumnoId}/matricula`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ anio: matriculaActual.anio, monto, nota: document.getElementById('matricula_nota').value || null }),
+            body: JSON.stringify({ anio, monto, nota }),
         });
         if (res && res.ok) {
             maToast('success', res.message);
-            renderMatricula(matriculaActual.anio, res.data);
+            if (anio === Number(matriculaActual.anio)) renderMatricula(anio, res.data);
         }
     }
+
+    document.getElementById('taller_periodo_id').addEventListener('change', prepararMatriculaTaller);
 
     document.getElementById('alumno_periodo_id').addEventListener('change', function () {
         const anio = this.selectedOptions[0]?.dataset.anio;
@@ -830,6 +797,7 @@
             document.getElementById('taller_dia_' + d + '_fin').value = '';
         }
         reiniciarMensualidad('taller');
+        prepararMatriculaTaller();
 
         if (!tallerId) return;
 
@@ -864,6 +832,7 @@
             if (hf) { hf.disabled = false; hf.value = h.hora_fin.substring(0, 5); }
         });
         reiniciarMensualidad('taller', t.veces_semana, t.monto_mensual, t.nota_mensualidad);
+        prepararMatriculaTaller();
     }
 
     async function guardarTaller() {
@@ -923,6 +892,7 @@
             });
             if (res && res.ok) {
                 maToast('success', res.message);
+                await guardarMatriculaDelTaller(alumnoId);
                 await recargarTalleresDelAlumno(alumnoId);
                 mostrarListaTalleres();
             }
