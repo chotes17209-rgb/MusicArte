@@ -265,7 +265,10 @@
                                 <h6 class="fw-semibold small text-uppercase mb-0"><i class="bi bi-award me-1"></i> Matrícula <span id="matricula_anio_txt"></span></h6>
                                 <div class="small" id="matricula_estado_txt"></div>
                             </div>
-                            <button type="button" class="btn btn-sm btn-outline-secondary" id="btnMatriculaEditar" onclick="mostrarFormMatricula(true)">Registrar matrícula</button>
+                            <div class="d-flex gap-1">
+                                <a href="#" class="btn btn-sm btn-light d-none" id="matricula_ver_pago" target="_blank" title="El cobro (abonos y recibo) se registra en Pagos"><i class="bi bi-cash-stack me-1"></i> Cobrar en Pagos</a>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnMatriculaEditar" onclick="mostrarFormMatricula(true)">Registrar matrícula</button>
+                            </div>
                         </div>
                         <div class="row g-2 mt-1 d-none" id="formMatricula">
                             <div class="col-md-4">
@@ -653,16 +656,28 @@
         document.getElementById('matricula_anio_txt').textContent = anio;
         const estado = document.getElementById('matricula_estado_txt');
         const boton = document.getElementById('btnMatriculaEditar');
+        const enlace = document.getElementById('matricula_ver_pago');
+        enlace.classList.toggle('d-none', !pago);
+
         if (!pago) {
-            estado.innerHTML = '<span class="text-danger">Aún no registra la matrícula de este año.</span>';
+            // Sin matricula: no es un error, solo informativo.
+            estado.innerHTML = '<span class="text-muted">Este alumno no tiene matrícula registrada en ' + anio + '.</span>';
             boton.textContent = 'Registrar matrícula';
         } else {
-            const total = Number(pago.monto_total).toFixed(2);
+            const total = Number(pago.monto_total);
             const falta = Number(pago.saldo);
-            estado.innerHTML = `S/ ${total} · ` + (falta > 0
-                ? `<span class="text-danger fw-semibold">le falta S/ ${falta.toFixed(2)}</span> <span class="text-muted">(se abona en Pagos)</span>`
-                : '<span class="text-success fw-semibold">pagada</span>')
-                + (pago.observacion ? ` <span class="text-muted fst-italic">· ${maEscapar(pago.observacion)}</span>` : '');
+            const pagado = total - falta;
+            let txt = `Monto: <strong>S/ ${total.toFixed(2)}</strong> · `;
+            if (falta <= 0) {
+                txt += '<span class="badge bg-success">Pagada</span>';
+            } else if (pagado > 0) {
+                txt += `<span class="badge bg-warning">A cuenta</span> pagó S/ ${pagado.toFixed(2)}, falta S/ ${falta.toFixed(2)}`;
+            } else {
+                txt += '<span class="badge bg-danger">Pendiente de pago</span>';
+            }
+            if (pago.observacion) txt += ` <span class="text-muted fst-italic">· ${maEscapar(pago.observacion)}</span>`;
+            estado.innerHTML = txt;
+            enlace.href = `/pagos/${pago.id}`;
             boton.textContent = 'Cambiar monto';
         }
         mostrarFormMatricula(false);
@@ -670,7 +685,7 @@
 
     function mostrarFormMatricula(mostrar) {
         document.getElementById('formMatricula').classList.toggle('d-none', !mostrar);
-        document.getElementById('btnMatriculaEditar').classList.toggle('d-none', mostrar);
+        document.getElementById('btnMatriculaEditar').parentElement.classList.toggle('d-none', mostrar);
         if (mostrar) {
             document.getElementById('matricula_monto').value = matriculaActual.pago ? Number(matriculaActual.pago.monto_total).toFixed(2) : '';
             document.getElementById('matricula_nota').value = matriculaActual.pago?.observacion ?? '';
