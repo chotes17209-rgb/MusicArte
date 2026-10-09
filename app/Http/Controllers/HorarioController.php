@@ -222,40 +222,17 @@ class HorarioController extends Controller
             return response()->json(['ok' => false, 'message' => 'El rango maximo permitido es de 90 dias.'], 422);
         }
 
-        $horarios = Horario::where('activo', true)->get();
-        $creadas = 0;
+        // Cada horario genera clases solo dentro de SU periodo (antes se usaban
+        // los horarios de todos los meses y aparecian alumnos en dias que ya no
+        // les tocaban). Solo talleres activos.
+        $horarios = Horario::where('activo', true)
+            ->whereHas('periodo', fn ($q) => $q->whereDate('fecha_inicio', '<=', $hasta->toDateString())
+                ->whereDate('fecha_fin', '>=', $desde->toDateString()))
+            ->where(fn ($q) => $q->whereNull('alumno_taller_id')
+                ->orWhereHas('alumnoTaller', fn ($t) => $t->where('estado', 'activo')))
+            ->get();
 
-        DB::transaction(function () use ($horarios, $desde, $hasta, &$creadas) {
-            for ($fecha = $desde->copy(); $fecha->lte($hasta); $fecha->addDay()) {
-                foreach ($horarios as $horario) {
-                    if ($fecha->isoWeekday() != $horario->dia_semana) {
-                        continue;
-                    }
-
-                    $existe = Clase::where('horario_id', $horario->id)
-                        ->whereDate('fecha', $fecha->toDateString())
-                        ->exists();
-
-                    if ($existe) {
-                        continue;
-                    }
-
-                    Clase::create([
-                        'horario_id' => $horario->id,
-                        'alumno_id' => $horario->alumno_id,
-                        'maestro_id' => $horario->maestro_id,
-                        'especialidad_id' => $horario->especialidad_id,
-                        'fecha' => $fecha->toDateString(),
-                        'hora_inicio' => $horario->hora_inicio,
-                        'hora_fin' => $horario->hora_fin,
-                        'salon' => $horario->salon,
-                        'estado' => 'programada',
-                    ]);
-
-                    $creadas++;
-                }
-            }
-        });
+        $creadas = DB::transaction(fn () => $horarios->sum(fn (Horario $h) => $h->generarClases($desde, $hasta)));
 
         return response()->json(['ok' => true, 'message' => "Se generaron {$creadas} clases en el calendario."]);
     }

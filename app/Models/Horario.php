@@ -111,12 +111,13 @@ class Horario extends Model
     }
 
     /**
-     * Crea en el calendario las clases que faltan de este horario dentro de
-     * su periodo (desde la fecha indicada, o desde el inicio del periodo).
+     * Crea en el calendario las clases que faltan de este horario, siempre
+     * DENTRO de su periodo (un horario de setiembre nunca genera clases en
+     * octubre). Opcionalmente acotado a un rango [desde, hasta].
      *
      * @return int cantidad de clases creadas
      */
-    public function generarClases(?Carbon $desde = null): int
+    public function generarClases(?Carbon $desde = null, ?Carbon $hasta = null): int
     {
         $periodo = $this->periodo;
         if (! $periodo || ! $this->activo) {
@@ -127,12 +128,16 @@ class Horario extends Model
         if ($desde && $desde->copy()->startOfDay()->gt($inicio)) {
             $inicio = $desde->copy()->startOfDay();
         }
+        $fin = $periodo->fecha_fin->copy();
+        if ($hasta && $hasta->copy()->startOfDay()->lt($fin)) {
+            $fin = $hasta->copy()->startOfDay();
+        }
 
-        $existentes = $this->clases()->whereBetween('fecha', [$inicio->toDateString(), $periodo->fecha_fin->toDateString()])
+        $existentes = $this->clases()->whereBetween('fecha', [$inicio->toDateString(), $fin->toDateString()])
             ->pluck('fecha')->map(fn ($f) => Carbon::parse($f)->toDateString())->flip();
 
         $creadas = 0;
-        for ($fecha = $inicio->copy(); $fecha->lte($periodo->fecha_fin); $fecha->addDay()) {
+        for ($fecha = $inicio->copy(); $fecha->lte($fin); $fecha->addDay()) {
             if ($fecha->isoWeekday() != $this->dia_semana || isset($existentes[$fecha->toDateString()])) {
                 continue;
             }

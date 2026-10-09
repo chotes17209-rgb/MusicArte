@@ -136,7 +136,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p class="small text-muted">Se crearán las clases del calendario a partir de todos los horarios activos, en el rango de fechas indicado.</p>
+                <p class="small text-muted">Crea las clases que falten en el rango de fechas indicado. Cada alumno recibe clases solo según el horario del periodo (mes) de cada fecha.</p>
                 <div class="row">
                     <div class="col-6 mb-3">
                         <label class="form-label small fw-semibold">Desde</label>
