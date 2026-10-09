@@ -16,7 +16,13 @@ class AsistenciaController extends Controller
 
         $clases = Clase::with(['alumno', 'maestro', 'especialidad', 'asistencia'])
             ->sinBajas()
-            ->whereDate('fecha', $fecha);
+            ->whereDate('fecha', $fecha)
+            // Una clase sin marcar solo sale si su horario sigue activo y es de este dia.
+            ->where(fn ($q) => $q->where('estado', '!=', 'programada')
+                ->orWhereHas('asistencia')
+                ->orWhereNull('horario_id')
+                ->orWhereHas('horario', fn ($h) => $h->where('activo', true)
+                    ->where('dia_semana', \Carbon\Carbon::parse($fecha)->isoWeekday())));
 
         // 16. Filtro por maestro: solo mostrar los alumnos/clases de ese maestro.
         if ($request->filled('maestro_id')) {
