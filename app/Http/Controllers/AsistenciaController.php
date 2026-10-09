@@ -34,7 +34,7 @@ class AsistenciaController extends Controller
             $alumno = Alumno::find($request->alumno_id);
             if ($alumno) {
                 $total = $alumno->asistencias()->count();
-                $asistio = $alumno->asistencias()->where('estado', 'asistio')->count();
+                $asistio = $alumno->asistencias()->whereIn('estado', Asistencia::PRESENTES)->count();
                 $resumenAlumno = [
                     'alumno' => $alumno->nombre,
                     'total' => $total,
@@ -48,21 +48,35 @@ class AsistenciaController extends Controller
         return view('asistencia.index', compact('clases', 'alumnos', 'maestros', 'fecha', 'resumenAlumno'));
     }
 
-    /** Marcar/actualizar asistencia de una clase puntual (modal rapido). */
+    /**
+     * Marcar/actualizar la asistencia de una clase: A (asistio), F (falto),
+     * R (recupero) o S (sin marcar, borra lo marcado). La observacion solo se
+     * cambia cuando se envia; los botones rapidos la conservan.
+     */
     public function marcar(Request $request, Clase $clase)
     {
         $data = $request->validate([
-            'estado' => 'required|in:asistio,falto,justificado,tardanza',
-            'observacion' => 'nullable|string',
+            'estado' => 'required|in:asistio,falto,justificado,tardanza,recupero,sin_marcar',
+            'observacion' => 'nullable|string|max:1000',
         ]);
+
+        if ($data['estado'] === 'sin_marcar') {
+            $clase->asistencia()->delete();
+            if ($clase->estado === 'realizada') {
+                $clase->update(['estado' => 'programada']);
+            }
+
+            return response()->json(['ok' => true, 'message' => 'Asistencia desmarcada.', 'data' => null]);
+        }
+
+        $valores = ['estado' => $data['estado'], 'registrado_por' => $request->user()->id];
+        if ($request->has('observacion')) {
+            $valores['observacion'] = trim((string) $data['observacion']) ?: null;
+        }
 
         $asistencia = Asistencia::updateOrCreate(
             ['clase_id' => $clase->id, 'alumno_id' => $clase->alumno_id],
-            [
-                'estado' => $data['estado'],
-                'observacion' => $data['observacion'] ?? null,
-                'registrado_por' => $request->user()->id,
-            ]
+            $valores
         );
 
         if ($clase->estado === 'programada') {

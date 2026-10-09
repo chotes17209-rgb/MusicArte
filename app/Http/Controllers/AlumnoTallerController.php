@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Alumno;
 use App\Models\AlumnoTaller;
+use App\Models\Clase;
 use App\Services\HorarioService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -44,6 +45,7 @@ class AlumnoTallerController extends Controller
 
         $alumno->sincronizarTallerPrincipal();
         $alumno->sincronizarEstadoPeriodo($taller->periodo_id);
+        Clase::quitarCruceDePeriodos($alumno->id);
 
         return response()->json([
             'ok' => true,

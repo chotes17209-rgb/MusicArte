@@ -7,7 +7,7 @@
 <table class="resumen"><tr>
     <td><div class="etq">Asistencia</div><div class="val {{ $tono($resumen['porcentaje']) }}">{{ $resumen['porcentaje'] !== null ? $resumen['porcentaje'].'%' : '—' }}</div><div class="det">sobre clases marcadas</div></td>
     <td><div class="etq">Clases</div><div class="val">{{ $resumen['clases'] }}</div><div class="det">{{ $data->count() }} alumnos</div></td>
-    <td><div class="etq">Asistencias</div><div class="val verde">{{ $resumen['asistio'] }}</div><div class="det">incluye tardanzas</div></td>
+    <td><div class="etq">Asistencias</div><div class="val verde">{{ $resumen['asistio'] }}</div><div class="det">incluye tardanzas y recuperadas</div></td>
     <td><div class="etq">Faltas</div><div class="val rojo">{{ $resumen['faltas'] }}</div><div class="det">{{ $resumen['sin_marcar'] }} clases sin marcar</div></td>
 </tr></table>
 

@@ -87,7 +87,7 @@
             <div class="modal-body">
                 <p class="small text-muted">
                     Se calculan las horas dictadas por cada maestro segun la asistencia marcada
-                    (estado "Asistio" o "Tardanza") y se multiplican por la tarifa/hora configurada
+                    (estado "Asistió", "Tardanza" o "Recuperó") y se multiplican por la tarifa/hora configurada
                     en la ficha de cada maestro. Puedes editar cualquier monto despues.
                 </p>
                 <div class="row">

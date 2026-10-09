@@ -21,7 +21,7 @@
     <div class="col-lg-7">
         <div class="card p-3">
             <h6 class="seccion-titulo">Clases de este horario ({{ $clases->count() }})</h6>
-            @php $nombres = ['asistio' => 'Asistió', 'falto' => 'Faltó', 'justificado' => 'Faltó con aviso', 'tardanza' => 'Tardanza']; @endphp
+            @php $nombres = \App\Models\Asistencia::NOMBRES; @endphp
             <div class="table-responsive">
                 <table class="table table-sm align-middle">
                     <thead><tr><th>Fecha</th><th>Clase</th><th>Asistencia</th></tr></thead>

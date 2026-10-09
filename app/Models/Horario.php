@@ -135,6 +135,16 @@ class Horario extends Model
             $fin = $hasta->copy()->startOfDay();
         }
 
+        // Los dias que ya son del periodo siguiente del alumno no se generan aqui.
+        if ($this->alumno_id) {
+            $siguiente = Periodo::whereDate('fecha_inicio', '>', $periodo->fecha_inicio->toDateString())
+                ->whereIn('id', AlumnoTaller::where('alumno_id', $this->alumno_id)->where('estado', 'activo')->whereNotNull('periodo_id')->select('periodo_id'))
+                ->min('fecha_inicio');
+            if ($siguiente && Carbon::parse($siguiente)->startOfDay()->lte($fin)) {
+                $fin = Carbon::parse($siguiente)->startOfDay()->subDay();
+            }
+        }
+
         $existentes = $this->clases()->whereBetween('fecha', [$inicio->toDateString(), $fin->toDateString()])
             ->pluck('fecha')->map(fn ($f) => Carbon::parse($f)->toDateString())->flip();
 

@@ -59,7 +59,7 @@ class PlanillaController extends Controller
         $anio = (int) $request->anio;
 
         $asistencias = Asistencia::with('clase')
-            ->whereIn('estado', ['asistio', 'tardanza'])
+            ->whereIn('estado', \App\Models\Asistencia::PRESENTES)
             ->whereHas('clase', function ($q) use ($mes, $anio) {
                 $q->whereMonth('fecha', $mes)->whereYear('fecha', $anio)
                     ->whereNotNull('maestro_id');

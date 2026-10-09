@@ -40,7 +40,7 @@ class DashboardController extends Controller
                 : $q->whereMonth('fecha', $mesP)->whereYear('fecha', $anioP);
         })->selectRaw('estado, count(*) as total')->groupBy('estado')->pluck('total', 'estado');
         $marcadas = $asistenciasMes->sum();
-        $kpis['asistencia_mes'] = $marcadas > 0 ? round((($asistenciasMes['asistio'] ?? 0) + ($asistenciasMes['tardanza'] ?? 0)) / $marcadas * 100) : null;
+        $kpis['asistencia_mes'] = $marcadas > 0 ? round((($asistenciasMes['asistio'] ?? 0) + ($asistenciasMes['tardanza'] ?? 0) + ($asistenciasMes['recupero'] ?? 0)) / $marcadas * 100) : null;
         $kpis['alumnos_con_saldo'] = Alumno::whereHas('pagos', fn ($q) => $q->where('mes', $mesP)->where('anio', $anioP)->where('saldo', '>', 0))->count();
 
         $clasesHoy = Clase::with(['alumno', 'maestro', 'especialidad'])

@@ -71,7 +71,7 @@ class ReporteController extends Controller
 
         $data = $clases->groupBy('alumno_id')->map(function ($cs) {
             $marcadas = $cs->filter(fn ($c) => $c->asistencia);
-            $asistio = $marcadas->filter(fn ($c) => in_array($c->asistencia->estado, ['asistio', 'tardanza']))->count();
+            $asistio = $marcadas->filter(fn ($c) => in_array($c->asistencia->estado, \App\Models\Asistencia::PRESENTES))->count();
 
             return [
                 'alumno' => $cs->first()->alumno,

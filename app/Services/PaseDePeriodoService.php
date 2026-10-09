@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Alumno;
 use App\Models\AlumnoTaller;
+use App\Models\Clase;
 use App\Models\Periodo;
 
 /**
@@ -65,6 +66,7 @@ class PaseDePeriodoService
         if ($resultado['talleres']) {
             $alumno->sincronizarEstadoPeriodo($destino->id);
             $alumno->sincronizarTallerPrincipal();
+            Clase::quitarCruceDePeriodos($alumno->id);
         }
 
         return $resultado;

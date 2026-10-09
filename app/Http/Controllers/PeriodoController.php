@@ -62,7 +62,7 @@ class PeriodoController extends Controller
             'talleres' => $talleres->count(),
             'clases' => $clases->sum(),
             'dictadas' => $clases['realizada'] ?? 0,
-            'asistencia' => $asistencias->sum() > 0 ? round((($asistencias['asistio'] ?? 0) + ($asistencias['tardanza'] ?? 0)) / $asistencias->sum() * 100) : null,
+            'asistencia' => $asistencias->sum() > 0 ? round((($asistencias['asistio'] ?? 0) + ($asistencias['tardanza'] ?? 0) + ($asistencias['recupero'] ?? 0)) / $asistencias->sum() * 100) : null,
             'pagos_total' => $pagos->count(),
             'pagos_pagados' => $pagos->where('estado', 'pagado')->count(),
         ];

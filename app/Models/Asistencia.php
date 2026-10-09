@@ -11,6 +11,22 @@ class Asistencia extends Model
 
     protected $table = 'asistencias';
 
+    /** Estados en los que el alumno si recibio su clase. */
+    public const PRESENTES = ['asistio', 'tardanza', 'recupero'];
+
+    public const NOMBRES = [
+        'asistio' => 'Asistió',
+        'falto' => 'Faltó',
+        'justificado' => 'Faltó con aviso',
+        'tardanza' => 'Tardanza',
+        'recupero' => 'Recuperó',
+    ];
+
+    public function estadoLabel(): string
+    {
+        return self::NOMBRES[$this->estado] ?? ucfirst((string) $this->estado);
+    }
+
     protected $fillable = [
         'clase_id', 'alumno_id', 'estado', 'observacion', 'registrado_por',
     ];

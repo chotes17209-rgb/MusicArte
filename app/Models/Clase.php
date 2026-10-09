@@ -59,6 +59,42 @@ class Clase extends Model
             ->orWhereHas('alumnoTaller', fn ($t) => $t->where('estado', 'activo')));
     }
 
+    /**
+     * Cuando el alumno ya tiene un periodo siguiente que empieza antes de
+     * que termine el anterior (p. ej. octubre desde el 28/09), los dias que
+     * se cruzan son del periodo nuevo: se quitan las clases sin marcar del
+     * periodo anterior desde ese dia. Solo periodos recientes.
+     *
+     * @return int clases quitadas
+     */
+    public static function quitarCruceDePeriodos(?int $alumnoId = null): int
+    {
+        $talleres = AlumnoTaller::with('periodo')
+            ->where('estado', 'activo')
+            ->when($alumnoId, fn ($q) => $q->where('alumno_id', $alumnoId))
+            ->whereHas('periodo', fn ($p) => $p->whereDate('fecha_fin', '>=', now()->subDays(45)->toDateString()))
+            ->get()
+            ->groupBy('alumno_id');
+
+        $quitadas = 0;
+        foreach ($talleres as $delAlumno) {
+            $periodos = $delAlumno->pluck('periodo')->filter()->unique('id')->sortBy('fecha_inicio')->values();
+            foreach ($periodos as $i => $periodo) {
+                $siguiente = $periodos->slice($i + 1)->first(fn ($p) => $p->fecha_inicio->gt($periodo->fecha_inicio));
+                if (! $siguiente || $siguiente->fecha_inicio->gt($periodo->fecha_fin)) {
+                    continue;
+                }
+                $quitadas += self::whereIn('alumno_taller_id', $delAlumno->where('periodo_id', $periodo->id)->pluck('id'))
+                    ->where('estado', 'programada')
+                    ->whereDate('fecha', '>=', $siguiente->fecha_inicio->toDateString())
+                    ->whereDoesntHave('asistencia')
+                    ->delete();
+            }
+        }
+
+        return $quitadas;
+    }
+
     public function asistencia()
     {
         return $this->hasOne(Asistencia::class);
