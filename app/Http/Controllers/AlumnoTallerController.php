@@ -19,6 +19,10 @@ class AlumnoTallerController extends Controller
     {
         $data = $this->validarTaller($request);
 
+        if ($error = $this->duplicado($alumno->id, $data)) {
+            return $error;
+        }
+
         $taller = DB::transaction(function () use ($alumno, $data, $request) {
             $taller = AlumnoTaller::create([
                 'alumno_id' => $alumno->id,
@@ -55,6 +59,10 @@ class AlumnoTallerController extends Controller
     public function update(Request $request, AlumnoTaller $alumnoTaller)
     {
         $data = $this->validarTaller($request);
+
+        if (($data['estado'] ?? $alumnoTaller->estado) === 'activo' && ($error = $this->duplicado($alumnoTaller->alumno_id, $data, $alumnoTaller->id))) {
+            return $error;
+        }
         $periodoAnteriorId = $alumnoTaller->periodo_id;
         $estadoAnterior = $alumnoTaller->estado;
         $estadoNuevo = $data['estado'] ?? $estadoAnterior;
@@ -119,6 +127,36 @@ class AlumnoTallerController extends Controller
             'ok' => true,
             'message' => 'Taller dado de baja para este alumno (se conserva su historial).',
         ]);
+    }
+
+    /**
+     * Un alumno no puede tener dos veces el mismo taller (misma especialidad y
+     * maestro) activo en el mismo periodo: saldria repetido en asistencia,
+     * horarios y pagos.
+     */
+    private function duplicado(int $alumnoId, array $data, ?int $exceptoId = null)
+    {
+        if (empty($data['periodo_id'])) {
+            return null;
+        }
+
+        $existe = AlumnoTaller::with(['especialidad', 'periodo'])
+            ->where('alumno_id', $alumnoId)
+            ->where('periodo_id', $data['periodo_id'])
+            ->where('especialidad_id', $data['especialidad_id'])
+            ->where('maestro_id', $data['maestro_id'] ?? null)
+            ->where('estado', 'activo')
+            ->when($exceptoId, fn ($q) => $q->whereKeyNot($exceptoId))
+            ->first();
+
+        if (! $existe) {
+            return null;
+        }
+
+        return response()->json([
+            'ok' => false,
+            'message' => 'Este alumno ya tiene '.($existe->especialidad->nombre ?? 'ese taller').' con ese maestro en '.($existe->periodo->nombre ?? 'ese periodo').'. Edita ese taller en lugar de agregar otro.',
+        ], 422);
     }
 
     private function validarTaller(Request $request): array

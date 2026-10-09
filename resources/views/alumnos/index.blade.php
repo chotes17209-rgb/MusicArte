@@ -366,7 +366,7 @@
                         </div>
                         <div class="text-end">
                             <button type="button" class="btn btn-sm btn-light" onclick="mostrarListaTalleres()">Cancelar</button>
-                            <button type="button" class="btn btn-sm btn-morado" onclick="guardarTaller()">Guardar taller</button>
+                            <button type="button" class="btn btn-sm btn-morado" id="btnGuardarTaller" onclick="guardarTaller()">Guardar taller</button>
                         </div>
                     </div>
                 </div>
@@ -893,16 +893,27 @@
         };
         if (horarios.length) payload.horarios = horarios;
 
-        const url = tallerId ? `/alumnos/talleres/${tallerId}` : `/alumnos/${alumnoId}/talleres`;
-        const res = await maFetch(url, {
-            method: tallerId ? 'PUT' : 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-        });
-        if (res && res.ok) {
-            maToast('success', res.message);
-            await recargarTalleresDelAlumno(alumnoId);
-            mostrarListaTalleres();
+        // Evita guardar dos veces si se presiona el boton varias veces (creaba talleres duplicados).
+        const boton = document.getElementById('btnGuardarTaller');
+        if (boton.disabled) return;
+        boton.disabled = true;
+        boton.textContent = 'Guardando…';
+
+        try {
+            const url = tallerId ? `/alumnos/talleres/${tallerId}` : `/alumnos/${alumnoId}/talleres`;
+            const res = await maFetch(url, {
+                method: tallerId ? 'PUT' : 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            if (res && res.ok) {
+                maToast('success', res.message);
+                await recargarTalleresDelAlumno(alumnoId);
+                mostrarListaTalleres();
+            }
+        } finally {
+            boton.disabled = false;
+            boton.textContent = 'Guardar taller';
         }
     }
 
@@ -950,8 +961,16 @@
         modalAlumno.show();
     }
 
+    let guardandoAlumno = false;
     document.getElementById('formAlumno').addEventListener('submit', async (e) => {
         e.preventDefault();
+        // Evita registrar el mismo alumno dos veces si se presiona Guardar varias veces.
+        if (guardandoAlumno) return;
+        guardandoAlumno = true;
+        try { await guardarAlumno(); } finally { guardandoAlumno = false; }
+    });
+
+    async function guardarAlumno() {
         const id = document.getElementById('alumno_id').value;
 
         const payload = {
@@ -1027,7 +1046,7 @@
             modalAlumno.hide();
             buscarAlumnosReactivo();
         }
-    });
+    }
 
     async function eliminarAlumno(id, nombre) {
         if (!(await maConfirmarEliminar(nombre))) return;
