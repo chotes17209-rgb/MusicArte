@@ -116,6 +116,24 @@ class AlumnoTallerController extends Controller
     public function destroy(AlumnoTaller $alumnoTaller)
     {
         $periodoId = $alumnoTaller->periodo_id;
+        $alumno = $alumnoTaller->alumno;
+
+        // Un taller que ya estaba dado de baja se elimina de verdad, salvo que
+        // tenga asistencias marcadas o abonos (eso es historial y se conserva).
+        if ($alumnoTaller->estado === 'inactivo') {
+            if ($alumnoTaller->tieneHistorial()) {
+                return response()->json([
+                    'ok' => false,
+                    'message' => 'Este taller tiene asistencias o pagos registrados, por eso se conserva como historial (ya está dado de baja y no aparece en asistencia ni horarios).',
+                ], 422);
+            }
+
+            DB::transaction(fn () => $alumnoTaller->eliminarDefinitivo());
+            $alumno->sincronizarTallerPrincipal();
+            $alumno->sincronizarEstadoPeriodo($periodoId);
+
+            return response()->json(['ok' => true, 'message' => 'Taller eliminado.']);
+        }
 
         DB::transaction(fn () => $alumnoTaller->darDeBaja());
 

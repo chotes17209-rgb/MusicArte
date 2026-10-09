@@ -91,6 +91,26 @@ class AlumnoTaller extends Model
         }
     }
 
+    /** Tiene historial que no se debe borrar: asistencias marcadas o abonos. */
+    public function tieneHistorial(): bool
+    {
+        return $this->clases()->where(fn ($q) => $q->where('estado', 'realizada')->orWhereHas('asistencia'))->exists()
+            || $this->pagos()->whereHas('abonos')->exists();
+    }
+
+    /**
+     * Elimina por completo un taller dado de baja que no tiene historial
+     * (por ejemplo, uno creado por error o repetido): sus horarios, clases
+     * y mensualidad sin abonos.
+     */
+    public function eliminarDefinitivo(): void
+    {
+        $this->clases()->delete();
+        $this->horarios()->get()->each->deleteQuietly();
+        $this->pagos()->whereDoesntHave('abonos')->delete();
+        $this->delete();
+    }
+
     /**
      * Revierte una baja: el taller vuelve a estar activo con sus horarios,
      * las clases canceladas que faltan dictar vuelven a programarse y se

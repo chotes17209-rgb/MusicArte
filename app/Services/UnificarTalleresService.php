@@ -15,10 +15,18 @@ use Illuminate\Support\Facades\DB;
  */
 class UnificarTalleresService
 {
-    /** @return int cantidad de talleres repetidos eliminados */
-    public static function unificarTodo(): int
+    /**
+     * Junta los talleres repetidos (misma especialidad y maestro en el mismo
+     * periodo), esten activos o dados de baja. Queda el activo con mas
+     * clases marcadas; los demas se unen a el.
+     *
+     * @return int cantidad de talleres repetidos eliminados
+     */
+    public static function unificarTodo(bool $soloRecientes = false): int
     {
-        $grupos = AlumnoTaller::where('estado', 'activo')->whereNotNull('periodo_id')
+        $grupos = AlumnoTaller::whereNotNull('periodo_id')
+            // Los meses pasados son historial: solo se corrigen el periodo actual y el anterior.
+            ->when($soloRecientes, fn ($q) => $q->whereHas('periodo', fn ($p) => $p->whereDate('fecha_fin', '>=', now()->subDays(45)->toDateString())))
             ->select('alumno_id', 'periodo_id', 'especialidad_id', 'maestro_id', DB::raw('count(*) as total'))
             ->groupBy('alumno_id', 'periodo_id', 'especialidad_id', 'maestro_id')
             ->havingRaw('count(*) > 1')
@@ -26,12 +34,15 @@ class UnificarTalleresService
 
         $eliminados = 0;
         foreach ($grupos as $g) {
-            $talleres = AlumnoTaller::where('estado', 'activo')
-                ->where('alumno_id', $g->alumno_id)->where('periodo_id', $g->periodo_id)
+            $talleres = AlumnoTaller::where('alumno_id', $g->alumno_id)->where('periodo_id', $g->periodo_id)
                 ->where('especialidad_id', $g->especialidad_id)->where('maestro_id', $g->maestro_id)
                 ->withCount(['clases as marcadas_count' => fn ($q) => $q->whereHas('asistencia')])
-                ->orderByDesc('marcadas_count')->orderBy('id')
-                ->get();
+                ->get()
+                ->sortBy([
+                    fn ($a, $b) => ($b->estado === 'activo') <=> ($a->estado === 'activo'),
+                    fn ($a, $b) => $b->marcadas_count <=> $a->marcadas_count,
+                    fn ($a, $b) => $a->id <=> $b->id,
+                ])->values();
 
             $queda = $talleres->shift();
             DB::transaction(function () use ($queda, $talleres, &$eliminados) {

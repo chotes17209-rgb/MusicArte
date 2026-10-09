@@ -903,7 +903,18 @@
     }
 
     async function quitarTaller(tallerId) {
-        if (!(await maConfirmarEliminar('este taller del alumno'))) return;
+        const t = talleresAlumnoActual.find(x => x.id === tallerId);
+        if (t && t.estado === 'inactivo') {
+            // Ya dado de baja: se elimina por completo (si no tiene historial).
+            if (!(await maConfirmarEliminar('este taller dado de baja (se borra por completo)'))) return;
+        } else {
+            const ok = await Swal.fire({
+                icon: 'question', title: 'Dar de baja este taller',
+                text: 'Dejará de salir en asistencia y horarios desde ahora. Lo ya dictado y pagado se conserva. Si fue un error, después puedes borrarlo por completo con el mismo botón.',
+                showCancelButton: true, confirmButtonText: 'Sí, dar de baja', cancelButtonText: 'Cancelar',
+            });
+            if (!ok.isConfirmed) return;
+        }
         const res = await maFetch(`/alumnos/talleres/${tallerId}`, { method: 'DELETE' });
         if (res && res.ok) {
             maToast('success', res.message);
