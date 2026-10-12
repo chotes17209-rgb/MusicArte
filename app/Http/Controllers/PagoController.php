@@ -9,6 +9,8 @@ use App\Models\Maestro;
 use App\Models\Pago;
 use App\Models\PagoAbono;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class PagoController extends Controller
 {
@@ -25,8 +27,18 @@ class PagoController extends Controller
         $query = Pago::with(['alumno', 'alumnoTaller.especialidad', 'alumnoTaller.maestro', 'abonos'])
             ->where('mes', $mes)->where('anio', $anio);
 
+        // Sin distinguir mayusculas ni tildes, cada palabra por separado
+        // ("santiago ledezma" encuentra "Santiago Cordova Ledezma").
         if ($request->filled('buscar')) {
-            $query->whereHas('alumno', fn ($q) => $q->where('nombre', 'like', '%'.$request->buscar.'%'));
+            $nombre = DB::getDriverName() === 'pgsql'
+                ? "translate(lower(nombre), 'áéíóúüñàèìòù', 'aeiouunaeiou')"
+                : 'lower(nombre)';
+            $palabras = preg_split('/\s+/', mb_strtolower(Str::ascii(trim($request->buscar))), -1, PREG_SPLIT_NO_EMPTY);
+            $query->whereHas('alumno', function ($q) use ($palabras, $nombre) {
+                foreach ($palabras as $palabra) {
+                    $q->whereRaw($nombre.' LIKE ?', ['%'.addcslashes($palabra, '%_\\').'%']);
+                }
+            });
         }
         if ($request->boolean('solo_pendientes')) {
             $query->where('saldo', '>', 0);
@@ -49,7 +61,11 @@ class PagoController extends Controller
         // limit/offset al query y solo sumaba los 20 pagos de la pagina.
         $totalesQuery = (clone $query);
 
-        $pagos = $query->orderBy('fecha_pago', 'desc')->paginate(20)->withQueryString();
+        // En orden alfabetico por alumno, para ir cobrando de corrido.
+        $pagos = $query
+            ->orderBy(Alumno::select('nombre')->whereColumn('alumnos.id', 'pagos.alumno_id'))
+            ->orderBy('tipo')->orderBy('id')
+            ->paginate(50)->withQueryString();
 
         $alumnos = Alumno::activos()->orderBy('nombre')->get();
         $especialidades = Especialidad::orderBy('nombre')->get();

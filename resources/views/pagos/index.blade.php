@@ -1,6 +1,14 @@
 @extends('layouts.app')
 @section('titulo', 'Pagos')
 
+@push('estilos')
+<style>
+    /* Lo que falta cobrar resalta: el boton Abonos en morado. */
+    .table .btn-icon.btn-abonar { background: var(--acento); border-color: var(--acento); color: #fff; }
+    .table .btn-icon.btn-abonar:hover { background: var(--acento-hover, #660066); color: #fff; }
+</style>
+@endpush
+
 @section('contenido')
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <div>
@@ -32,7 +40,7 @@
             <input type="number" name="anio" value="{{ $anio }}" class="form-control">
         </div>
         <div class="col-md-2">
-            <input type="text" name="buscar" value="{{ request('buscar') }}" class="form-control" placeholder="Buscar alumno...">
+            <input type="text" name="buscar" value="{{ request('buscar') }}" class="form-control" placeholder="Buscar alumno..." autocomplete="off">
         </div>
         <div class="col-md-2">
             <select name="especialidad_id" class="form-select">
@@ -88,7 +96,7 @@
                     </td>
                     <td class="text-end">
                         <a href="{{ route('pagos.show', $p) }}" class="btn btn-sm btn-light btn-icon" title="Ver detalle"><i class="bi bi-eye"></i></a>
-                        <button class="btn btn-sm btn-light btn-icon" title="Registrar abonos" onclick="abrirAbonos({{ $p->id }})"><i class="bi bi-cash-stack"></i></button>
+                        <button class="btn btn-sm btn-light btn-icon {{ $p->saldo > 0 ? 'btn-abonar' : '' }}" title="Registrar abonos" onclick="abrirAbonos({{ $p->id }})"><i class="bi bi-cash-stack"></i></button>
                         <a href="{{ route('pagos.recibo', $p) }}" target="_blank" class="btn btn-sm btn-light btn-icon" title="Estado de cuenta PDF"><i class="bi bi-file-earmark-pdf"></i></a>
                         @auth @if(auth()->user()->esAdmin())
                         <button class="btn btn-sm btn-light btn-icon text-danger" onclick="eliminarPago({{ $p->id }}, '{{ $p->alumno->nombre ?? '' }}')" title="Eliminar"><i class="bi bi-trash"></i></button>
@@ -247,8 +255,21 @@
         const res = await maFetch(`/pagos/${pagoId}/edit`);
         if (!res) return;
         pintarAbonos(res.data);
+        // Monto sugerido: lo que le falta pagar (se puede cambiar).
+        const monto = document.getElementById('abono_monto');
+        monto.value = Number(res.data.saldo) > 0 ? Number(res.data.saldo).toFixed(2) : '';
         modalAbonos.show();
+        document.getElementById('modalAbonos').addEventListener('shown.bs.modal', () => { monto.focus(); monto.select(); }, { once: true });
     }
+
+    // Despues de registrar un abono, el cursor vuelve al buscador para el siguiente alumno.
+    try {
+        if (sessionStorage.getItem('ma_pagos_buscar_foco')) {
+            sessionStorage.removeItem('ma_pagos_buscar_foco');
+            const buscar = document.querySelector('input[name=buscar]');
+            if (buscar) { buscar.focus(); buscar.select(); }
+        }
+    } catch (e) {}
 
     function pintarAbonos(pago) {
         document.getElementById('abonos_pago_id').value = pago.id;
@@ -299,6 +320,7 @@
             document.getElementById('formAbono').reset();
             document.getElementById('abono_fecha').value = '{{ now()->toDateString() }}';
             pintarAbonos(res.data.pago);
+            try { sessionStorage.setItem('ma_pagos_buscar_foco', '1'); } catch (e) {}
             setTimeout(() => location.reload(), 900);
         }
     });
