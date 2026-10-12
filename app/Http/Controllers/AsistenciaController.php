@@ -6,6 +6,7 @@ use App\Models\Alumno;
 use App\Models\Asistencia;
 use App\Models\Clase;
 use App\Models\Maestro;
+use App\Models\Periodo;
 use Illuminate\Http\Request;
 
 class AsistenciaController extends Controller
@@ -31,27 +32,37 @@ class AsistenciaController extends Controller
 
         $clases = $clases->orderBy('hora_inicio')->get();
 
-        $alumnos = Alumno::activos()->orderBy('nombre')->get();
+        $alumnos = Alumno::activos()->orWhere('id', $request->alumno_id)->orderBy('nombre')->get();
         $maestros = Maestro::where('activo', true)->orderBy('nombre')->get();
 
-        // Reporte rapido: % de asistencia del alumno seleccionado (ultimos 30 dias)
+        // Resumen del alumno elegido: por defecto solo el periodo en curso.
+        $periodos = Periodo::orderByDesc('fecha_inicio')->get();
+        $periodoResumen = $request->get('periodo_resumen', (string) (Periodo::enCurso()?->id ?? 'todos'));
         $resumenAlumno = null;
         if ($request->filled('alumno_id')) {
             $alumno = Alumno::find($request->alumno_id);
             if ($alumno) {
-                $total = $alumno->asistencias()->count();
-                $asistio = $alumno->asistencias()->whereIn('estado', Asistencia::PRESENTES)->count();
+                $detalle = $alumno->asistencias()
+                    ->join('clases', 'clases.id', '=', 'asistencias.clase_id')
+                    ->when($periodoResumen !== 'todos', fn ($q) => $q->where('clases.periodo_id', $periodoResumen))
+                    ->orderByDesc('clases.fecha')->orderByDesc('clases.hora_inicio')
+                    ->select('asistencias.*')
+                    ->with('clase.especialidad')
+                    ->get();
+                $total = $detalle->count();
+                $asistio = $detalle->whereIn('estado', Asistencia::PRESENTES)->count();
                 $resumenAlumno = [
                     'alumno' => $alumno->nombre,
                     'total' => $total,
                     'asistio' => $asistio,
+                    'faltas' => $detalle->whereIn('estado', ['falto', 'justificado'])->count(),
                     'porcentaje' => $total > 0 ? round($asistio / $total * 100, 1) : 0,
-                    'detalle' => $alumno->asistencias()->with('clase')->latest()->limit(20)->get(),
+                    'detalle' => $detalle,
                 ];
             }
         }
 
-        return view('asistencia.index', compact('clases', 'alumnos', 'maestros', 'fecha', 'resumenAlumno'));
+        return view('asistencia.index', compact('clases', 'alumnos', 'maestros', 'fecha', 'resumenAlumno', 'periodos', 'periodoResumen'));
     }
 
     /**

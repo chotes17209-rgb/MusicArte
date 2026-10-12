@@ -108,25 +108,37 @@
                 @endforeach
             </select>
         </div>
+        <div class="col-md-4">
+            <select name="periodo_resumen" class="form-select" title="Periodo">
+                @foreach($periodos as $p)
+                    <option value="{{ $p->id }}" @selected($periodoResumen == $p->id)>{{ $p->nombre }}</option>
+                @endforeach
+                <option value="todos" @selected($periodoResumen === 'todos')>Todos los periodos</option>
+            </select>
+        </div>
     </form>
 
     @if($resumenAlumno)
         <div class="row g-3 mb-3">
-            <div class="col-md-4"><div class="card-kpi card p-3 text-center"><div class="text-muted small">Total clases</div><div class="fs-4 fw-bold">{{ $resumenAlumno['total'] }}</div></div></div>
-            <div class="col-md-4"><div class="card-kpi card p-3 text-center"><div class="text-muted small">Asistió</div><div class="fs-4 fw-bold text-success">{{ $resumenAlumno['asistio'] }}</div><div class="small text-muted">incluye recuperadas</div></div></div>
-            <div class="col-md-4"><div class="card-kpi card p-3 text-center"><div class="text-muted small">% Asistencia</div><div class="fs-4 fw-bold">{{ $resumenAlumno['porcentaje'] }}%</div></div></div>
+            <div class="col-md-3"><div class="card-kpi card p-3 text-center"><div class="text-muted small">Clases marcadas</div><div class="fs-4 fw-bold">{{ $resumenAlumno['total'] }}</div></div></div>
+            <div class="col-md-3"><div class="card-kpi card p-3 text-center"><div class="text-muted small">Asistió</div><div class="fs-4 fw-bold text-success">{{ $resumenAlumno['asistio'] }}</div><div class="small text-muted">incluye recuperadas</div></div></div>
+            <div class="col-md-3"><div class="card-kpi card p-3 text-center"><div class="text-muted small">Faltó</div><div class="fs-4 fw-bold text-danger">{{ $resumenAlumno['faltas'] }}</div><div class="small text-muted">con o sin aviso</div></div></div>
+            <div class="col-md-3"><div class="card-kpi card p-3 text-center"><div class="text-muted small">% Asistencia</div><div class="fs-4 fw-bold">{{ $resumenAlumno['porcentaje'] }}%</div></div></div>
         </div>
         <div class="table-responsive">
             <table class="table table-sm">
-                <thead><tr><th>Fecha</th><th>Estado</th><th>Observación</th></tr></thead>
+                <thead><tr><th>Fecha</th><th>Taller</th><th>Estado</th><th>Observación</th></tr></thead>
                 <tbody>
-                @foreach($resumenAlumno['detalle'] as $d)
+                @forelse($resumenAlumno['detalle'] as $d)
                     <tr>
-                        <td>{{ optional($d->clase)->fecha?->format('d/m/Y') }}</td>
+                        <td class="text-nowrap">{{ optional($d->clase)->fecha?->translatedFormat('D d/m/Y') }}</td>
+                        <td>{{ $d->clase?->especialidad?->nombre ?? '—' }}</td>
                         <td>{{ $d->estadoLabel() }}</td>
                         <td>{{ $d->observacion ?? '—' }}</td>
                     </tr>
-                @endforeach
+                @empty
+                    <tr><td colspan="4" class="text-muted">No tiene asistencias marcadas en este periodo.</td></tr>
+                @endforelse
                 </tbody>
             </table>
         </div>
