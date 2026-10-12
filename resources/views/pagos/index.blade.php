@@ -211,24 +211,25 @@
                 <h6 class="fw-semibold">Registrar nuevo abono</h6>
                 <form id="formAbono" class="row g-2">
                     <div class="col-md-3">
-                        <label class="form-label small">Monto (S/)</label>
+                        <label class="form-label small">Monto (S/) <span class="text-danger">*</span></label>
                         <input type="number" step="0.01" min="0.01" class="form-control" id="abono_monto" required>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label small">Fecha</label>
+                        <label class="form-label small">Fecha <span class="text-danger">*</span></label>
                         <input type="date" class="form-control" id="abono_fecha" value="{{ now()->toDateString() }}" required>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label small">Método de pago</label>
+                        <label class="form-label small">Método de pago <span class="text-danger">*</span></label>
                         <select class="form-select" id="abono_metodo" required>
+                            <option value="">-- Elige --</option>
                             <option value="transferencia">Transferencia</option>
                             <option value="yape">Yape</option>
                             <option value="efectivo">Efectivo</option>
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label small">N° Recibo</label>
-                        <input type="text" class="form-control" id="abono_recibo_nro">
+                        <label class="form-label small">N° Recibo <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="abono_recibo_nro" maxlength="50" required>
                     </div>
                     <div class="col-12">
                         <label class="form-label small">Observación (opcional)</label>

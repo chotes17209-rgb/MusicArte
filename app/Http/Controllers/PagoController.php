@@ -172,11 +172,15 @@ class PagoController extends Controller
             'monto' => 'required|numeric|min:0.01',
             'fecha' => 'required|date',
             'metodo_pago' => 'required|in:transferencia,yape,efectivo',
-            'recibo_nro' => 'nullable|string|max:50',
+            'recibo_nro' => 'required|string|max:50',
             'observacion' => 'nullable|string',
         ], [
             'monto.required' => 'Indica el monto del abono.',
             'monto.min' => 'El monto del abono debe ser mayor a cero.',
+            'fecha.required' => 'Indica la fecha del abono.',
+            'metodo_pago.required' => 'Elige el método de pago.',
+            'metodo_pago.in' => 'Elige el método de pago.',
+            'recibo_nro.required' => 'Escribe el N° de recibo.',
         ]);
 
         if ($pago->saldo <= 0) {
