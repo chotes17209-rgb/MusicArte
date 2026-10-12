@@ -42,13 +42,34 @@ class AsistenciaController extends Controller
         if ($request->filled('alumno_id')) {
             $alumno = Alumno::find($request->alumno_id);
             if ($alumno) {
-                $detalle = $alumno->asistencias()
+                $delPeriodo = $alumno->asistencias()
                     ->join('clases', 'clases.id', '=', 'asistencias.clase_id')
                     ->when($periodoResumen !== 'todos', fn ($q) => $q->where('clases.periodo_id', $periodoResumen))
                     ->orderByDesc('clases.fecha')->orderByDesc('clases.hora_inicio')
                     ->select('asistencias.*')
                     ->with('clase.especialidad')
                     ->get();
+
+                // Talleres que tiene en ese periodo, para elegir uno.
+                $talleresResumen = $delPeriodo->pluck('clase.especialidad')->filter()->unique('id')->sortBy('nombre')->values();
+                $tallerResumen = $request->filled('taller_resumen') && $talleresResumen->contains('id', (int) $request->taller_resumen)
+                    ? (int) $request->taller_resumen : null;
+                $detalle = $tallerResumen
+                    ? $delPeriodo->filter(fn ($a) => $a->clase?->especialidad_id === $tallerResumen)->values()
+                    : $delPeriodo;
+
+                // Asistencia de cada taller por separado.
+                $porTaller = $delPeriodo->groupBy(fn ($a) => $a->clase?->especialidad?->nombre ?? 'Sin taller')
+                    ->map(function ($items) {
+                        $presentes = $items->whereIn('estado', Asistencia::PRESENTES)->count();
+
+                        return [
+                            'total' => $items->count(),
+                            'asistio' => $presentes,
+                            'faltas' => $items->whereIn('estado', ['falto', 'justificado'])->count(),
+                            'porcentaje' => $items->count() ? round($presentes / $items->count() * 100) : 0,
+                        ];
+                    })->sortKeys();
                 $total = $detalle->count();
                 $asistio = $detalle->whereIn('estado', Asistencia::PRESENTES)->count();
                 $resumenAlumno = [
@@ -58,6 +79,9 @@ class AsistenciaController extends Controller
                     'faltas' => $detalle->whereIn('estado', ['falto', 'justificado'])->count(),
                     'porcentaje' => $total > 0 ? round($asistio / $total * 100, 1) : 0,
                     'detalle' => $detalle,
+                    'talleres' => $talleresResumen,
+                    'taller' => $tallerResumen,
+                    'porTaller' => $porTaller,
                 ];
             }
         }

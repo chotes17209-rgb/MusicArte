@@ -116,6 +116,16 @@
                 <option value="todos" @selected($periodoResumen === 'todos')>Todos los periodos</option>
             </select>
         </div>
+        @if($resumenAlumno && $resumenAlumno['talleres']->count() > 1)
+            <div class="col-md-3">
+                <select name="taller_resumen" class="form-select" title="Taller">
+                    <option value="">Todos los talleres</option>
+                    @foreach($resumenAlumno['talleres'] as $esp)
+                        <option value="{{ $esp->id }}" @selected($resumenAlumno['taller'] === $esp->id)>{{ $esp->nombre }}</option>
+                    @endforeach
+                </select>
+            </div>
+        @endif
     </form>
 
     @if($resumenAlumno)
@@ -125,6 +135,26 @@
             <div class="col-md-3"><div class="card-kpi card p-3 text-center"><div class="text-muted small">Faltó</div><div class="fs-4 fw-bold text-danger">{{ $resumenAlumno['faltas'] }}</div><div class="small text-muted">con o sin aviso</div></div></div>
             <div class="col-md-3"><div class="card-kpi card p-3 text-center"><div class="text-muted small">% Asistencia</div><div class="fs-4 fw-bold">{{ $resumenAlumno['porcentaje'] }}%</div></div></div>
         </div>
+        @if(! $resumenAlumno['taller'] && $resumenAlumno['porTaller']->count() > 1)
+            <h6 class="small fw-semibold text-muted mb-2">Por taller</h6>
+            <div class="table-responsive mb-3">
+                <table class="table table-sm align-middle mb-0">
+                    <thead><tr><th>Taller</th><th class="text-end">Clases marcadas</th><th class="text-end">Asistió</th><th class="text-end">Faltó</th><th class="text-end">% Asistencia</th></tr></thead>
+                    <tbody>
+                    @foreach($resumenAlumno['porTaller'] as $nombreTaller => $t)
+                        <tr>
+                            <td class="fw-semibold">{{ $nombreTaller }}</td>
+                            <td class="text-end">{{ $t['total'] }}</td>
+                            <td class="text-end text-success fw-semibold">{{ $t['asistio'] }}</td>
+                            <td class="text-end text-danger fw-semibold">{{ $t['faltas'] }}</td>
+                            <td class="text-end fw-semibold">{{ $t['porcentaje'] }}%</td>
+                        </tr>
+                    @endforeach
+                    </tbody>
+                </table>
+            </div>
+            <h6 class="small fw-semibold text-muted mb-2">Detalle por fecha</h6>
+        @endif
         <div class="table-responsive">
             <table class="table table-sm">
                 <thead><tr><th>Fecha</th><th>Taller</th><th>Estado</th><th>Observación</th></tr></thead>
