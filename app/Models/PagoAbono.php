@@ -30,10 +30,18 @@ class PagoAbono extends Model
         ];
     }
 
+    /** Metodos que se pueden elegir al registrar un abono. */
     const METODOS = [
-        'transferencia' => 'Transferencia',
+        'transferencia_bcp' => 'Transferencia BCP',
+        'transferencia_ibk' => 'Transferencia IBK',
         'yape' => 'Yape',
         'efectivo' => 'Efectivo',
+        'tarjeta' => 'Tarjeta',
+    ];
+
+    /** Abonos registrados antes de separar BCP e IBK. */
+    const METODOS_ANTERIORES = [
+        'transferencia' => 'Transferencia',
     ];
 
     public function pago()
@@ -48,6 +56,6 @@ class PagoAbono extends Model
 
     public function metodoLabel(): string
     {
-        return self::METODOS[$this->metodo_pago] ?? $this->metodo_pago;
+        return self::METODOS[$this->metodo_pago] ?? self::METODOS_ANTERIORES[$this->metodo_pago] ?? $this->metodo_pago;
     }
 }

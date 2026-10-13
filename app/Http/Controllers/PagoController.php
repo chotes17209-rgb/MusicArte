@@ -215,7 +215,7 @@ class PagoController extends Controller
         $data = $request->validate([
             'monto' => 'required|numeric|min:0.01',
             'fecha' => 'required|date',
-            'metodo_pago' => 'required|in:transferencia,yape,efectivo',
+            'metodo_pago' => 'required|in:'.implode(',', array_keys(PagoAbono::METODOS)),
             'recibo_nro' => 'required|string|max:50',
             'observacion' => 'nullable|string',
         ], [

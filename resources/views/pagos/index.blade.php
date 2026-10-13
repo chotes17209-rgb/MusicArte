@@ -265,9 +265,9 @@
                         <label class="form-label small">Método de pago <span class="text-danger">*</span></label>
                         <select class="form-select" id="abono_metodo" required>
                             <option value="">-- Elige --</option>
-                            <option value="transferencia">Transferencia</option>
-                            <option value="yape">Yape</option>
-                            <option value="efectivo">Efectivo</option>
+                            @foreach(\App\Models\PagoAbono::METODOS as $valor => $nombre)
+                                <option value="{{ $valor }}">{{ $nombre }}</option>
+                            @endforeach
                         </select>
                     </div>
                     <div class="col-md-3">
@@ -292,7 +292,7 @@
 @push('scripts')
 <script>
     const modalAbonos = new bootstrap.Modal('#modalAbonos');
-    const METODO_LABEL = { transferencia: 'Transferencia', yape: 'Yape', efectivo: 'Efectivo' };
+    const METODO_LABEL = @json(\App\Models\PagoAbono::METODOS + \App\Models\PagoAbono::METODOS_ANTERIORES);
     const ES_ADMIN = @json(auth()->check() && auth()->user()->esAdmin());
 
     async function abrirAbonos(pagoId) {

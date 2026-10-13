@@ -128,9 +128,9 @@ class Pago extends Model
             'estado' => $estado,
             // Los campos legado (yape/efectivo/tarjeta) reflejan la suma de
             // los abonos por metodo, solo para no romper reportes viejos.
-            'yape_transferencia' => (float) $this->abonos()->where('metodo_pago', 'transferencia')->sum('monto'),
+            'yape_transferencia' => (float) $this->abonos()->whereIn('metodo_pago', ['transferencia', 'transferencia_bcp', 'transferencia_ibk', 'yape'])->sum('monto'),
             'efectivo' => (float) $this->abonos()->where('metodo_pago', 'efectivo')->sum('monto'),
-            'tarjeta' => (float) $this->abonos()->where('metodo_pago', 'yape')->sum('monto'),
+            'tarjeta' => (float) $this->abonos()->where('metodo_pago', 'tarjeta')->sum('monto'),
             'fecha_pago' => optional($this->abonos()->latest('fecha')->first())->fecha ?? $this->fecha_pago,
         ])->save();
     }
