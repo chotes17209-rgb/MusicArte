@@ -78,10 +78,14 @@ class Horario extends Model
             if (! $horario->activo || $cambioDia) {
                 $horario->quitarClasesPendientes();
             } elseif ($horario->wasChanged(['hora_inicio', 'hora_fin', 'maestro_id', 'especialidad_id', 'salon'])) {
-                // Las que siguen con la hora anterior (una clase movida a mano se respeta).
-                $horario->clasesPendientes()
-                    ->where('hora_inicio', $horario->getOriginal('hora_inicio'))
-                    ->update(['hora_inicio' => $horario->hora_inicio, 'hora_fin' => $horario->hora_fin]);
+                // La hora nueva vale para todas sus clases con la hora anterior,
+                // tambien las ya marcadas (la asistencia no cambia). Una clase
+                // movida a otra hora a mano se respeta.
+                if ($horario->wasChanged(['hora_inicio', 'hora_fin'])) {
+                    $horario->clases()
+                        ->where('hora_inicio', $horario->getOriginal('hora_inicio'))
+                        ->update(['hora_inicio' => $horario->hora_inicio, 'hora_fin' => $horario->hora_fin]);
+                }
                 $horario->clasesPendientes()->update([
                     'maestro_id' => $horario->maestro_id,
                     'especialidad_id' => $horario->especialidad_id,
