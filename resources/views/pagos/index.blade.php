@@ -142,7 +142,7 @@
                         <button class="btn btn-sm btn-light btn-icon {{ $p->saldo > 0 ? 'btn-abonar' : '' }}" title="Registrar abonos" onclick="abrirAbonos({{ $p->id }})"><i class="bi bi-cash-stack"></i></button>
                         <a href="{{ route('pagos.recibo', $p) }}" target="_blank" class="btn btn-sm btn-light btn-icon" title="Estado de cuenta PDF"><i class="bi bi-file-earmark-pdf"></i></a>
                         @auth @if(auth()->user()->esAdmin())
-                        <button class="btn btn-sm btn-light btn-icon text-danger" onclick="eliminarPago({{ $p->id }}, '{{ $p->alumno->nombre ?? '' }}')" title="Eliminar"><i class="bi bi-trash"></i></button>
+                        <button class="btn btn-sm btn-light btn-icon text-danger ms-3" onclick="eliminarPago({{ $p->id }}, @js($p->alumno->nombre ?? ''), @js($p->tallerLabel()), @js('S/ '.number_format($p->monto_total, 2)), {{ $p->abonos->count() }})" title="Eliminar"><i class="bi bi-trash"></i></button>
                         @endif @endauth
                     </td>
                 </tr>
@@ -469,8 +469,26 @@
         if (res && res.ok) { maToast('success', res.message); setTimeout(() => location.reload(), 700); }
     }
 
-    async function eliminarPago(id, nombre) {
-        if (!(await maConfirmarEliminar(`el pago de ${nombre}`))) return;
+    // Confirmacion clara: que pago se elimina y que se puede recuperar.
+    async function eliminarPago(id, nombre, taller, monto, abonos) {
+        const r = await Swal.fire({
+            icon: 'warning',
+            title: '¿Eliminar este pago?',
+            html: `<div class="text-start">
+                       <div><b>Alumno:</b> ${maEscapar(nombre)}</div>
+                       <div><b>Taller:</b> ${maEscapar(taller)}</div>
+                       <div><b>Monto:</b> ${maEscapar(monto)}${abonos ? ` · <b>${abonos} abono(s)</b> registrados` : ''}</div>
+                       <div class="small text-muted mt-2">Si solo querías registrar un abono, pulsa <b>Cancelar</b> y usa el botón <b>Abonos</b>.
+                       Si lo eliminas por error, puedes recuperarlo en «Pagos eliminados de este mes».</div>
+                   </div>`,
+            showCancelButton: true,
+            reverseButtons: true,
+            focusCancel: true,
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#b42318',
+        });
+        if (!r.isConfirmed) return;
         const res = await maFetch(`/pagos/${id}`, { method: 'DELETE' });
         if (res && res.ok) {
             maToast('success', res.message);
