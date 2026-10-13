@@ -76,7 +76,19 @@ class PagoController extends Controller
             'pendiente' => (clone $totalesQuery)->sum('saldo'),
         ];
 
-        return view('pagos.index', compact('pagos', 'alumnos', 'especialidades', 'maestros', 'mes', 'anio', 'totales'));
+        // Para corregir errores: pagos eliminados de este mes (se pueden
+        // recuperar) y talleres activos de este mes que se quedaron sin su
+        // mensualidad (p. ej. porque se elimino por error).
+        $eliminados = Pago::onlyTrashed()->with(['alumno', 'alumnoTaller.especialidad'])->withCount('abonos')
+            ->where('mes', $mes)->where('anio', $anio)
+            ->latest('deleted_at')->get();
+        $sinMensualidad = AlumnoTaller::with(['alumno', 'especialidad', 'maestro'])
+            ->where('estado', 'activo')->whereNotNull('monto_mensual')
+            ->whereHas('periodo', fn ($q) => $q->where('mes', $mes)->where('anio', $anio))
+            ->whereDoesntHave('pagos', fn ($q) => $q->where('mes', $mes)->where('anio', $anio))
+            ->get()->sortBy(fn ($t) => $t->alumno->nombre ?? '')->values();
+
+        return view('pagos.index', compact('pagos', 'alumnos', 'especialidades', 'maestros', 'mes', 'anio', 'totales', 'eliminados', 'sinMensualidad'));
     }
 
     /** Talleres activos de un alumno especifico, para el selector del modal (AJAX). */
@@ -157,7 +169,39 @@ class PagoController extends Controller
     {
         $pago->delete();
 
-        return response()->json(['ok' => true, 'message' => 'Registro de pago eliminado.']);
+        return response()->json(['ok' => true, 'message' => 'Pago eliminado. Si fue un error, puedes recuperarlo en «Pagos eliminados».']);
+    }
+
+    /** Devuelve a la lista un pago eliminado por error, con sus abonos. */
+    public function recuperar(int $id)
+    {
+        $pago = Pago::onlyTrashed()->findOrFail($id);
+
+        // La matricula es una por año; la mensualidad, una por taller y mes.
+        $repetido = Pago::where('alumno_id', $pago->alumno_id)->where('anio', $pago->anio)
+            ->when($pago->esMatricula(),
+                fn ($q) => $q->where('tipo', Pago::TIPO_MATRICULA),
+                fn ($q) => $q->where('mes', $pago->mes)->where('alumno_taller_id', $pago->alumno_taller_id)->where('tipo', '!=', Pago::TIPO_MATRICULA))
+            ->exists();
+        if ($repetido) {
+            return response()->json(['ok' => false, 'message' => 'Ese alumno ya tiene otro pago de '.$pago->tallerLabel().' para este mes. Elimina ese primero si quieres recuperar este.'], 422);
+        }
+
+        $pago->restore();
+        $pago->recalcular();
+
+        return response()->json(['ok' => true, 'message' => 'Pago recuperado.']);
+    }
+
+    /** Crea la mensualidad del mes de un taller que se quedo sin ella. */
+    public function crearMensualidad(AlumnoTaller $alumnoTaller)
+    {
+        $pago = $alumnoTaller->sincronizarPago();
+        if (! $pago) {
+            return response()->json(['ok' => false, 'message' => 'Este taller no tiene mensualidad asignada o ya no está activo.'], 422);
+        }
+
+        return response()->json(['ok' => true, 'message' => 'Mensualidad creada: S/ '.number_format($pago->monto_total, 2).'.']);
     }
 
     /**

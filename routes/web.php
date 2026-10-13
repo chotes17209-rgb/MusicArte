@@ -129,6 +129,8 @@ Route::middleware('auth')->group(function () {
             Route::post('/pagos', [PagoController::class, 'store'])->name('pagos.store');
             Route::put('/pagos/{pago}', [PagoController::class, 'update'])->name('pagos.update');
             Route::delete('/pagos/{pago}', [PagoController::class, 'destroy'])->name('pagos.destroy');
+            Route::post('/pagos/{id}/recuperar', [PagoController::class, 'recuperar'])->whereNumber('id')->name('pagos.recuperar');
+            Route::post('/pagos/mensualidad/{alumnoTaller}', [PagoController::class, 'crearMensualidad'])->name('pagos.crearMensualidad');
             Route::post('/pagos/{pago}/abonos', [PagoController::class, 'registrarAbono'])->name('pagos.abonos.store');
             Route::delete('/pagos/abonos/{abono}', [PagoController::class, 'eliminarAbono'])->name('pagos.abonos.destroy');
 

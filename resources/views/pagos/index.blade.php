@@ -69,6 +69,49 @@
     </form>
 </div>
 
+@auth @if(auth()->user()->esAdmin())
+@if($sinMensualidad->isNotEmpty())
+    <div class="card p-3 mb-3 border-warning">
+        <h6 class="fw-semibold mb-1"><i class="bi bi-exclamation-triangle text-warning me-1"></i> Talleres sin mensualidad en {{ \App\Models\Pago::MESES[$mes] ?? $mes }}</h6>
+        <p class="small text-muted mb-2">Tienen mensualidad asignada pero no tienen su pago de este mes (por ejemplo, porque se eliminó por error).</p>
+        <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+                <tbody>
+                @foreach($sinMensualidad as $t)
+                    <tr>
+                        <td class="fw-semibold">{{ $t->alumno->nombre ?? '—' }}</td>
+                        <td>{{ $t->especialidad->nombre ?? '—' }} <span class="text-muted">· {{ $t->maestro->nombre ?? '—' }}</span></td>
+                        <td class="text-end">S/ {{ number_format($t->monto_mensual, 2) }}</td>
+                        <td class="text-end"><button type="button" class="btn btn-sm btn-morado" onclick="crearMensualidad({{ $t->id }})"><i class="bi bi-plus-lg me-1"></i> Crear mensualidad</button></td>
+                    </tr>
+                @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+@endif
+@if($eliminados->isNotEmpty())
+    <details class="card p-3 mb-3">
+        <summary class="fw-semibold" style="cursor:pointer"><i class="bi bi-arrow-counterclockwise me-1"></i> Pagos eliminados de este mes ({{ $eliminados->count() }}) — recuperar si fue un error</summary>
+        <div class="table-responsive mt-2">
+            <table class="table table-sm align-middle mb-0">
+                <tbody>
+                @foreach($eliminados as $e)
+                    <tr>
+                        <td class="fw-semibold">{{ $e->alumno->nombre ?? '—' }}</td>
+                        <td>{{ $e->tallerLabel() }}</td>
+                        <td class="text-end">S/ {{ number_format($e->monto_total, 2) }}</td>
+                        <td class="small text-muted">{{ $e->abonos_count ? $e->abonos_count.' abono(s)' : 'sin abonos' }} · eliminado el {{ $e->deleted_at->format('d/m/Y H:i') }}</td>
+                        <td class="text-end"><button type="button" class="btn btn-sm btn-light" onclick="recuperarPago({{ $e->id }})"><i class="bi bi-arrow-counterclockwise me-1"></i> Recuperar</button></td>
+                    </tr>
+                @endforeach
+                </tbody>
+            </table>
+        </div>
+    </details>
+@endif
+@endif @endauth
+
 <div class="card p-3">
     <div class="table-responsive">
         <table class="table align-middle">
@@ -415,6 +458,16 @@
             setTimeout(() => location.reload(), 700);
         }
     });
+
+    async function crearMensualidad(tallerId) {
+        const res = await maFetch(`/pagos/mensualidad/${tallerId}`, { method: 'POST' });
+        if (res && res.ok) { maToast('success', res.message); setTimeout(() => location.reload(), 700); }
+    }
+
+    async function recuperarPago(id) {
+        const res = await maFetch(`/pagos/${id}/recuperar`, { method: 'POST' });
+        if (res && res.ok) { maToast('success', res.message); setTimeout(() => location.reload(), 700); }
+    }
 
     async function eliminarPago(id, nombre) {
         if (!(await maConfirmarEliminar(`el pago de ${nombre}`))) return;
