@@ -54,9 +54,15 @@ class AsistenciaController extends Controller
                 $talleresResumen = $delPeriodo->pluck('clase.especialidad')->filter()->unique('id')->sortBy('nombre')->values();
                 $tallerResumen = $request->filled('taller_resumen') && $talleresResumen->contains('id', (int) $request->taller_resumen)
                     ? (int) $request->taller_resumen : null;
-                $detalle = $tallerResumen
-                    ? $delPeriodo->filter(fn ($a) => $a->clase?->especialidad_id === $tallerResumen)->values()
-                    : $delPeriodo;
+                // Agrupado por taller (todo Canto, luego todo Guitarra...) y,
+                // dentro de cada taller, de la clase mas reciente a la mas antigua.
+                $detalle = ($tallerResumen
+                    ? $delPeriodo->filter(fn ($a) => $a->clase?->especialidad_id === $tallerResumen)
+                    : $delPeriodo)
+                    ->sortBy([
+                        fn ($a, $b) => strcmp($a->clase?->especialidad?->nombre ?? '~', $b->clase?->especialidad?->nombre ?? '~'),
+                        fn ($a, $b) => strcmp($b->clase?->fecha?->toDateString().$b->clase?->hora_inicio, $a->clase?->fecha?->toDateString().$a->clase?->hora_inicio),
+                    ])->values();
 
                 // Asistencia de cada taller por separado.
                 $porTaller = $delPeriodo->groupBy(fn ($a) => $a->clase?->especialidad?->nombre ?? 'Sin taller')

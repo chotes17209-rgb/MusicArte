@@ -153,13 +153,19 @@
                     </tbody>
                 </table>
             </div>
-            <h6 class="small fw-semibold text-muted mb-2">Detalle por fecha</h6>
+            <h6 class="small fw-semibold text-muted mb-2">Detalle por taller</h6>
         @endif
         <div class="table-responsive">
             <table class="table table-sm">
                 <thead><tr><th>Fecha</th><th>Taller</th><th>Estado</th><th>Observación</th></tr></thead>
                 <tbody>
+                @php $tallerAnterior = null; @endphp
                 @forelse($resumenAlumno['detalle'] as $d)
+                    @php $tallerFila = $d->clase?->especialidad?->nombre ?? 'Sin taller'; @endphp
+                    @if(! $resumenAlumno['taller'] && $tallerFila !== $tallerAnterior)
+                        <tr class="table-light"><td colspan="4" class="fw-semibold">{{ $tallerFila }}</td></tr>
+                        @php $tallerAnterior = $tallerFila; @endphp
+                    @endif
                     <tr>
                         <td class="text-nowrap">{{ optional($d->clase)->fecha?->translatedFormat('D d/m/Y') }}</td>
                         <td>{{ $d->clase?->especialidad?->nombre ?? '—' }}</td>
