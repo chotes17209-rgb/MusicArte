@@ -43,8 +43,13 @@ class PagoController extends Controller
         if ($request->boolean('solo_pendientes')) {
             $query->where('saldo', '>', 0);
         }
+        // "Pendientes" = todo lo que falta cobrar: sin pagar y a cuenta.
         if ($request->filled('estado')) {
-            $query->where('estado', $request->estado);
+            match ($request->estado) {
+                'pendiente' => $query->whereIn('estado', ['pendiente', 'a_cuenta']),
+                'sin_pagar' => $query->where('estado', 'pendiente'),
+                default => $query->where('estado', $request->estado),
+            };
         }
         // Filtro por taller (seccion 12/14): el "taller" del pago es la
         // especialidad del taller especifico que se le asigno al crearlo.

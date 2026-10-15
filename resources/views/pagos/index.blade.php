@@ -61,8 +61,9 @@
         <div class="col-md-2">
             <select name="estado" class="form-select">
                 <option value="">Todos los estados</option>
-                <option value="pendiente" @selected(request('estado')=='pendiente')>Pendiente</option>
-                <option value="a_cuenta" @selected(request('estado')=='a_cuenta')>A cuenta</option>
+                <option value="pendiente" @selected(request('estado')=='pendiente')>Pendientes (sin pagar y a cuenta)</option>
+                <option value="sin_pagar" @selected(request('estado')=='sin_pagar')>Solo sin pagar nada</option>
+                <option value="a_cuenta" @selected(request('estado')=='a_cuenta')>Solo a cuenta</option>
                 <option value="pagado" @selected(request('estado')=='pagado')>Pagado</option>
             </select>
         </div>
