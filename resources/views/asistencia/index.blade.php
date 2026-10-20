@@ -30,6 +30,7 @@
     $letras = ['asistio' => ['A', 'Asistió'], 'falto' => ['F', 'Faltó'], 'recupero' => ['R', 'Recuperó'], 'sin_marcar' => ['S', 'Sin marcar']];
 @endphp
 <x-page-head titulo="Asistencia" subtitulo="Marca con un toque: A asistió, F faltó, R recuperó, S sin marcar. Con «Nota» agregas una observación.">
+    <a href="{{ route('asistencia.mes', array_filter(['maestro_id' => request('maestro_id')])) }}" class="btn btn-morado"><i class="bi bi-calendar3 me-1"></i> Ver todo el mes</a>
     <form method="GET" data-autofiltro>
         <select name="maestro_id" class="form-select" title="Filtrar por maestro">
             <option value="">Todos los maestros</option>
