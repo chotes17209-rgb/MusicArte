@@ -3,7 +3,7 @@
 
 @push('estilos')
 <style>
-    /* Como el Excel: una fila por alumno y taller, sus clases por semana. */
+    /* Una fila por alumno y taller, sus clases por semana. */
     .tabla-mes { font-size: .82rem; }
     .tabla-mes > :not(caption) > * > * { padding: .3rem .35rem; }
     .tabla-mes th, .tabla-mes td { white-space: nowrap; vertical-align: middle; }
@@ -37,7 +37,7 @@
     $nombres = \App\Models\Asistencia::NOMBRES;
     $totalFaltas = $filas->sum('faltas');
 @endphp
-<x-page-head titulo="Asistencia del mes" subtitulo="Todas las clases del periodo, como en el Excel. Toca una fecha para marcarla o agregar una nota.">
+<x-page-head titulo="Asistencia del mes" subtitulo="Todas las clases del periodo por alumno y semana. Toca una fecha para marcarla o agregar una nota.">
     <a href="{{ route('asistencia.index') }}" class="btn btn-light"><i class="bi bi-calendar-day me-1"></i> Asistencia del día</a>
 </x-page-head>
 

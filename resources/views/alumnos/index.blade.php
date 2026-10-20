@@ -628,6 +628,12 @@
 
     // Estado de la matricula del año (arriba de los talleres). Se registra o
     // cambia en el formulario del taller, al costado de la mensualidad.
+    // Sin las notas que dejo la carga inicial de datos (igual que Pago::sinMarcaDeCarga).
+    function notaVisible(texto) {
+        return String(texto || '').split('|').map(t => t.trim())
+            .filter(t => t && !/importad[oa] de|excel|\.xlsx/i.test(t)).join(' | ');
+    }
+
     function renderMatricula(anio, pago) {
         matriculaActual = { anio, pago };
         document.getElementById('matricula_anio_txt').textContent = anio;
@@ -635,7 +641,7 @@
         enlace.classList.toggle('d-none', !pago);
         if (pago) enlace.href = `/pagos/${pago.id}`;
         document.getElementById('matricula_estado_txt').innerHTML = pago
-            ? textoMatricula(pago, anio) + (pago.observacion ? ` <span class="text-muted fst-italic">· ${maEscapar(pago.observacion)}</span>` : '')
+            ? textoMatricula(pago, anio) + (notaVisible(pago.observacion) ? ` <span class="text-muted fst-italic">· ${maEscapar(notaVisible(pago.observacion))}</span>` : '')
             : `<span class="text-muted">Sin matrícula registrada en ${anio}. Se registra al costado de la mensualidad, en el taller.</span>`;
     }
 

@@ -54,6 +54,12 @@ class PagoAbono extends Model
         return $this->belongsTo(User::class, 'registrado_por');
     }
 
+    /** Observacion para mostrar (sin las notas de la carga inicial de datos). */
+    public function observacionVisible(): ?string
+    {
+        return Pago::sinMarcaDeCarga($this->observacion);
+    }
+
     public function metodoLabel(): string
     {
         return self::METODOS[$this->metodo_pago] ?? self::METODOS_ANTERIORES[$this->metodo_pago] ?? $this->metodo_pago;

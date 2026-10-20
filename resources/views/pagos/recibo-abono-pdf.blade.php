@@ -26,7 +26,7 @@
     <tr><td>Concepto</td><td>{{ $abono->pago->concepto ?? 'Mensualidad' }}</td></tr>
     <tr><td>Periodo</td><td>{{ $abono->pago->mesLabel() }} {{ $abono->pago->anio }}</td></tr>
     <tr><td>Fecha del abono</td><td>{{ $abono->fecha->format('d/m/Y') }}</td></tr>
-    @if($abono->observacion)<tr><td>Observación</td><td>{{ $abono->observacion }}</td></tr>@endif
+    @if($abono->observacionVisible())<tr><td>Observación</td><td>{{ $abono->observacionVisible() }}</td></tr>@endif
 </table>
 
 <table class="montos" style="margin-top:14px"><tr>

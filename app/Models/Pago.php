@@ -89,9 +89,20 @@ class Pago extends Model
      */
     public function observacionVisible(): ?string
     {
-        $texto = trim(preg_replace('/\s*\|?\s*Importado de [^|]*$/u', '', (string) $this->observacion), " |");
+        return self::sinMarcaDeCarga($this->observacion);
+    }
 
-        return $texto !== '' ? $texto : null;
+    /**
+     * Quita de un texto las notas que dejo la carga inicial de datos
+     * (menciones al archivo de origen): no son para el usuario.
+     */
+    public static function sinMarcaDeCarga(?string $texto): ?string
+    {
+        $partes = collect(explode('|', (string) $texto))
+            ->map(fn ($t) => trim($t))
+            ->reject(fn ($t) => $t === '' || preg_match('/importad[oa] de|excel|\.xlsx/iu', $t));
+
+        return $partes->isNotEmpty() ? $partes->implode(' | ') : null;
     }
 
     public function scopePendientes($query)
