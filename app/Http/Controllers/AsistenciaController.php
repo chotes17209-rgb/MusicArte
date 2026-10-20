@@ -120,14 +120,23 @@ class AsistenciaController extends Controller
 
             $talleres = AlumnoTaller::with(['alumno', 'especialidad', 'maestro',
                 'horarios' => fn ($q) => $q->where('periodo_id', $periodo->id)->orderBy('dia_semana')])
-                ->where('periodo_id', $periodo->id)
-                ->where(fn ($q) => $q->where('estado', 'activo')->orWhereHas('clases', fn ($c) => $c->whereHas('asistencia')))
+                // Talleres del periodo, y tambien los que tienen clases de este
+                // periodo aunque el taller ya se haya pasado al mes siguiente.
+                ->where(fn ($q) => $q->where(fn ($p) => $p->where('periodo_id', $periodo->id)
+                        ->where(fn ($e) => $e->where('estado', 'activo')->orWhereHas('clases', fn ($c) => $c->whereHas('asistencia'))))
+                    ->orWhereHas('clases', fn ($c) => $c->where('periodo_id', $periodo->id)
+                        ->whereDate('fecha', '>=', $periodo->fecha_inicio->toDateString())
+                        ->whereDate('fecha', '<=', $periodo->fecha_fin->toDateString())))
                 ->when($request->filled('maestro_id'), fn ($q) => $q->where('maestro_id', $request->maestro_id))
                 ->when($request->filled('especialidad_id'), fn ($q) => $q->where('especialidad_id', $request->especialidad_id))
                 ->get();
 
+            // Solo las clases dentro de las fechas del periodo: un taller que
+            // viene de meses anteriores tambien tiene guardadas esas clases.
             $clases = Clase::with('asistencia')->sinBajas()
                 ->whereIn('alumno_taller_id', $talleres->pluck('id'))
+                ->whereDate('fecha', '>=', $periodo->fecha_inicio->toDateString())
+                ->whereDate('fecha', '<=', $periodo->fecha_fin->toDateString())
                 ->orderBy('fecha')->orderBy('hora_inicio')
                 ->get()->groupBy('alumno_taller_id');
 
@@ -144,7 +153,6 @@ class AsistenciaController extends Controller
                     'horario' => $dias->isEmpty() ? '—'
                         : ($dias->count() > 1 ? $dias->slice(0, -1)->implode(', ').' y '.$dias->last() : $dias->first())
                           .' '.($horas->count() === 1 ? $horas->first() : ''),
-                    // Una clase fuera de las fechas del periodo va a la primera o ultima semana.
                     'porSemana' => $suyas->groupBy(fn ($c) => max(0, min($ultimaSemana, (int) floor($inicioSemana->diffInDays($c->fecha->copy()->startOfDay(), false) / 7)))),
                     'asistio' => $suyas->filter(fn ($c) => in_array($c->asistencia?->estado, Asistencia::PRESENTES))->count(),
                     'faltas' => $suyas->filter(fn ($c) => in_array($c->asistencia?->estado, ['falto', 'justificado']))->count(),
