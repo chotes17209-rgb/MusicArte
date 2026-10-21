@@ -16,7 +16,7 @@ class Asistencia extends Model
 
     public const NOMBRES = [
         'asistio' => 'Asistió',
-        'falto' => 'Faltó',
+        'falto' => 'Faltó sin aviso',
         'justificado' => 'Faltó con aviso',
         'tardanza' => 'Tardanza',
         'recupero' => 'Recuperó',

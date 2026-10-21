@@ -14,6 +14,7 @@
     .marcador .btn-letra:hover { border-color: var(--acento); color: var(--acento); }
     .marcador .btn-letra.activo[data-estado="asistio"] { background: #198754; border-color: #198754; color: #fff; }
     .marcador .btn-letra.activo[data-estado="falto"] { background: #dc3545; border-color: #dc3545; color: #fff; }
+    .marcador .btn-letra.activo[data-estado="justificado"] { background: #ffc107; border-color: #ffc107; color: #333; }
     .marcador .btn-letra.activo[data-estado="recupero"] { background: var(--acento); border-color: var(--acento); color: #fff; }
     .marcador .btn-letra.activo[data-estado="sin_marcar"] { background: #6c757d; border-color: #6c757d; color: #fff; }
     .marcador .btn-mas { height: 2.4rem; border-radius: 8px; border: 2px solid var(--borde, #dee2e6); background: #fff; }
@@ -27,9 +28,9 @@
 @php
     $nombresEstado = \App\Models\Asistencia::NOMBRES;
     $colorEstado = ['asistio' => 'bg-success', 'falto' => 'bg-danger', 'justificado' => 'bg-warning', 'tardanza' => 'bg-info', 'recupero' => 'bg-primary'];
-    $letras = ['asistio' => ['A', 'Asistió'], 'falto' => ['F', 'Faltó'], 'recupero' => ['R', 'Recuperó'], 'sin_marcar' => ['S', 'Sin marcar']];
+    $letras = ['asistio' => ['A', 'Asistió'], 'falto' => ['F', 'Faltó sin aviso'], 'justificado' => ['FA', 'Faltó con aviso'], 'recupero' => ['R', 'Recuperó'], 'sin_marcar' => ['S', 'Sin marcar']];
 @endphp
-<x-page-head titulo="Asistencia" subtitulo="Marca con un toque: A asistió, F faltó, R recuperó, S sin marcar. Con «Nota» agregas una observación.">
+<x-page-head titulo="Asistencia" subtitulo="Marca con un toque: A asistió, F faltó sin aviso, FA faltó con aviso, R recuperó, S sin marcar. Con «Nota» agregas una observación.">
     <a href="{{ route('asistencia.mes', array_filter(['maestro_id' => request('maestro_id')])) }}" class="btn btn-morado"><i class="bi bi-calendar3 me-1"></i> Ver todo el mes</a>
     <form method="GET" data-autofiltro>
         <select name="maestro_id" class="form-select" title="Filtrar por maestro">
@@ -51,7 +52,7 @@
 
 <div class="card p-3 mb-3">
     <div class="leyenda-letras small text-muted mb-2">
-        <span><b class="text-success">A</b> Asistió</span><span><b class="text-danger">F</b> Faltó</span><span><b class="text-primary">R</b> Recuperó</span><span><b>S</b> Sin marcar</span><span><i class="bi bi-chat-left-text"></i> Nota: observación, falta con aviso o tardanza</span>
+        <span><b class="text-success">A</b> Asistió</span><span><b class="text-danger">F</b> Faltó sin aviso</span><span><b class="text-warning">FA</b> Faltó con aviso</span><span><b style="color: var(--acento)">R</b> Recuperó</span><span><b>S</b> Sin marcar</span><span><i class="bi bi-chat-left-text"></i> Nota: observación o tardanza</span>
     </div>
     <div class="table-responsive">
         <table class="table align-middle">
@@ -196,9 +197,9 @@
                     <label class="form-label small fw-semibold">Estado</label>
                     <select class="form-select" id="asistencia_estado" required>
                         <option value="asistio">A · Asistió</option>
-                        <option value="falto">F · Faltó (sin aviso)</option>
+                        <option value="falto">F · Faltó sin aviso</option>
                         <option value="recupero">R · Recuperó (faltó y luego recuperó la clase)</option>
-                        <option value="justificado">Faltó con aviso</option>
+                        <option value="justificado">FA · Faltó con aviso</option>
                         <option value="tardanza">Tardanza</option>
                     </select>
                 </div>
@@ -228,7 +229,7 @@
         recupero: 'bg-primary',
     };
     const NOMBRES = @json(\App\Models\Asistencia::NOMBRES);
-    const TOAST = { asistio: 'Marcado: asistió', falto: 'Marcado: faltó', recupero: 'Marcado: recuperó', sin_marcar: 'Quedó sin marcar' };
+    const TOAST = { asistio: 'Marcado: asistió', falto: 'Marcado: faltó sin aviso', justificado: 'Marcado: faltó con aviso', recupero: 'Marcado: recuperó', sin_marcar: 'Quedó sin marcar' };
 
     // Pinta la fila: etiqueta de estado, boton A/F/R/S activo y la nota.
     function pintarFila(claseId, estado, observacion) {

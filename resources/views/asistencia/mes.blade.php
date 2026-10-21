@@ -88,7 +88,7 @@
 <div class="card p-3">
     <div class="leyenda-mes small text-muted mb-2">
         <span><span class="chip-clase asistio">&nbsp;</span> Asistió</span>
-        <span><span class="chip-clase falto">&nbsp;</span> Faltó</span>
+        <span><span class="chip-clase falto">&nbsp;</span> Faltó sin aviso</span>
         <span><span class="chip-clase justificado">&nbsp;</span> Faltó con aviso</span>
         <span><span class="chip-clase recupero">&nbsp;</span> Recuperó</span>
         <span><span class="chip-clase pendiente">&nbsp;</span> Pasada sin marcar</span>
@@ -174,8 +174,8 @@
                 <textarea class="form-control mb-3" id="mesObservacion" rows="2" maxlength="1000" placeholder="Ej.: se programó su recuperación para el sábado..."></textarea>
                 <div class="d-flex flex-wrap gap-2 justify-content-center">
                     <button type="button" class="btn btn-success btn-estado" onclick="guardarClase('asistio')">A · Asistió</button>
-                    <button type="button" class="btn btn-danger btn-estado" onclick="guardarClase('falto')">F · Faltó</button>
-                    <button type="button" class="btn btn-warning btn-estado" onclick="guardarClase('justificado')">Faltó con aviso</button>
+                    <button type="button" class="btn btn-danger btn-estado" onclick="guardarClase('falto')">F · Faltó sin aviso</button>
+                    <button type="button" class="btn btn-warning btn-estado" onclick="guardarClase('justificado')">FA · Faltó con aviso</button>
                     <button type="button" class="btn btn-morado btn-estado" onclick="guardarClase('recupero')">R · Recuperó</button>
                     <button type="button" class="btn btn-light btn-estado" onclick="guardarClase('sin_marcar')">S · Sin marcar</button>
                 </div>
