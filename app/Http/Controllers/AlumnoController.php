@@ -208,7 +208,9 @@ class AlumnoController extends Controller
         // Talleres que se muestran en la columna "Taller": los de ese periodo.
         $query->with(['talleres' => fn ($qt) => $delPeriodo($qt)->with(['especialidad', 'maestro'])->orderBy('id')]);
 
-        if ($request->filled('estado')) {
+        // Sin periodo, el estado es el general del alumno; con periodo, es su
+        // estado EN ese periodo (el mismo que se ve en la columna Estado).
+        if ($request->filled('estado') && ! $request->filled('periodo_id')) {
             $query->where('activo', $request->estado === 'activo');
         }
 
@@ -218,9 +220,27 @@ class AlumnoController extends Controller
         if ($request->filled('periodo_id')) {
             $periodoId = $request->periodo_id;
 
-            if ($request->estado === 'inactivo') {
+            // Activo en el periodo (igual que la columna Estado): el mes sigue en
+            // curso, tiene ahi un taller activo, no se le dio de baja en ese mes
+            // y no paso a uno posterior. En un mes terminado nadie esta activo.
+            $periodo = Periodo::find($periodoId);
+            $finalizado = ! $periodo || $periodo->finalizado();
+            $posteriores = $periodo ? Periodo::where('fecha_inicio', '>', $periodo->fecha_inicio)->pluck('id') : collect();
+            $activoEnPeriodo = fn ($q) => $q->where('activo', true)
+                ->when($finalizado, fn ($q) => $q->whereRaw('1 = 0'))
+                ->whereHas('talleres', fn ($t) => $t->where('periodo_id', $periodoId)->where('estado', 'activo'))
+                ->whereDoesntHave('historialPeriodos', fn ($h) => $h->where('periodo_id', $periodoId)->where('estado', 'inactivo'))
+                ->when($posteriores->isNotEmpty(), fn ($q) => $q
+                    ->whereDoesntHave('talleres', fn ($t) => $t->whereIn('periodo_id', $posteriores)->where('estado', 'activo'))
+                    ->whereDoesntHave('historialPeriodos', fn ($h) => $h->whereIn('periodo_id', $posteriores)->where('estado', 'activo')));
+
+            if ($request->estado === 'activo') {
+                $query->where($activoEnPeriodo);
+            } elseif ($request->estado === 'inactivo') {
                 $query->where(fn ($q) => $q->whereHas('talleres', fn ($t) => $t->where('periodo_id', $periodoId))
-                    ->orWhereHas('historialPeriodos', fn ($h) => $h->where('periodo_id', $periodoId)));
+                    ->orWhereHas('horarios', fn ($h) => $h->where('periodo_id', $periodoId))
+                    ->orWhereHas('historialPeriodos', fn ($h) => $h->where('periodo_id', $periodoId)))
+                    ->whereNot($activoEnPeriodo);
             } else {
                 $query->where(fn ($q) => $q->whereHas('talleres', fn ($t) => $t->where('periodo_id', $periodoId)->where('estado', 'activo'))
                     ->orWhereHas('horarios', fn ($h) => $h->where('periodo_id', $periodoId)->where('activo', true))
