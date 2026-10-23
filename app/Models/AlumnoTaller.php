@@ -18,7 +18,7 @@ class AlumnoTaller extends Model
 
     protected $fillable = [
         'alumno_id', 'especialidad_id', 'maestro_id', 'periodo_id', 'salon', 'estado',
-        'veces_semana', 'monto_mensual', 'nota_mensualidad', 'fecha_inicio',
+        'veces_semana', 'monto_mensual', 'nota_mensualidad', 'fecha_inicio', 'fecha_inscripcion',
     ];
 
     /** Nota de la mensualidad antes del ultimo cambio (para actualizar la observacion del pago). */
@@ -35,7 +35,7 @@ class AlumnoTaller extends Model
 
     protected function casts(): array
     {
-        return ['veces_semana' => 'integer', 'monto_mensual' => 'decimal:2', 'fecha_inicio' => 'date:Y-m-d'];
+        return ['veces_semana' => 'integer', 'monto_mensual' => 'decimal:2', 'fecha_inicio' => 'date:Y-m-d', 'fecha_inscripcion' => 'date:Y-m-d'];
     }
 
     /**

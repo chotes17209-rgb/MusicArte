@@ -390,6 +390,7 @@ class AlumnoController extends Controller
             'monto_mensual' => 'nullable|required_with:periodo_id|numeric|min:0|max:99999',
             'nota_mensualidad' => 'nullable|string|max:255',
             'fecha_inicio' => 'nullable|date',
+            'fecha_inscripcion' => 'nullable|date',
         ], [
             'monto_mensual.required_with' => 'Escribe la mensualidad que pagará el alumno por este taller.',
         ]);
@@ -400,6 +401,7 @@ class AlumnoController extends Controller
             'maestro_id' => $data['maestro_id'] ?? null,
             'periodo_id' => $data['periodo_id'] ?? null,
             'fecha_inicio' => AlumnoTaller::validarFechaInicio($data['fecha_inicio'] ?? null, $data['periodo_id'] ?? null),
+            'fecha_inscripcion' => $data['fecha_inscripcion'] ?? now()->toDateString(),
             'estado' => 'activo',
         ] + AlumnoTaller::resolverMensualidad($data, $request->input('horarios')));
 

@@ -195,7 +195,12 @@
                         </div>
                     </div>
                     <div class="row">
-                        <div class="col-md-8 mb-2">
+                        <div class="col-md-4 mb-2">
+                            <label class="form-label small fw-semibold" for="alumno_fecha_inscripcion">Fecha de inscripción</label>
+                            <input type="date" class="form-control" id="alumno_fecha_inscripcion" value="{{ now()->toDateString() }}">
+                            <small class="text-muted">El día que se inscribió.</small>
+                        </div>
+                        <div class="col-md-4 mb-2">
                             <label class="form-label small fw-semibold">Periodo</label>
                             <select class="form-select" id="alumno_periodo_id">
                                 <option value="">-- No programar clases ahora --</option>
@@ -208,9 +213,9 @@
                             <small class="text-muted" id="alumno_periodo_duracion"></small>
                         </div>
                         <div class="col-md-4 mb-2">
-                            <label class="form-label small fw-semibold" for="alumno_fecha_inicio">Empieza el</label>
+                            <label class="form-label small fw-semibold" for="alumno_fecha_inicio">Inicio de clases</label>
                             <input type="date" class="form-control" id="alumno_fecha_inicio" disabled>
-                            <small class="text-muted">Sus clases y asistencia van desde este día.</small>
+                            <small class="text-muted">Su asistencia empieza este día.</small>
                         </div>
                     </div>
                     @include('alumnos._mensualidad', ['prefijo' => 'alumno', 'tamano' => ''])
@@ -291,6 +296,11 @@
                         </div>
                         <div class="row">
                             <div class="col-md-4 mb-2">
+                                <label class="form-label small fw-semibold" for="taller_fecha_inscripcion">Fecha de inscripción</label>
+                                <input type="date" class="form-control form-control-sm" id="taller_fecha_inscripcion">
+                                <small class="text-muted">El día que se inscribió.</small>
+                            </div>
+                            <div class="col-md-4 mb-2">
                                 <label class="form-label small fw-semibold">Periodo</label>
                                 <select class="form-select form-select-sm" id="taller_periodo_id">
                                     <option value="">-- Sin programar clases --</option>
@@ -302,16 +312,18 @@
                                 </select>
                                 <small class="text-muted" id="taller_periodo_duracion"></small>
                             </div>
-                            <div class="col-md-3 mb-2">
-                                <label class="form-label small fw-semibold" for="taller_fecha_inicio">Empieza el</label>
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label small fw-semibold" for="taller_fecha_inicio">Inicio de clases</label>
                                 <input type="date" class="form-control form-control-sm" id="taller_fecha_inicio" disabled>
-                                <small class="text-muted">Clases y asistencia desde este día.</small>
+                                <small class="text-muted">Su asistencia empieza este día.</small>
                             </div>
-                            <div class="col-md-3 mb-2">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-8 mb-2">
                                 <label class="form-label small fw-semibold">Salón</label>
                                 <input type="text" class="form-control form-control-sm" id="taller_salon">
                             </div>
-                            <div class="col-md-2 mb-2">
+                            <div class="col-md-4 mb-2">
                                 <label class="form-label small fw-semibold">Estado</label>
                                 <select class="form-select form-select-sm" id="taller_estado">
                                     <option value="activo">Activo</option>
@@ -709,6 +721,7 @@
         document.getElementById('alumno_edad').value = '';
         document.getElementById('alumno_periodo_duracion').innerText = '';
         prepararFechaInicio('alumno');
+        document.getElementById('alumno_fecha_inscripcion').value = HOY;
         for (let diaNum = 1; diaNum <= 7; diaNum++) {
             document.getElementById('alumno_dia_' + diaNum + '_inicio').disabled = true;
             document.getElementById('alumno_dia_' + diaNum + '_inicio').value = '';
@@ -798,7 +811,7 @@
             <div class="border rounded p-2 d-flex justify-content-between align-items-start">
                 <div>
                     <div class="fw-semibold">${t.especialidad?.nombre ?? 'Taller'} ${estadoBadge}</div>
-                    <div class="small text-muted">Maestro: ${t.maestro?.nombre ?? 'Sin asignar'} · Periodo: ${t.periodo?.nombre ?? 'Sin periodo'}${t.fecha_inicio ? ` · Empieza el ${String(t.fecha_inicio).substring(0, 10).split('-').reverse().slice(0, 2).join('/')}` : ''}</div>
+                    <div class="small text-muted">Maestro: ${t.maestro?.nombre ?? 'Sin asignar'} · Periodo: ${t.periodo?.nombre ?? 'Sin periodo'}${t.fecha_inscripcion ? ` · Inscrito el ${String(t.fecha_inscripcion).substring(0, 10).split('-').reverse().join('/')}` : ''}${t.fecha_inicio ? ` · Clases desde el ${String(t.fecha_inicio).substring(0, 10).split('-').reverse().slice(0, 2).join('/')}` : ''}</div>
                     <div class="small text-muted">${dias}</div>
                     <div class="small mt-1">${t.monto_mensual !== null && t.monto_mensual !== undefined
                         ? `<span class="fw-semibold">S/ ${Number(t.monto_mensual).toFixed(2)} al mes</span>${t.veces_semana ? ` · ${t.veces_semana === 1 ? '1 vez' : t.veces_semana + ' veces'} por semana` : ''}`
@@ -830,6 +843,7 @@
         document.querySelectorAll('#taller_periodo_id option[data-temporal]').forEach(o => o.remove());
         document.getElementById('taller_periodo_id').value = '';
         prepararFechaInicio('taller');
+        document.getElementById('taller_fecha_inscripcion').value = HOY;
         document.getElementById('taller_periodo_duracion').innerText = '';
         document.getElementById('taller_salon').value = '';
         document.getElementById('taller_estado').value = 'activo';
@@ -853,6 +867,7 @@
         document.getElementById('taller_maestro_id').value = t.maestro_id ?? '';
         document.getElementById('taller_salon').value = t.salon ?? '';
         document.getElementById('taller_estado').value = t.estado ?? 'activo';
+        document.getElementById('taller_fecha_inscripcion').value = t.fecha_inscripcion ? String(t.fecha_inscripcion).substring(0, 10) : '';
         if (t.periodo_id) {
             const sel = document.getElementById('taller_periodo_id');
             // Un periodo ya finalizado no esta en la lista: se agrega para no perderlo al guardar.
@@ -917,6 +932,7 @@
             maestro_id: document.getElementById('taller_maestro_id').value || null,
             periodo_id: document.getElementById('taller_periodo_id').value || null,
             fecha_inicio: fechaInicioPayload('taller'),
+            fecha_inscripcion: document.getElementById('taller_fecha_inscripcion').value || null,
             salon: document.getElementById('taller_salon').value,
             estado: document.getElementById('taller_estado').value,
             ...datosMensualidad('taller'),
@@ -1071,6 +1087,7 @@
                 Object.assign(payload, datosMensualidad('alumno'));
                 if (periodoId) payload.periodo_id = periodoId;
                 if (periodoId) payload.fecha_inicio = fechaInicioPayload('alumno');
+                payload.fecha_inscripcion = document.getElementById('alumno_fecha_inscripcion').value || null;
             }
             if (periodoId && horariosDias.length) {
                 payload.periodo_id = periodoId;

@@ -31,6 +31,7 @@ class AlumnoTallerController extends Controller
                 'maestro_id' => $data['maestro_id'] ?? null,
                 'periodo_id' => $data['periodo_id'] ?? null,
                 'fecha_inicio' => AlumnoTaller::validarFechaInicio($data['fecha_inicio'] ?? null, $data['periodo_id'] ?? null),
+                'fecha_inscripcion' => $data['fecha_inscripcion'] ?? now()->toDateString(),
                 'salon' => $data['salon'] ?? null,
                 'estado' => $data['estado'] ?? 'activo',
             ] + AlumnoTaller::resolverMensualidad($data, $request->input('horarios')));
@@ -78,7 +79,8 @@ class AlumnoTallerController extends Controller
                 'salon' => $data['salon'] ?? null,
             ] + ($request->exists('fecha_inicio')
                 ? ['fecha_inicio' => AlumnoTaller::validarFechaInicio($data['fecha_inicio'] ?? null, $data['periodo_id'] ?? null)]
-                : []) + AlumnoTaller::resolverMensualidad($data, $request->input('horarios')));
+                : []) + ($request->exists('fecha_inscripcion') ? ['fecha_inscripcion' => $data['fecha_inscripcion'] ?? null] : [])
+                + AlumnoTaller::resolverMensualidad($data, $request->input('horarios')));
             $cambioInicio = $alumnoTaller->wasChanged('fecha_inicio');
 
             if ($estadoNuevo === 'inactivo') {
@@ -198,6 +200,7 @@ class AlumnoTallerController extends Controller
             'monto_mensual' => 'nullable|required_with:periodo_id|numeric|min:0|max:99999',
             'nota_mensualidad' => 'nullable|string|max:255',
             'fecha_inicio' => 'nullable|date',
+            'fecha_inscripcion' => 'nullable|date',
         ], [
             'especialidad_id.required' => 'Selecciona el taller (especialidad).',
             'monto_mensual.required_with' => 'Escribe la mensualidad que pagará el alumno por este taller.',
