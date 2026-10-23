@@ -134,6 +134,11 @@ class Horario extends Model
         if ($desde && $desde->copy()->startOfDay()->gt($inicio)) {
             $inicio = $desde->copy()->startOfDay();
         }
+        // El alumno empezo el taller despues (se inscribio a mitad de mes).
+        $empieza = $this->alumnoTaller?->fecha_inicio;
+        if ($empieza && $empieza->copy()->startOfDay()->gt($inicio)) {
+            $inicio = $empieza->copy()->startOfDay();
+        }
         $fin = $periodo->fecha_fin->copy();
         if ($hasta && $hasta->copy()->startOfDay()->lt($fin)) {
             $fin = $hasta->copy()->startOfDay();

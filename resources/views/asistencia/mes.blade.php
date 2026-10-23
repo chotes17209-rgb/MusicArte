@@ -125,7 +125,7 @@
                         @if($t->estado !== 'activo')<span class="badge bg-secondary ms-1">Baja</span>@endif
                     </td>
                     <td>{{ $t->especialidad->nombre ?? '—' }}@if(request('maestro_id'))<div class="small text-muted">{{ $t->maestro->nombre ?? '' }}</div>@endif</td>
-                    <td class="small col-horario">{{ $f['horario'] }}</td>
+                    <td class="small col-horario">{{ $f['horario'] }}@if($t->fecha_inicio && $periodo && $t->fecha_inicio->gt($periodo->fecha_inicio))<div class="text-muted">Desde el {{ $t->fecha_inicio->format('d/m') }}</div>@endif</td>
                     @foreach($semanas as $i => $s)
                         <td class="semana">
                             @foreach($f['porSemana']->get($i, collect()) as $c)

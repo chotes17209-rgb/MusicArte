@@ -195,17 +195,22 @@
                         </div>
                     </div>
                     <div class="row">
-                        <div class="col-md-12 mb-2">
+                        <div class="col-md-8 mb-2">
                             <label class="form-label small fw-semibold">Periodo</label>
                             <select class="form-select" id="alumno_periodo_id">
                                 <option value="">-- No programar clases ahora --</option>
                                 @foreach($periodos as $p)
                                     <option value="{{ $p->id }}" data-anio="{{ $p->anio }}"
-                                        data-inicio="{{ $p->fecha_inicio->format('d/m/Y') }}"
+                                        data-inicio="{{ $p->fecha_inicio->format('d/m/Y') }}" data-inicio-iso="{{ $p->fecha_inicio->toDateString() }}" data-fin-iso="{{ $p->fecha_fin->toDateString() }}"
                                         data-fin="{{ $p->fecha_fin->format('d/m/Y') }}">{{ $p->nombre }}</option>
                                 @endforeach
                             </select>
                             <small class="text-muted" id="alumno_periodo_duracion"></small>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <label class="form-label small fw-semibold" for="alumno_fecha_inicio">Empieza el</label>
+                            <input type="date" class="form-control" id="alumno_fecha_inicio" disabled>
+                            <small class="text-muted">Sus clases y asistencia van desde este día.</small>
                         </div>
                     </div>
                     @include('alumnos._mensualidad', ['prefijo' => 'alumno', 'tamano' => ''])
@@ -285,23 +290,28 @@
                             </div>
                         </div>
                         <div class="row">
-                            <div class="col-md-5 mb-2">
+                            <div class="col-md-4 mb-2">
                                 <label class="form-label small fw-semibold">Periodo</label>
                                 <select class="form-select form-select-sm" id="taller_periodo_id">
                                     <option value="">-- Sin programar clases --</option>
                                     @foreach($periodos as $p)
                                         <option value="{{ $p->id }}" data-anio="{{ $p->anio }}"
-                                            data-inicio="{{ $p->fecha_inicio->format('d/m/Y') }}"
+                                            data-inicio="{{ $p->fecha_inicio->format('d/m/Y') }}" data-inicio-iso="{{ $p->fecha_inicio->toDateString() }}" data-fin-iso="{{ $p->fecha_fin->toDateString() }}"
                                             data-fin="{{ $p->fecha_fin->format('d/m/Y') }}">{{ $p->nombre }}</option>
                                     @endforeach
                                 </select>
                                 <small class="text-muted" id="taller_periodo_duracion"></small>
                             </div>
-                            <div class="col-md-4 mb-2">
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label small fw-semibold" for="taller_fecha_inicio">Empieza el</label>
+                                <input type="date" class="form-control form-control-sm" id="taller_fecha_inicio" disabled>
+                                <small class="text-muted">Clases y asistencia desde este día.</small>
+                            </div>
+                            <div class="col-md-3 mb-2">
                                 <label class="form-label small fw-semibold">Salón</label>
                                 <input type="text" class="form-control form-control-sm" id="taller_salon">
                             </div>
-                            <div class="col-md-3 mb-2">
+                            <div class="col-md-2 mb-2">
                                 <label class="form-label small fw-semibold">Estado</label>
                                 <select class="form-select form-select-sm" id="taller_estado">
                                     <option value="activo">Activo</option>
@@ -698,6 +708,7 @@
         document.getElementById('alumno_id').value = '';
         document.getElementById('alumno_edad').value = '';
         document.getElementById('alumno_periodo_duracion').innerText = '';
+        prepararFechaInicio('alumno');
         for (let diaNum = 1; diaNum <= 7; diaNum++) {
             document.getElementById('alumno_dia_' + diaNum + '_inicio').disabled = true;
             document.getElementById('alumno_dia_' + diaNum + '_inicio').value = '';
@@ -715,13 +726,39 @@
         const opt = this.options[this.selectedIndex];
         const txt = document.getElementById('alumno_periodo_duracion');
         txt.innerText = this.value ? `Del ${opt.dataset.inicio} al ${opt.dataset.fin}` : '';
+        prepararFechaInicio('alumno');
     });
 
     document.getElementById('taller_periodo_id').addEventListener('change', function () {
         const opt = this.options[this.selectedIndex];
         const txt = document.getElementById('taller_periodo_duracion');
         txt.innerText = this.value ? `Del ${opt.dataset.inicio} al ${opt.dataset.fin}` : '';
+        prepararFechaInicio('taller');
     });
+
+    // "Empieza el": dentro del periodo elegido. Por defecto, hoy si el periodo
+    // ya empezo (se inscribe a mitad de mes); si no, el primer dia del periodo.
+    function prepararFechaInicio(prefijo, valor = null) {
+        const sel = document.getElementById(prefijo + '_periodo_id');
+        const opt = sel.options[sel.selectedIndex];
+        const campo = document.getElementById(prefijo + '_fecha_inicio');
+        if (!sel.value || !opt?.dataset.inicioIso) {
+            campo.value = ''; campo.disabled = true; campo.removeAttribute('min'); campo.removeAttribute('max');
+            return;
+        }
+        const ini = opt.dataset.inicioIso, fin = opt.dataset.finIso;
+        campo.disabled = false; campo.min = ini; campo.max = fin;
+        const hoy = HOY;
+        campo.value = valor || (hoy > ini && hoy <= fin ? hoy : ini);
+    }
+
+    // Se envia solo si empieza despues del inicio del periodo.
+    function fechaInicioPayload(prefijo) {
+        const sel = document.getElementById(prefijo + '_periodo_id');
+        const opt = sel.options[sel.selectedIndex];
+        const valor = document.getElementById(prefijo + '_fecha_inicio').value;
+        return valor && opt?.dataset.inicioIso && valor > opt.dataset.inicioIso ? valor : null;
+    }
 
     /* ---------------------------------------------------------------
      * Seccion 3 y 4: gestion de multiples talleres por alumno.
@@ -761,7 +798,7 @@
             <div class="border rounded p-2 d-flex justify-content-between align-items-start">
                 <div>
                     <div class="fw-semibold">${t.especialidad?.nombre ?? 'Taller'} ${estadoBadge}</div>
-                    <div class="small text-muted">Maestro: ${t.maestro?.nombre ?? 'Sin asignar'} · Periodo: ${t.periodo?.nombre ?? 'Sin periodo'}</div>
+                    <div class="small text-muted">Maestro: ${t.maestro?.nombre ?? 'Sin asignar'} · Periodo: ${t.periodo?.nombre ?? 'Sin periodo'}${t.fecha_inicio ? ` · Empieza el ${String(t.fecha_inicio).substring(0, 10).split('-').reverse().slice(0, 2).join('/')}` : ''}</div>
                     <div class="small text-muted">${dias}</div>
                     <div class="small mt-1">${t.monto_mensual !== null && t.monto_mensual !== undefined
                         ? `<span class="fw-semibold">S/ ${Number(t.monto_mensual).toFixed(2)} al mes</span>${t.veces_semana ? ` · ${t.veces_semana === 1 ? '1 vez' : t.veces_semana + ' veces'} por semana` : ''}`
@@ -792,6 +829,7 @@
         document.getElementById('taller_maestro_id').value = '';
         document.querySelectorAll('#taller_periodo_id option[data-temporal]').forEach(o => o.remove());
         document.getElementById('taller_periodo_id').value = '';
+        prepararFechaInicio('taller');
         document.getElementById('taller_periodo_duracion').innerText = '';
         document.getElementById('taller_salon').value = '';
         document.getElementById('taller_estado').value = 'activo';
@@ -828,6 +866,7 @@
             }
             sel.value = t.periodo_id;
             sel.dispatchEvent(new Event('change'));
+            prepararFechaInicio('taller', t.fecha_inicio ? String(t.fecha_inicio).substring(0, 10) : sel.selectedOptions[0]?.dataset.inicioIso);
         }
         (t.horarios || []).forEach(h => {
             const cb = document.getElementById('taller_dia_' + h.dia_semana);
@@ -877,6 +916,7 @@
             especialidad_id: document.getElementById('taller_especialidad_id').value,
             maestro_id: document.getElementById('taller_maestro_id').value || null,
             periodo_id: document.getElementById('taller_periodo_id').value || null,
+            fecha_inicio: fechaInicioPayload('taller'),
             salon: document.getElementById('taller_salon').value,
             estado: document.getElementById('taller_estado').value,
             ...datosMensualidad('taller'),
@@ -1030,6 +1070,7 @@
                 payload.maestro_id = document.getElementById('alumno_maestro_id').value || null;
                 Object.assign(payload, datosMensualidad('alumno'));
                 if (periodoId) payload.periodo_id = periodoId;
+                if (periodoId) payload.fecha_inicio = fechaInicioPayload('alumno');
             }
             if (periodoId && horariosDias.length) {
                 payload.periodo_id = periodoId;

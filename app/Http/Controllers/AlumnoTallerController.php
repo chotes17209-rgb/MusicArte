@@ -30,6 +30,7 @@ class AlumnoTallerController extends Controller
                 'especialidad_id' => $data['especialidad_id'],
                 'maestro_id' => $data['maestro_id'] ?? null,
                 'periodo_id' => $data['periodo_id'] ?? null,
+                'fecha_inicio' => AlumnoTaller::validarFechaInicio($data['fecha_inicio'] ?? null, $data['periodo_id'] ?? null),
                 'salon' => $data['salon'] ?? null,
                 'estado' => $data['estado'] ?? 'activo',
             ] + AlumnoTaller::resolverMensualidad($data, $request->input('horarios')));
@@ -75,7 +76,10 @@ class AlumnoTallerController extends Controller
                 'maestro_id' => $data['maestro_id'] ?? null,
                 'periodo_id' => $data['periodo_id'] ?? null,
                 'salon' => $data['salon'] ?? null,
-            ] + AlumnoTaller::resolverMensualidad($data, $request->input('horarios')));
+            ] + ($request->exists('fecha_inicio')
+                ? ['fecha_inicio' => AlumnoTaller::validarFechaInicio($data['fecha_inicio'] ?? null, $data['periodo_id'] ?? null)]
+                : []) + AlumnoTaller::resolverMensualidad($data, $request->input('horarios')));
+            $cambioInicio = $alumnoTaller->wasChanged('fecha_inicio');
 
             if ($estadoNuevo === 'inactivo') {
                 // Pasarlo a inactivo es lo mismo que darlo de baja.
@@ -90,6 +94,9 @@ class AlumnoTallerController extends Controller
 
             if ($request->filled('horarios')) {
                 HorarioService::generar($alumnoTaller, $request->input('horarios'));
+            }
+            if ($cambioInicio) {
+                $alumnoTaller->aplicarFechaInicio();
             }
 
             $alumnoTaller->sincronizarPago();
@@ -190,6 +197,7 @@ class AlumnoTallerController extends Controller
             'veces_semana' => 'nullable|integer|between:1,7',
             'monto_mensual' => 'nullable|required_with:periodo_id|numeric|min:0|max:99999',
             'nota_mensualidad' => 'nullable|string|max:255',
+            'fecha_inicio' => 'nullable|date',
         ], [
             'especialidad_id.required' => 'Selecciona el taller (especialidad).',
             'monto_mensual.required_with' => 'Escribe la mensualidad que pagará el alumno por este taller.',

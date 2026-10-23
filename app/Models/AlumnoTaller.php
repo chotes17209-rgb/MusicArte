@@ -18,7 +18,7 @@ class AlumnoTaller extends Model
 
     protected $fillable = [
         'alumno_id', 'especialidad_id', 'maestro_id', 'periodo_id', 'salon', 'estado',
-        'veces_semana', 'monto_mensual', 'nota_mensualidad',
+        'veces_semana', 'monto_mensual', 'nota_mensualidad', 'fecha_inicio',
     ];
 
     /** Nota de la mensualidad antes del ultimo cambio (para actualizar la observacion del pago). */
@@ -35,7 +35,43 @@ class AlumnoTaller extends Model
 
     protected function casts(): array
     {
-        return ['veces_semana' => 'integer', 'monto_mensual' => 'decimal:2'];
+        return ['veces_semana' => 'integer', 'monto_mensual' => 'decimal:2', 'fecha_inicio' => 'date:Y-m-d'];
+    }
+
+    /**
+     * Valida la fecha desde la que empieza el taller: debe estar dentro de
+     * su periodo. Devuelve la fecha (Y-m-d) o null si no se indico.
+     */
+    public static function validarFechaInicio(?string $fecha, $periodoId): ?string
+    {
+        if (blank($fecha)) {
+            return null;
+        }
+        $periodo = $periodoId ? Periodo::find($periodoId) : null;
+        $dia = \Carbon\Carbon::parse($fecha)->startOfDay();
+        if ($periodo && ($dia->lt($periodo->fecha_inicio) || $dia->gt($periodo->fecha_fin))) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'fecha_inicio' => 'La fecha de inicio debe estar dentro del periodo ('
+                    .$periodo->fecha_inicio->format('d/m').' al '.$periodo->fecha_fin->format('d/m').').',
+            ]);
+        }
+
+        return $dia->toDateString();
+    }
+
+    /**
+     * Ajusta las clases a la fecha de inicio: quita las que quedaron antes
+     * (solo las sin marcar) y crea las que falten desde ese dia.
+     */
+    public function aplicarFechaInicio(): void
+    {
+        if ($this->fecha_inicio) {
+            $this->clases()->where('estado', 'programada')->whereDoesntHave('asistencia')
+                ->whereDate('fecha', '<', $this->fecha_inicio->toDateString())->delete();
+        }
+        if ($this->estado === 'activo') {
+            $this->horarios()->where('activo', true)->get()->each(fn ($h) => $h->generarClases());
+        }
     }
 
     public function modalidadLabel(): ?string
