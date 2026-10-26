@@ -109,70 +109,102 @@ class AsistenciaController extends Controller
         $maestros = Maestro::where('activo', true)->orderBy('nombre')->get();
         $especialidades = \App\Models\Especialidad::orderBy('nombre')->get();
 
-        $filas = collect();
-        $semanas = [];
-        if ($periodo) {
-            // Semanas del periodo (de lunes a domingo).
-            $inicioSemana = $periodo->fecha_inicio->copy()->startOfWeek();
-            for ($d = $inicioSemana->copy(); $d->lte($periodo->fecha_fin); $d->addWeek()) {
-                $semanas[] = ['desde' => $d->copy()->max($periodo->fecha_inicio), 'hasta' => $d->copy()->endOfWeek()->min($periodo->fecha_fin)];
-            }
-
-            $talleres = AlumnoTaller::with(['alumno', 'especialidad', 'maestro',
-                'horarios' => fn ($q) => $q->where('periodo_id', $periodo->id)->orderBy('dia_semana')])
-                // Talleres del periodo, y tambien los que tienen clases de este
-                // periodo aunque el taller ya se haya pasado al mes siguiente.
-                ->where(fn ($q) => $q->where(fn ($p) => $p->where('periodo_id', $periodo->id)
-                        ->where(fn ($e) => $e->where('estado', 'activo')->orWhereHas('clases', fn ($c) => $c->whereHas('asistencia'))))
-                    ->orWhereHas('clases', fn ($c) => $c->where('periodo_id', $periodo->id)
-                        ->whereDate('fecha', '>=', $periodo->fecha_inicio->toDateString())
-                        ->whereDate('fecha', '<=', $periodo->fecha_fin->toDateString())))
-                ->when($request->filled('maestro_id'), fn ($q) => $q->where('maestro_id', $request->maestro_id))
-                ->when($request->filled('especialidad_id'), fn ($q) => $q->where('especialidad_id', $request->especialidad_id))
-                ->get();
-
-            // Solo las clases dentro de las fechas del periodo: un taller que
-            // viene de meses anteriores tambien tiene guardadas esas clases.
-            $clases = Clase::with('asistencia')->sinBajas()
-                ->whereIn('alumno_taller_id', $talleres->pluck('id'))
-                ->whereDate('fecha', '>=', $periodo->fecha_inicio->toDateString())
-                ->whereDate('fecha', '<=', $periodo->fecha_fin->toDateString())
-                ->orderBy('fecha')->orderBy('hora_inicio')
-                ->get()->groupBy('alumno_taller_id');
-
-            $ultimaSemana = count($semanas) - 1;
-            $filas = $talleres->map(function ($t) use ($clases, $inicioSemana, $ultimaSemana) {
-                $suyas = $clases->get($t->id, collect());
-                $activos = $t->horarios->where('activo', true);
-                $hs = $activos->isNotEmpty() ? $activos : $t->horarios;
-                $dias = $hs->map(fn ($h) => $h->diaLabel())->unique()->values();
-                $horas = $hs->map(fn ($h) => \Carbon\Carbon::parse($h->hora_inicio)->format('g:i a'))->unique();
-
-                return [
-                    'taller' => $t,
-                    'horario' => $dias->isEmpty() ? '—'
-                        : ($dias->count() > 1 ? $dias->slice(0, -1)->implode(', ').' y '.$dias->last() : $dias->first())
-                          .' '.($horas->count() === 1 ? $horas->first() : ''),
-                    'porSemana' => $suyas->groupBy(fn ($c) => max(0, min($ultimaSemana, (int) floor($inicioSemana->diffInDays($c->fecha->copy()->startOfDay(), false) / 7)))),
-                    'asistio' => $suyas->filter(fn ($c) => in_array($c->asistencia?->estado, Asistencia::PRESENTES))->count(),
-                    'faltas' => $suyas->filter(fn ($c) => in_array($c->asistencia?->estado, ['falto', 'justificado']))->count(),
-                    'recupero' => $suyas->filter(fn ($c) => $c->asistencia?->estado === 'recupero')->count(),
-                    'sinMarcar' => $suyas->filter(fn ($c) => ! $c->asistencia && $c->fecha->lt(today()))->count(),
-                ];
-            })
-                ->when($request->filled('buscar'), function ($f) use ($request) {
-                    $q = mb_strtolower(\Illuminate\Support\Str::ascii(trim($request->buscar)));
-
-                    return $f->filter(fn ($x) => str_contains(mb_strtolower(\Illuminate\Support\Str::ascii($x['taller']->alumno->nombre ?? '')), $q));
-                })
-                ->when($request->boolean('con_faltas'), fn ($f) => $f->filter(fn ($x) => $x['faltas'] > 0))
-                ->sortBy([
-                    fn ($a, $b) => strcmp($a['taller']->maestro->nombre ?? '~', $b['taller']->maestro->nombre ?? '~'),
-                    fn ($a, $b) => strcmp($a['taller']->alumno->nombre ?? '', $b['taller']->alumno->nombre ?? ''),
-                ])->values();
-        }
+        [$semanas, $filas] = $periodo ? $this->datosMes($request, $periodo) : [[], collect()];
 
         return view('asistencia.mes', compact('periodos', 'periodo', 'maestros', 'especialidades', 'filas', 'semanas'));
+    }
+
+    /**
+     * Excel para que cada maestro lleve la asistencia del mes: una hoja por
+     * maestro con sus alumnos y las fechas de clase del periodo.
+     */
+    public function excelMaestros(Request $request)
+    {
+        $periodo = Periodo::find($request->get('periodo_id')) ?? Periodo::enCurso();
+        abort_unless($periodo, 404);
+
+        [, $filas] = $this->datosMes($request, $periodo);
+        $libro = \App\Services\ListaAsistenciaExcel::generar($periodo, $filas);
+
+        $maestro = $request->filled('maestro_id') ? Maestro::find($request->maestro_id)?->nombre : null;
+        $archivo = 'Asistencia '.$periodo->nombre.($maestro ? ' - '.$maestro : '').'.xlsx';
+
+        return response()->streamDownload(function () use ($libro) {
+            (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($libro))->save('php://output');
+        }, $archivo, ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']);
+    }
+
+    /**
+     * Filas de la asistencia del mes: una por alumno y taller con sus clases
+     * del periodo (la usan la pantalla y el Excel para los maestros).
+     *
+     * @return array{0: array, 1: \Illuminate\Support\Collection}
+     */
+    private function datosMes(Request $request, Periodo $periodo): array
+    {
+        $semanas = [];
+        // Semanas del periodo (de lunes a domingo).
+        $inicioSemana = $periodo->fecha_inicio->copy()->startOfWeek();
+        for ($d = $inicioSemana->copy(); $d->lte($periodo->fecha_fin); $d->addWeek()) {
+            $semanas[] = ['desde' => $d->copy()->max($periodo->fecha_inicio), 'hasta' => $d->copy()->endOfWeek()->min($periodo->fecha_fin)];
+        }
+
+        $talleres = AlumnoTaller::with(['alumno', 'especialidad', 'maestro',
+            'horarios' => fn ($q) => $q->where('periodo_id', $periodo->id)->orderBy('dia_semana')])
+            // Talleres del periodo, y tambien los que tienen clases de este
+            // periodo aunque el taller ya se haya pasado al mes siguiente.
+            ->where(fn ($q) => $q->where(fn ($p) => $p->where('periodo_id', $periodo->id)
+                    ->where(fn ($e) => $e->where('estado', 'activo')->orWhereHas('clases', fn ($c) => $c->whereHas('asistencia'))))
+                ->orWhereHas('clases', fn ($c) => $c->where('periodo_id', $periodo->id)
+                    ->whereDate('fecha', '>=', $periodo->fecha_inicio->toDateString())
+                    ->whereDate('fecha', '<=', $periodo->fecha_fin->toDateString())))
+            ->when($request->filled('maestro_id'), fn ($q) => $q->where('maestro_id', $request->maestro_id))
+            ->when($request->filled('especialidad_id'), fn ($q) => $q->where('especialidad_id', $request->especialidad_id))
+            ->get();
+
+        // Solo las clases dentro de las fechas del periodo: un taller que
+        // viene de meses anteriores tambien tiene guardadas esas clases.
+        $clases = Clase::with('asistencia')->sinBajas()
+            ->whereIn('alumno_taller_id', $talleres->pluck('id'))
+            ->whereDate('fecha', '>=', $periodo->fecha_inicio->toDateString())
+            ->whereDate('fecha', '<=', $periodo->fecha_fin->toDateString())
+            ->orderBy('fecha')->orderBy('hora_inicio')
+            ->get()->groupBy('alumno_taller_id');
+
+        $ultimaSemana = count($semanas) - 1;
+        $filas = $talleres->map(function ($t) use ($clases, $inicioSemana, $ultimaSemana) {
+            $suyas = $clases->get($t->id, collect());
+            $activos = $t->horarios->where('activo', true);
+            $hs = $activos->isNotEmpty() ? $activos : $t->horarios;
+            $dias = $hs->map(fn ($h) => $h->diaLabel())->unique()->values();
+            $horas = $hs->map(fn ($h) => \Carbon\Carbon::parse($h->hora_inicio)->format('g:i a'))->unique();
+
+            return [
+                'taller' => $t,
+                'clases' => $suyas,
+                'orden' => ($hs->min('dia_semana') ?? 9).' '.($hs->sortBy('dia_semana')->first()?->hora_inicio ?? '99'),
+                'horario' => $dias->isEmpty() ? '—'
+                    : ($dias->count() > 1 ? $dias->slice(0, -1)->implode(', ').' y '.$dias->last() : $dias->first())
+                      .' '.($horas->count() === 1 ? $horas->first() : ''),
+                'porSemana' => $suyas->groupBy(fn ($c) => max(0, min($ultimaSemana, (int) floor($inicioSemana->diffInDays($c->fecha->copy()->startOfDay(), false) / 7)))),
+                'asistio' => $suyas->filter(fn ($c) => in_array($c->asistencia?->estado, Asistencia::PRESENTES))->count(),
+                'faltas' => $suyas->filter(fn ($c) => in_array($c->asistencia?->estado, ['falto', 'justificado']))->count(),
+                'recupero' => $suyas->filter(fn ($c) => $c->asistencia?->estado === 'recupero')->count(),
+                'sinMarcar' => $suyas->filter(fn ($c) => ! $c->asistencia && $c->fecha->lt(today()))->count(),
+            ];
+        })
+            ->when($request->filled('buscar'), function ($f) use ($request) {
+                $q = mb_strtolower(\Illuminate\Support\Str::ascii(trim($request->buscar)));
+
+                return $f->filter(fn ($x) => str_contains(mb_strtolower(\Illuminate\Support\Str::ascii($x['taller']->alumno->nombre ?? '')), $q));
+            })
+            ->when($request->boolean('con_faltas'), fn ($f) => $f->filter(fn ($x) => $x['faltas'] > 0))
+            ->sortBy([
+                fn ($a, $b) => strcmp($a['taller']->maestro->nombre ?? '~', $b['taller']->maestro->nombre ?? '~'),
+                fn ($a, $b) => strcmp($a['taller']->alumno->nombre ?? '', $b['taller']->alumno->nombre ?? ''),
+            ])->values();
+
+        return [$semanas, $filas];
     }
 
     /**

@@ -38,6 +38,8 @@
     $totalFaltas = $filas->sum('faltas');
 @endphp
 <x-page-head titulo="Asistencia del mes" subtitulo="Todas las clases del periodo por alumno y semana. Toca una fecha para marcarla o agregar una nota.">
+    <a href="{{ route('asistencia.mes.excel', array_filter(['periodo_id' => $periodo?->id, 'maestro_id' => request('maestro_id'), 'especialidad_id' => request('especialidad_id')])) }}"
+       class="btn btn-morado" data-sin-ventana><i class="bi bi-file-earmark-excel me-1"></i> Excel para maestros</a>
     <a href="{{ route('asistencia.index') }}" class="btn btn-light"><i class="bi bi-calendar-day me-1"></i> Asistencia del día</a>
 </x-page-head>
 

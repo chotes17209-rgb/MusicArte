@@ -92,6 +92,7 @@ Route::middleware('auth')->group(function () {
     // ---------------------------------------------------------------
     Route::get('/asistencia', [AsistenciaController::class, 'index'])->name('asistencia.index');
     Route::get('/asistencia/mes', [AsistenciaController::class, 'mes'])->name('asistencia.mes');
+    Route::get('/asistencia/mes/excel', [AsistenciaController::class, 'excelMaestros'])->name('asistencia.mes.excel');
     Route::post('/asistencia/{clase}', [AsistenciaController::class, 'marcar'])->name('asistencia.marcar');
 
     // ---------------------------------------------------------------

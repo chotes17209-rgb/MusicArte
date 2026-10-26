@@ -68,5 +68,41 @@
             </div>
         </a>
     </div>
+    @php
+        $periodosExcel = \App\Models\Periodo::orderByDesc('fecha_inicio')->get();
+        $periodoExcel = \App\Models\Periodo::seleccionado();
+        $maestrosExcel = \App\Models\Maestro::where('activo', true)->orderBy('nombre')->get();
+    @endphp
+    <div class="col-md-8">
+        <div class="card p-3 h-100">
+            <div class="d-flex gap-3 align-items-start">
+                <div class="kpi-icon"><i class="bi bi-file-earmark-excel"></i></div>
+                <div class="flex-grow-1">
+                    <h6 class="fw-semibold mb-1">Lista de asistencia por maestro (Excel)</h6>
+                    <small class="text-muted d-block mb-2">Una hoja por maestro con sus alumnos y las fechas de clase del mes, para que lleve la asistencia.</small>
+                    <form method="GET" action="{{ route('asistencia.mes.excel') }}" class="row g-2" data-sin-ventana>
+                        <div class="col-sm-5">
+                            <select name="periodo_id" class="form-select form-select-sm" aria-label="Periodo">
+                                @foreach($periodosExcel as $p)
+                                    <option value="{{ $p->id }}" @selected($periodoExcel?->id == $p->id)>{{ $p->nombre }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-sm-4">
+                            <select name="maestro_id" class="form-select form-select-sm" aria-label="Maestro">
+                                <option value="">Todos los maestros</option>
+                                @foreach($maestrosExcel as $m)
+                                    <option value="{{ $m->id }}">{{ $m->nombre }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-sm-3 d-grid">
+                            <button type="submit" class="btn btn-sm btn-morado"><i class="bi bi-download me-1"></i> Descargar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection
