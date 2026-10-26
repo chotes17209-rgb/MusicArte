@@ -37,6 +37,8 @@ class MaestroController extends Controller
             $horarios = \App\Models\Horario::with(['alumno', 'especialidad'])
                 ->where('maestro_id', $maestro->id)
                 ->where('periodo_id', $periodo->id)
+                // Solo los horarios vigentes: el de un alumno que se quito deja la hora libre.
+                ->where('activo', true)
                 ->orderBy('dia_semana')->orderBy('hora_inicio')
                 ->get();
         }
