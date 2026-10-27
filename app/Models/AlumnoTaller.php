@@ -132,6 +132,21 @@ class AlumnoTaller extends Model
         }
     }
 
+    /**
+     * Saca el taller de su periodo porque el alumno se incluyo ahi por error:
+     * se cancelan todas sus clases sin marcar y se quita su mensualidad sin
+     * abonos (queda en "Pagos eliminados", se puede recuperar). Lo ya marcado
+     * y los abonos no se tocan.
+     */
+    public function quitarDelPeriodo(): void
+    {
+        $this->update(['estado' => 'inactivo']);
+        $this->horarios()->update(['activo' => false]);
+        $this->clases()->where('estado', 'programada')->whereDoesntHave('asistencia')
+            ->update(['estado' => 'cancelada']);
+        $this->pagos()->whereDoesntHave('abonos')->get()->each->delete();
+    }
+
     /** Tiene historial que no se debe borrar: asistencias marcadas o abonos. */
     public function tieneHistorial(): bool
     {

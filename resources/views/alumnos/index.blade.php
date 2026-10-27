@@ -1108,8 +1108,43 @@
         }
     }
 
+    // Saca al alumno solo del periodo filtrado (se incluyo por error). No lo borra.
+    async function quitarDelPeriodo(id, nombre) {
+        const sel = document.getElementById('filtro_periodo_id');
+        const periodoId = sel?.value;
+        const periodo = sel?.selectedOptions[0]?.textContent.trim() || 'este periodo';
+        if (!periodoId) return;
+        const r = await Swal.fire({
+            icon: 'question',
+            title: `¿Quitar de ${periodo}?`,
+            html: `<div class="text-start"><b>${maEscapar(nombre)}</b> dejará de estar en <b>${maEscapar(periodo)}</b>:
+                   <ul class="mt-2 mb-0 small"><li>Sus clases sin marcar de ese mes se cancelan y su mensualidad sin pagar se quita.</li>
+                   <li>Lo ya marcado y lo ya pagado se conserva.</li>
+                   <li>No se borra del sistema ni se tocan los otros meses.</li></ul></div>`,
+            showCancelButton: true, reverseButtons: true, focusCancel: true,
+            confirmButtonText: 'Sí, quitar de este periodo', cancelButtonText: 'Cancelar',
+        });
+        if (!r.isConfirmed) return;
+        const res = await maFetch(`/alumnos/${id}/quitar-periodo`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ periodo_id: periodoId }),
+        });
+        if (res && res.ok) {
+            maToast('success', res.message);
+            buscarAlumnosReactivo();
+        }
+    }
+
     async function eliminarAlumno(id, nombre) {
-        if (!(await maConfirmarEliminar(nombre))) return;
+        const r = await Swal.fire({
+            icon: 'warning',
+            title: '¿Eliminar del sistema?',
+            html: `<div class="text-start">Se borrará <b>${maEscapar(nombre)}</b> con <b>todo su historial</b> (talleres, asistencias y pagos de todos los meses). <b>No se puede deshacer.</b>
+                   <div class="small text-muted mt-2">Si solo lo incluiste por error en un mes, usa <b>«Quitar del periodo»</b>.</div></div>`,
+            showCancelButton: true, reverseButtons: true, focusCancel: true,
+            confirmButtonText: 'Sí, eliminar todo', cancelButtonText: 'Cancelar', confirmButtonColor: '#b42318',
+        });
+        if (!r.isConfirmed) return;
         const res = await maFetch(`/alumnos/${id}`, { method: 'DELETE' });
         if (res && res.ok) {
             maToast('success', res.message);

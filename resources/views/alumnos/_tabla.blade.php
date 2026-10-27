@@ -40,7 +40,10 @@
                 <td class="text-end">
                     <a href="{{ route('alumnos.show', $a) }}" class="btn btn-sm btn-light btn-icon" title="Ver perfil e historial"><i class="bi bi-eye"></i></a>
                     <button class="btn btn-sm btn-light btn-icon" onclick="editarAlumno({{ $a->id }})" title="Editar"><i class="bi bi-pencil"></i></button>
-                    <button class="btn btn-sm btn-light btn-icon text-danger" onclick="eliminarAlumno({{ $a->id }}, '{{ $a->nombre }}')" title="Eliminar"><i class="bi bi-trash"></i></button>
+                    @if(request('periodo_id') && ($estados[$a->id]['texto'] ?? null) === 'Activo')
+                        <button class="btn btn-sm btn-light btn-icon text-warning-emphasis" onclick="quitarDelPeriodo({{ $a->id }}, @js($a->nombre))" title="Quitar solo de este periodo (si se incluyó por error)"><i class="bi bi-calendar-x"></i></button>
+                    @endif
+                    <button class="btn btn-sm btn-light btn-icon text-danger" onclick="eliminarAlumno({{ $a->id }}, @js($a->nombre))" title="Eliminar"><i class="bi bi-trash"></i></button>
                 </td>
             </tr>
         @empty

@@ -361,6 +361,35 @@ class AlumnoController extends Controller
         return response()->json(['ok' => true, 'message' => $mensaje, 'data' => $alumno->fresh()]);
     }
 
+    /**
+     * "Quitar del periodo": el alumno se incluyo en un periodo por error. Sale
+     * de ese periodo (sus talleres de ahi se dan de baja) sin borrarlo del
+     * sistema ni tocar los demas periodos.
+     */
+    public function quitarDelPeriodo(Request $request, Alumno $alumno)
+    {
+        $data = $request->validate(['periodo_id' => 'required|exists:periodos,id']);
+        $periodo = Periodo::find($data['periodo_id']);
+
+        $talleres = $alumno->talleres()->where('periodo_id', $periodo->id)->where('estado', 'activo')->get();
+        DB::transaction(function () use ($alumno, $periodo, $talleres) {
+            $talleres->each->quitarDelPeriodo();
+            $alumno->sincronizarEstadoPeriodo($periodo->id);
+
+            // Si ya no estudia en ningun periodo vigente, queda inactivo.
+            if (Periodo::alumnosConPeriodoVigente(collect([$alumno->id]))->isEmpty() && $alumno->activo) {
+                $alumno->forceFill(['activo' => false])->saveQuietly();
+            }
+            $alumno->sincronizarTallerPrincipal();
+        });
+
+        return response()->json([
+            'ok' => true,
+            'message' => "{$alumno->nombre} ya no está en {$periodo->nombre}"
+                .($talleres->count() ? ' ('.$talleres->count().' '.($talleres->count() === 1 ? 'taller' : 'talleres').' dado(s) de baja).' : '.'),
+        ]);
+    }
+
     public function destroy(Alumno $alumno)
     {
         // Al eliminar el alumno se eliminan en cascada sus talleres,

@@ -252,6 +252,7 @@
         .table .btn-icon:has(.bi-eye)::after { content: "Ver"; }
         .table .btn-icon:has(.bi-pencil)::after { content: "Editar"; }
         .table .btn-icon:has(.bi-trash)::after { content: "Eliminar"; }
+        .table .btn-icon:has(.bi-calendar-x)::after { content: "Quitar del periodo"; }
         .table .btn-icon:has(.bi-cash-stack)::after { content: "Abonos"; }
         .table .btn-icon:has(.bi-file-earmark-pdf)::after { content: "PDF"; }
         .table .btn-icon:has(.bi-trash) { color: var(--rojo) !important; border-color: #f0cfcb; }
