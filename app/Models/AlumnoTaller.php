@@ -118,10 +118,15 @@ class AlumnoTaller extends Model
     {
         $this->update(['estado' => 'inactivo']);
         $this->horarios()->update(['activo' => false]);
+        // Solo se cancelan las clases que faltan (de hoy en adelante): las
+        // pasadas son parte de su historial aunque no se hayan marcado.
         $this->clases()->where('estado', 'programada')->whereDoesntHave('asistencia')
+            ->whereDate('fecha', '>=', now()->toDateString())
             ->update(['estado' => 'cancelada']);
 
-        $tuvoClases = $this->clases()->where(fn ($q) => $q->where('estado', 'realizada')->orWhereHas('asistencia'))->exists();
+        // La mensualidad se quita solo si no llego a tener ninguna clase.
+        $tuvoClases = $this->clases()->where(fn ($q) => $q->where('estado', 'realizada')->orWhereHas('asistencia')
+            ->orWhereDate('fecha', '<', now()->toDateString()))->where('estado', '!=', 'cancelada')->exists();
         if (! $tuvoClases) {
             $this->pagos()->whereDoesntHave('abonos')->delete();
         }
