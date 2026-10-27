@@ -153,9 +153,13 @@ class AsistenciaController extends Controller
             'horarios' => fn ($q) => $q->where('periodo_id', $periodo->id)->orderBy('dia_semana')])
             // Talleres del periodo, y tambien los que tienen clases de este
             // periodo aunque el taller ya se haya pasado al mes siguiente.
-            ->where(fn ($q) => $q->where(fn ($p) => $p->where('periodo_id', $periodo->id)
-                    ->where(fn ($e) => $e->where('estado', 'activo')->orWhereHas('clases', fn ($c) => $c->whereHas('asistencia'))))
+            // Uno dado de baja solo sale si tuvo clases dictadas o con asistencia ese mes.
+            ->where(fn ($q) => $q->where('periodo_id', $periodo->id)
                 ->orWhereHas('clases', fn ($c) => $c->where('periodo_id', $periodo->id)
+                    ->whereDate('fecha', '>=', $periodo->fecha_inicio->toDateString())
+                    ->whereDate('fecha', '<=', $periodo->fecha_fin->toDateString())))
+            ->where(fn ($q) => $q->where('estado', 'activo')
+                ->orWhereHas('clases', fn ($c) => $c->where(fn ($m) => $m->where('estado', 'realizada')->orWhereHas('asistencia'))
                     ->whereDate('fecha', '>=', $periodo->fecha_inicio->toDateString())
                     ->whereDate('fecha', '<=', $periodo->fecha_fin->toDateString())))
             ->when($request->filled('maestro_id'), fn ($q) => $q->where('maestro_id', $request->maestro_id))

@@ -54,9 +54,12 @@ class Clase extends Model
      */
     public function scopeSinBajas($query)
     {
-        return $query->where(fn ($q) => $q->where('estado', '!=', 'cancelada')
-            ->orWhereNull('alumno_taller_id')
-            ->orWhereHas('alumnoTaller', fn ($t) => $t->where('estado', 'activo')));
+        // De un taller dado de baja solo se ve lo que si paso (clase dictada
+        // o asistencia marcada); lo demas no es parte del periodo.
+        return $query->where(fn ($q) => $q->whereNull('alumno_taller_id')
+            ->orWhereHas('alumnoTaller', fn ($t) => $t->where('estado', 'activo'))
+            ->orWhere(fn ($c) => $c->where('estado', '!=', 'cancelada')
+                ->where(fn ($m) => $m->where('estado', 'realizada')->orWhereHas('asistencia'))));
     }
 
     /**
