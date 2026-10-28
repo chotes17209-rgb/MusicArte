@@ -83,6 +83,14 @@ class AlumnoTallerController extends Controller
                 + AlumnoTaller::resolverMensualidad($data, $request->input('horarios')));
             $cambioInicio = $alumnoTaller->wasChanged('fecha_inicio');
 
+            // Si el taller cambio de periodo, el horario del periodo anterior deja
+            // de valer (si no, seguia creando clases y el alumno salia repetido).
+            if ($alumnoTaller->wasChanged('periodo_id')) {
+                $alumnoTaller->horarios()->where('activo', true)
+                    ->where(fn ($q) => $q->where('periodo_id', '!=', $alumnoTaller->periodo_id)->orWhereNull('periodo_id'))
+                    ->get()->each(fn ($h) => $h->update(['activo' => false]));
+            }
+
             if ($estadoNuevo === 'inactivo') {
                 // Pasarlo a inactivo es lo mismo que darlo de baja.
                 $alumnoTaller->darDeBaja();
