@@ -21,10 +21,10 @@ return new class extends Migration
         Log::info('REPETIDAS total grupos: '.$repetidas->count());
 
         foreach ($repetidas->groupBy('alumno_id') as $alumnoId => $grupos) {
-            $clases = DB::table('clases')->where('alumno_id', $alumnoId)
-                ->whereIn(DB::raw('CAST(fecha AS DATE)'), $grupos->pluck('dia'))
+            $clases = DB::table('clases')->where('clases.alumno_id', $alumnoId)
+                ->whereIn(DB::raw('CAST(clases.fecha AS DATE)'), $grupos->pluck('dia'))
                 ->leftJoin('asistencias', 'asistencias.clase_id', '=', 'clases.id')
-                ->orderBy('fecha')->get(['clases.id', 'clases.fecha', 'clases.hora_inicio', 'clases.estado', 'clases.alumno_taller_id', 'clases.horario_id', 'clases.periodo_id', 'asistencias.estado as a']);
+                ->orderBy('clases.fecha')->get(['clases.id', 'clases.fecha', 'clases.hora_inicio', 'clases.estado', 'clases.alumno_taller_id', 'clases.horario_id', 'clases.periodo_id', 'asistencias.estado as a']);
             $talleres = DB::table('alumno_talleres')->whereIn('id', $clases->pluck('alumno_taller_id')->filter()->unique())
                 ->get(['id', 'periodo_id', 'especialidad_id', 'maestro_id', 'estado', 'created_at']);
             $horarios = DB::table('horarios')->whereIn('id', $clases->pluck('horario_id')->filter()->unique())
