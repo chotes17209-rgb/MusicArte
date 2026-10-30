@@ -17,7 +17,7 @@ use Symfony\Component\HttpFoundation\Response;
 class EnsurePagosAuth
 {
     /** Minutos que dura la confirmacion antes de volver a pedirla. */
-    const MINUTOS_VIGENCIA = 20;
+    const MINUTOS_VIGENCIA = 240;
 
     public function handle(Request $request, Closure $next): Response
     {

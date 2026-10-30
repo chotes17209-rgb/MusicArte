@@ -74,7 +74,7 @@
                 <input type="password" name="password" id="password" class="form-control" required autocomplete="current-password">
             </div>
             <div class="form-check mb-3">
-                <input class="form-check-input" type="checkbox" name="remember" id="remember">
+                <input class="form-check-input" type="checkbox" name="remember" id="remember" checked>
                 <label class="form-check-label" for="remember">Mantener la sesión iniciada</label>
             </div>
             <button type="submit" class="btn btn-ingresar w-100">Ingresar</button>
