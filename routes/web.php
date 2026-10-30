@@ -41,6 +41,10 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 */
 Route::middleware('auth')->group(function () {
 
+    // Mantiene viva la sesion mientras la pagina esta abierta y entrega la
+    // llave de seguridad (CSRF) vigente.
+    Route::get('/sesion/ping', fn () => response()->json(['ok' => true, 'token' => csrf_token()]))->name('sesion.ping');
+
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // ---------------------------------------------------------------

@@ -733,7 +733,26 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
 
 <script>
-    const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').content;
+    let CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').content;
+
+    // Mientras la pagina esta abierta: cada 4 minutos se avisa al servidor
+    // (asi no se duerme ni vence la sesion) y se renueva la llave de seguridad.
+    async function _maRenovarSesion() {
+        try {
+            const r = await fetch('{{ route('sesion.ping') }}', { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' });
+            if (r.status === 401) return 'sin_sesion';
+            const d = await r.json();
+            if (d.token) {
+                CSRF_TOKEN = d.token;
+                document.querySelector('meta[name="csrf-token"]').content = d.token;
+                document.querySelectorAll('input[name="_token"]').forEach(i => i.value = d.token);
+            }
+            return true;
+        } catch (e) { return false; }
+    }
+    setInterval(_maRenovarSesion, 4 * 60 * 1000);
+    // Al volver a la pestaña despues de un rato, se renueva enseguida.
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) _maRenovarSesion(); });
 
     // ---------- Helpers globales de UI (toasts, confirmaciones, fetch AJAX) ----------
     // ---------- Notificaciones (toasts) ----------
@@ -807,8 +826,28 @@
         const metodo = (options.method || 'GET').toUpperCase();
         const esperas = [250, 600]; // ms antes de cada reintento
 
+        // Si el servidor estaba dormido tarda en responder: se avisa en vez de parecer colgado.
+        const avisoLento = setTimeout(() => maToast('info', 'El sistema se está activando, espera unos segundos…', 'Un momento'), 4000);
+
         try {
             let res = await fetch(url, options);
+
+            // La llave de seguridad vencio (pagina abierta mucho rato): se renueva y se reintenta una vez.
+            let sinSesion = false;
+            if (res.status === 419) {
+                const renovada = await _maRenovarSesion();
+                if (renovada === true) {
+                    options.headers['X-CSRF-TOKEN'] = CSRF_TOKEN;
+                    res = await fetch(url, options);
+                }
+                sinSesion = renovada === 'sin_sesion';
+            }
+            // La sesion termino: hay que volver a entrar.
+            if (res.status === 401 || sinSesion) {
+                await Swal.fire({ icon: 'info', title: 'Tu sesión terminó', text: 'Vuelve a iniciar sesión para continuar.', confirmButtonText: 'Entrar' });
+                location.href = '{{ route('login') }}';
+                return null;
+            }
 
             // El borde de Railway a veces corta la conexion justo al reusarla
             // (499) sin que la peticion llegue a la app. Como un GET no
@@ -835,6 +874,8 @@
         } catch (e) {
             maToast('error', 'Revisa tu conexión a internet e intenta de nuevo.', 'Sin conexión');
             return null;
+        } finally {
+            clearTimeout(avisoLento);
         }
     }
 
