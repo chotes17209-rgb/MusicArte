@@ -124,7 +124,7 @@
                     <td class="col-alumno fw-semibold">
                         {{ $t->alumno->nombre ?? '—' }}
                         @if($t->alumno?->edadNumero())<span class="text-muted fw-normal small">· {{ $t->alumno->edadNumero() }} años</span>@endif
-                        @if($t->estado !== 'activo')<span class="badge bg-secondary ms-1">Baja</span>@endif
+                        {{-- Los dados de baja ya no se listan aqui (quedan en la ficha del alumno). --}}
                     </td>
                     <td>{{ $t->especialidad->nombre ?? '—' }}@if(request('maestro_id'))<div class="small text-muted">{{ $t->maestro->nombre ?? '' }}</div>@endif</td>
                     <td class="small col-horario">{{ $f['horario'] }}@if($t->fecha_inicio && $periodo && $t->fecha_inicio->gt($periodo->fecha_inicio))<div class="text-muted">Desde el {{ $t->fecha_inicio->format('d/m') }}</div>@endif</td>

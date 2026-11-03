@@ -147,6 +147,18 @@ class AlumnoTaller extends Model
         $this->pagos()->whereDoesntHave('abonos')->get()->each->delete();
     }
 
+    /**
+     * Talleres que se muestran en las listas del periodo: los activos y los
+     * de meses pasados que quedaron como historial (inactivos pero con su
+     * horario). Un taller dado de baja (inactivo y sin horario vigente) solo
+     * queda en la ficha del alumno, como historial.
+     */
+    public function scopeVisibleEnPeriodo($query)
+    {
+        return $query->where(fn ($q) => $q->where('alumno_talleres.estado', 'activo')
+            ->orWhereHas('horarios', fn ($h) => $h->where('activo', true)));
+    }
+
     /** Tiene historial que no se debe borrar: asistencias marcadas o abonos. */
     public function tieneHistorial(): bool
     {

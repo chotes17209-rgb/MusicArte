@@ -54,12 +54,10 @@ class Clase extends Model
      */
     public function scopeSinBajas($query)
     {
-        // De un taller dado de baja solo se ve lo que si paso (clase dictada
-        // o asistencia marcada); lo demas no es parte del periodo.
+        // Las clases de un taller dado de baja ya no se ven en las listas
+        // (quedan solo en la ficha del alumno, como historial).
         return $query->where(fn ($q) => $q->whereNull('alumno_taller_id')
-            ->orWhereHas('alumnoTaller', fn ($t) => $t->where('estado', 'activo'))
-            ->orWhere(fn ($c) => $c->where('estado', '!=', 'cancelada')
-                ->where(fn ($m) => $m->where('estado', 'realizada')->orWhereHas('asistencia'))));
+            ->orWhereHas('alumnoTaller', fn ($t) => $t->visibleEnPeriodo()));
     }
 
     /**
