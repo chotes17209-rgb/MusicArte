@@ -23,14 +23,14 @@ class EspecialidadController extends Controller
         $talleres = $periodo
             ? \App\Models\AlumnoTaller::with(['alumno', 'maestro'])
                 ->where('especialidad_id', $especialidad->id)->where('periodo_id', $periodo->id)
-                ->get()->sortBy(fn ($t) => $t->alumno->nombre ?? '')
+                ->visibleEnPeriodo()->get()->sortBy(fn ($t) => $t->alumno->nombre ?? '')
             : collect();
 
         // Alumnos por mes en los ultimos 6 periodos, para ver la tendencia.
         $historial = \App\Models\Periodo::orderByDesc('anio')->orderByDesc('mes')->limit(6)->get()->reverse()
             ->map(fn ($p) => [
                 'periodo' => $p->nombre,
-                'alumnos' => \App\Models\AlumnoTaller::where('especialidad_id', $especialidad->id)->where('periodo_id', $p->id)->distinct()->count('alumno_id'),
+                'alumnos' => \App\Models\AlumnoTaller::where('especialidad_id', $especialidad->id)->where('periodo_id', $p->id)->visibleEnPeriodo()->distinct()->count('alumno_id'),
             ])->values();
 
         return view('especialidades.show', compact('especialidad', 'periodo', 'talleres', 'historial'));

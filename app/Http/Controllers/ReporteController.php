@@ -37,7 +37,7 @@ class ReporteController extends Controller
             : Periodo::seleccionado();
 
         $talleres = $periodo
-            ? AlumnoTaller::with(['especialidad', 'maestro'])->where('periodo_id', $periodo->id)->get()
+            ? AlumnoTaller::with(['especialidad', 'maestro'])->where('periodo_id', $periodo->id)->visibleEnPeriodo()->get()
             : collect();
 
         $data = $talleres->groupBy('especialidad_id')->map(fn ($ts) => [
@@ -64,6 +64,7 @@ class ReporteController extends Controller
         $maestroId = $request->get('maestro_id');
 
         $clases = Clase::with(['alumno', 'maestro', 'especialidad', 'asistencia'])
+            ->sinBajas()
             ->whereMonth('fecha', $mes)->whereYear('fecha', $anio)
             ->where('estado', '!=', 'cancelada')
             ->when($maestroId, fn ($q) => $q->where('maestro_id', $maestroId))
@@ -228,6 +229,7 @@ class ReporteController extends Controller
         $hasta = $request->get('hasta', now()->endOfMonth()->toDateString());
 
         $data = Clase::with(['alumno', 'maestro', 'especialidad'])
+            ->sinBajas()
             ->whereDate('fecha', '>=', $desde)->whereDate('fecha', '<=', $hasta)
             ->orderBy('fecha')->get();
 

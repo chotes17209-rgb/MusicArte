@@ -77,6 +77,7 @@ class DashboardController extends Controller
             ->get();
 
         $ultimasClasesCanceladas = Clase::with(['alumno'])
+            ->sinBajas()
             ->where('estado', 'cancelada')
             ->whereDate('fecha', '>=', now()->subDays(7))
             ->latest('fecha')

@@ -51,7 +51,7 @@ class PeriodoController extends Controller
     /** Ver: resumen del periodo (inscritos, clases, asistencia y pagos). */
     public function show(Periodo $periodo)
     {
-        $talleres = \App\Models\AlumnoTaller::with(['especialidad', 'maestro'])->where('periodo_id', $periodo->id)->get();
+        $talleres = \App\Models\AlumnoTaller::with(['especialidad', 'maestro'])->where('periodo_id', $periodo->id)->visibleEnPeriodo()->get();
         $clases = \App\Models\Clase::where('periodo_id', $periodo->id)->selectRaw('estado, count(*) as total')->groupBy('estado')->pluck('total', 'estado');
         $asistencias = \App\Models\Asistencia::whereHas('clase', fn ($q) => $q->where('periodo_id', $periodo->id))
             ->selectRaw('estado, count(*) as total')->groupBy('estado')->pluck('total', 'estado');
