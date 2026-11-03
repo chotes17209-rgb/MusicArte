@@ -78,9 +78,16 @@ class AlumnoController extends Controller
         $periodos = Periodo::whereIn('id', $idsPeriodos)->orderByDesc('anio')->orderByDesc('mes')->get();
 
         $lineaDeTiempo = $periodos->map(function ($periodo) use ($horariosPorPeriodo, $estadosPorPeriodo, $alumno) {
-            $horarios = $horariosPorPeriodo->get($periodo->id, collect());
+            // Un taller dado de baja sin ninguna clase dictada o marcada en ese
+            // mes no se muestra (el alumno ya no lo lleva).
             $talleresDelPeriodo = $alumno->talleres()->where('periodo_id', $periodo->id)
-                ->with(['especialidad', 'maestro'])->get();
+                ->with(['especialidad', 'maestro'])->get()
+                ->filter(fn ($t) => $t->estado === 'activo' || $t->clases()
+                    ->where(fn ($c) => $c->where('estado', 'realizada')->orWhereHas('asistencia'))->exists())
+                ->values();
+            $ocultos = $alumno->talleres()->where('periodo_id', $periodo->id)->pluck('id')->diff($talleresDelPeriodo->pluck('id'));
+            $horarios = $horariosPorPeriodo->get($periodo->id, collect())
+                ->reject(fn ($h) => $h->alumno_taller_id && $ocultos->contains($h->alumno_taller_id))->values();
 
             return [
                 'periodo' => $periodo,
