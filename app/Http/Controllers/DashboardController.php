@@ -74,7 +74,17 @@ class DashboardController extends Controller
             ->whereNotNull('fecha_nacimiento')
             ->whereMonth('fecha_nacimiento', now()->month)
             ->orderByRaw('EXTRACT(DAY FROM fecha_nacimiento)')
-            ->get();
+            ->get()
+            ->map(fn ($a) => (object) ['nombre' => $a->nombre, 'fecha_nacimiento' => $a->fecha_nacimiento, 'maestro' => false]);
+
+        // Tambien los cumpleanos de los maestros activos.
+        $cumpleanieros = $cumpleanieros->concat(
+            Maestro::where('activo', true)
+                ->whereNotNull('fecha_nacimiento')
+                ->whereMonth('fecha_nacimiento', now()->month)
+                ->get()
+                ->map(fn ($m) => (object) ['nombre' => $m->nombre, 'fecha_nacimiento' => $m->fecha_nacimiento, 'maestro' => true])
+        )->sortBy(fn ($c) => \Carbon\Carbon::parse($c->fecha_nacimiento)->day)->values();
 
         $ultimasClasesCanceladas = Clase::with(['alumno'])
             ->sinBajas()

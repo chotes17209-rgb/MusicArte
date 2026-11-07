@@ -110,10 +110,12 @@ class MaestroController extends Controller
             'especialidades.*.tarifa' => 'nullable|numeric|min:0',
             'telefono' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:150',
+            'fecha_nacimiento' => 'nullable|date|before:today',
             'activo' => 'nullable|boolean',
         ], [
             'nombre.required' => 'El nombre del maestro es obligatorio.',
             'email.email' => 'Ingresa un correo valido.',
+            'fecha_nacimiento.before' => 'La fecha de nacimiento debe ser anterior a hoy.',
         ]);
     }
 }

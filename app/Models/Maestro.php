@@ -12,12 +12,12 @@ class Maestro extends Model
     protected $table = 'maestros';
 
     protected $fillable = [
-        'nombre', 'telefono', 'email', 'activo',
+        'nombre', 'telefono', 'email', 'fecha_nacimiento', 'activo',
     ];
 
     protected function casts(): array
     {
-        return ['activo' => 'boolean'];
+        return ['activo' => 'boolean', 'fecha_nacimiento' => 'date:Y-m-d'];
     }
 
     /** Un maestro puede ensenar varias especialidades (Piano y Bateria, por ejemplo). */

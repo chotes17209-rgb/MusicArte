@@ -126,7 +126,7 @@
             <ul class="lista-simple">
                 @foreach($cumpleanieros as $c)
                     <li>
-                        <span>{{ $c->nombre }}</span>
+                        <span>{{ $c->nombre }}@if($c->maestro) <span class="badge rounded-pill text-bg-light border ms-1">Maestro</span>@endif</span>
                         <span class="text-muted small {{ \Carbon\Carbon::parse($c->fecha_nacimiento)->day == now()->day ? 'fw-semibold text-body' : '' }}">{{ \Carbon\Carbon::parse($c->fecha_nacimiento)->format('d/m') }}</span>
                     </li>
                 @endforeach

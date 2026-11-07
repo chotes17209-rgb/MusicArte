@@ -96,6 +96,10 @@
                         <label class="form-label small fw-semibold">Email</label>
                         <input type="email" class="form-control" id="maestro_email">
                     </div>
+                    <div class="col-6 mb-3">
+                        <label class="form-label small fw-semibold">Fecha de nacimiento</label>
+                        <input type="date" class="form-control" id="maestro_fecha_nacimiento">
+                    </div>
                 </div>
                 <div class="form-check form-switch">
                     <input class="form-check-input" type="checkbox" id="maestro_activo" checked>
@@ -142,6 +146,7 @@
         document.getElementById('maestro_nombre').value = d.nombre;
         document.getElementById('maestro_telefono').value = d.telefono ?? '';
         document.getElementById('maestro_email').value = d.email ?? '';
+        document.getElementById('maestro_fecha_nacimiento').value = d.fecha_nacimiento ?? '';
         document.getElementById('maestro_activo').checked = !!d.activo;
         limpiarChecksEspecialidad();
         (d.especialidades || []).forEach(esp => {
@@ -166,6 +171,7 @@
             especialidades: especialidades,
             telefono: document.getElementById('maestro_telefono').value,
             email: document.getElementById('maestro_email').value,
+            fecha_nacimiento: document.getElementById('maestro_fecha_nacimiento').value || null,
             activo: document.getElementById('maestro_activo').checked ? 1 : 0,
         };
         const url = id ? `/maestros/${id}` : '/maestros';

@@ -29,6 +29,7 @@
             <dl class="row small mb-0">
                 <dt class="col-5 text-muted">Teléfono</dt><dd class="col-7">{{ $maestro->telefono ?? '—' }}</dd>
                 <dt class="col-5 text-muted">Email</dt><dd class="col-7">{{ $maestro->email ?? '—' }}</dd>
+                <dt class="col-5 text-muted">Cumpleaños</dt><dd class="col-7">{{ $maestro->fecha_nacimiento?->format('d/m/Y') ?? '—' }}</dd>
             </dl>
             <hr>
             <div class="small text-muted">
