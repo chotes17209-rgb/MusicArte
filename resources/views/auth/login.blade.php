@@ -38,6 +38,7 @@
         .form-check-input:focus { box-shadow: 0 0 0 3px rgba(128,0,128,.12); }
         .btn-ingresar { background: var(--acento); border: 1px solid var(--acento); color: #fff; font-weight: 500; font-size: .875rem; padding: .55rem; border-radius: 6px; }
         .btn-ingresar:hover, .btn-ingresar:focus { background: var(--acento-hover); border-color: var(--acento-hover); color: #fff; }
+        .alert-aviso { background: #f3e5f3 !important; border-color: #e0c3e0 !important; color: #4a0a4a !important; }
         .alert { font-size: .8125rem; border-radius: 8px; background: #fdeeec; border: 1px solid #f3c7c1; color: #7a1a12; padding: .6rem .8rem; }
         .pie { margin-top: 1.25rem; color: var(--texto-3); font-size: .75rem; }
     </style>
@@ -54,6 +55,10 @@
     <main class="panel">
         <h1>Iniciar sesión</h1>
         <p class="sub">Ingresa con tu cuenta del centro.</p>
+
+        @if (session('aviso') && ! $errors->any())
+            <div class="alert alert-aviso mb-3">{{ session('aviso') }}</div>
+        @endif
 
         @if ($errors->any())
             <div class="alert mb-3">
@@ -82,5 +87,11 @@
     </main>
 
     <p class="pie">Acceso solo para el personal de MusicArte.</p>
+<script>
+    // Si el celular muestra esta pagina desde su memoria (boton Atras o al
+    // volver a la pestaña), se recarga para que el formulario tenga un
+    // token vigente y no salga "Page Expired".
+    window.addEventListener('pageshow', e => { if (e.persisted) location.reload(); });
+</script>
 </body>
 </html>

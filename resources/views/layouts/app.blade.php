@@ -1104,6 +1104,9 @@
     @if(session('success'))
         window.addEventListener('DOMContentLoaded', () => maToast('success', @json(session('success'))));
     @endif
+    @if(session('aviso'))
+        window.addEventListener('DOMContentLoaded', () => maToast('info', @json(session('aviso'))));
+    @endif
     @if(session('error'))
         window.addEventListener('DOMContentLoaded', () => maToast('error', @json(session('error'))));
     @endif
