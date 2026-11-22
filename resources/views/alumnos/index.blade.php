@@ -507,7 +507,7 @@
                         <select class="form-select" id="pase_periodo_anterior_id" onchange="cargarCandidatosPase()">
                             <option value="">-- Selecciona --</option>
                             @foreach($todosPeriodos as $p)
-                                <option value="{{ $p->id }}">{{ $p->nombre }}</option>
+                                <option value="{{ $p->id }}" data-inicio="{{ $p->fecha_inicio?->toDateString() }}">{{ $p->nombre }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -516,7 +516,7 @@
                         <select class="form-select" id="pase_periodo_nuevo_id">
                             <option value="">-- Selecciona --</option>
                             @foreach($todosPeriodos as $p)
-                                <option value="{{ $p->id }}">{{ $p->nombre }}</option>
+                                <option value="{{ $p->id }}" data-inicio="{{ $p->fecha_inicio?->toDateString() }}">{{ $p->nombre }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -1322,13 +1322,31 @@
     function prepararPaseAlumnos() {
         document.getElementById('pase_periodo_anterior_id').value = '';
         document.getElementById('pase_periodo_nuevo_id').value = '';
+        ajustarDestinoPase();
         document.getElementById('pase_lista_wrap').classList.add('d-none');
         document.getElementById('pase_estado_vacio').classList.remove('d-none');
         document.getElementById('pase_lista_alumnos').innerHTML = '';
         candidatosPaseActual = [];
     }
 
+    /* El periodo nuevo solo puede ser posterior al anterior: se ocultan los
+     * meses anteriores y se elige solo el mes siguiente. */
+    function ajustarDestinoPase() {
+        const sel = document.getElementById('pase_periodo_anterior_id');
+        const inicio = sel.selectedOptions[0]?.dataset.inicio || '';
+        const destino = document.getElementById('pase_periodo_nuevo_id');
+        let siguiente = null;
+        Array.from(destino.options).forEach(o => {
+            if (!o.value) return;
+            const valido = !inicio || (o.dataset.inicio || '') > inicio;
+            o.hidden = !valido; o.disabled = !valido;
+            if (valido && inicio && (!siguiente || o.dataset.inicio < siguiente.dataset.inicio)) siguiente = o;
+        });
+        if (destino.selectedOptions[0]?.disabled || !destino.value) destino.value = siguiente ? siguiente.value : '';
+    }
+
     async function cargarCandidatosPase() {
+        ajustarDestinoPase();
         const periodoId = document.getElementById('pase_periodo_anterior_id').value;
         if (!periodoId) {
             document.getElementById('pase_lista_wrap').classList.add('d-none');
@@ -1383,7 +1401,7 @@
         const confirmacion = await Swal.fire({
             icon: 'question',
             title: 'Confirmar pase de alumnos',
-            text: `${seleccionados.length} alumno(s) pasarán activos al nuevo periodo${copiarTalleres ? ' con sus talleres y mensualidad' : ''}. En su historial, el periodo anterior quedará como inactivo. Los no marcados quedarán inactivos en el nuevo periodo. ¿Continuar?`,
+            text: `De ${document.getElementById('pase_periodo_anterior_id').selectedOptions[0].text} a ${document.getElementById('pase_periodo_nuevo_id').selectedOptions[0].text}: ${seleccionados.length} alumno(s) pasarán activos al nuevo periodo${copiarTalleres ? ' con sus talleres y mensualidad' : ''}. En su historial, el periodo anterior quedará como inactivo. Los no marcados quedarán inactivos en el nuevo periodo. ¿Continuar?`,
             showCancelButton: true,
             confirmButtonText: 'Si, pasar alumnos',
             cancelButtonText: 'Cancelar',

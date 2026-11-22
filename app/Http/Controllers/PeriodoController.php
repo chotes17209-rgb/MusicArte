@@ -165,6 +165,12 @@ class PeriodoController extends Controller
             return response()->json(['ok' => false, 'message' => 'El periodo anterior y el nuevo periodo no pueden ser el mismo.'], 422);
         }
 
+        // El pase siempre es hacia adelante (de noviembre a diciembre, no al reves).
+        $anterior = Periodo::findOrFail($data['periodo_anterior_id']);
+        if ($periodo->fecha_inicio->lte($anterior->fecha_inicio)) {
+            return response()->json(['ok' => false, 'message' => "El periodo nuevo debe ser posterior al anterior: {$periodo->nombre} es antes que {$anterior->nombre}."], 422);
+        }
+
         $seleccionados = collect($data['alumno_ids'] ?? [])->map(fn ($id) => (int) $id);
 
         $candidatosIds = AlumnoPeriodo::where('periodo_id', $data['periodo_anterior_id'])
