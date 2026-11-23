@@ -86,7 +86,10 @@
                 <i class="bi bi-x-lg"></i><span class="d-md-none ms-1">Limpiar filtros</span>
             </button>
         </div>
-        <div class="col-12 d-flex justify-content-end">
+        <div class="col-12 d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-outline-success btn-sm" onclick="excelListaAlumnos()">
+                <i class="bi bi-file-earmark-excel me-1"></i> Descargar Excel
+            </button>
             <button type="button" class="btn btn-outline-secondary btn-sm" onclick="imprimirListaAlumnos()">
                 <i class="bi bi-printer me-1"></i> Imprimir lista de alumnos
             </button>
@@ -1205,6 +1208,12 @@
         const form = document.getElementById('formFiltrosAlumnos');
         const params = new URLSearchParams(new FormData(form));
         window.open(`{{ route('alumnos.imprimir') }}?` + params.toString(), '_blank');
+    }
+
+    /* Lista de alumnos en Excel, con los filtros actuales. */
+    function excelListaAlumnos() {
+        const params = new URLSearchParams(new FormData(document.getElementById('formFiltrosAlumnos')));
+        window.location.href = `{{ route('alumnos.excel') }}?` + params.toString();
     }
 
     document.getElementById('tablaAlumnosWrap').addEventListener('click', function (e) {

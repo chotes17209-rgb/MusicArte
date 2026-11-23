@@ -133,6 +133,37 @@ class AlumnoController extends Controller
     }
 
     /**
+     * Lista de alumnos en Excel con los filtros de la pantalla: nombre, edad,
+     * taller, horario, fecha de nacimiento, tutor, celular, DNI y total a
+     * pagar, agrupada por maestro.
+     */
+    public function excel(Request $request)
+    {
+        // loadMissing: conserva solo los talleres del periodo filtrado.
+        $alumnos = $this->aplicarFiltros($request)->orderBy('nombre')->get()
+            ->loadMissing(['talleres.horarios', 'talleres.pagos', 'talleres.periodo']);
+
+        $periodo = $request->filled('periodo_id') ? Periodo::find($request->periodo_id) : null;
+        $maestro = $request->filled('maestro_id') ? Maestro::find($request->maestro_id) : null;
+        $especialidad = $request->filled('especialidad_id') ? Especialidad::find($request->especialidad_id) : null;
+
+        $filtros = array_values(array_filter([
+            'Periodo: '.($periodo->nombre ?? 'Todos'),
+            'Maestro: '.($maestro->nombre ?? 'Todos'),
+            'Taller: '.($especialidad->nombre ?? 'Todos'),
+            $request->filled('estado') ? 'Estado: '.ucfirst($request->estado).'s' : null,
+            $request->filled('buscar') ? 'Búsqueda: '.$request->buscar : null,
+        ]));
+
+        $libro = \App\Services\ListaAlumnosExcel::generar($alumnos, $periodo, $filtros, $maestro?->id, $especialidad?->id);
+        $archivo = 'Alumnos '.($periodo->nombre ?? 'todos los periodos').($maestro ? ' - '.$maestro->nombre : '').'.xlsx';
+
+        return response()->streamDownload(function () use ($libro) {
+            (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($libro))->save('php://output');
+        }, $archivo, ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']);
+    }
+
+    /**
      * Estado de cada alumno EN el periodo que se esta viendo (no su estado
      * general). En un periodo ya terminado se indica a que periodo paso o
      * que ahi termino; en uno vigente, si esta activo o no ese mes.

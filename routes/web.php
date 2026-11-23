@@ -104,6 +104,7 @@ Route::middleware('auth')->group(function () {
     // Imprimir lista de alumnos filtrada (seccion 18)
     // ---------------------------------------------------------------
     Route::get('/alumnos-imprimir', [AlumnoController::class, 'imprimir'])->name('alumnos.imprimir');
+    Route::get('/alumnos-excel', [AlumnoController::class, 'excel'])->name('alumnos.excel');
 
     // ---------------------------------------------------------------
     // Recitales / eventos
