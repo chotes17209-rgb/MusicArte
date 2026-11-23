@@ -21,10 +21,12 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
  */
 class ListaAlumnosExcel
 {
-    const MORADO = '5B2C6F';
-    const MORADO_SUAVE = 'F7F2F9';
-    const MORADO_MEDIO = 'EADCF0';
-    const BORDE = 'D0C4D6';
+    // Mismos colores que la lista de asistencia: cabecera morada y filas
+    // alternadas blanco / violeta claro.
+    const MORADO = '800080';
+    const MORADO_SUAVE = 'F3E5F3';
+    const MORADO_MEDIO = 'E1C4E1';
+    const BORDE = 'B9A3B9';
 
     const DIAS = [1 => 'Lun', 2 => 'Mar', 3 => 'Mié', 4 => 'Jue', 5 => 'Vie', 6 => 'Sáb', 7 => 'Dom'];
 
@@ -249,6 +251,9 @@ class ListaAlumnosExcel
             $hoja->setCellValue("A{$r}", $n + 1);
             $hoja->setCellValue("B{$r}", $fila['maestro']);
             self::datos($hoja, $r, 3, $fila);
+            if ($n % 2 === 1) {
+                $hoja->getStyle("A{$r}:{$fin}{$r}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB(self::MORADO_SUAVE);
+            }
         }
         $ultima = $f + max(1, $filas->count());
         if ($filas->isNotEmpty()) {
@@ -262,8 +267,7 @@ class ListaAlumnosExcel
     {
         $ultimaCol = self::letra(count($columnas));
         $tabla = $hoja->getStyle("A{$inicio}:{$ultimaCol}{$fin}");
-        $tabla->getBorders()->getHorizontal()->setBorderStyle(Border::BORDER_HAIR)->getColor()->setRGB(self::BORDE);
-        $tabla->getBorders()->getOutline()->setBorderStyle(Border::BORDER_THIN)->getColor()->setRGB(self::BORDE);
+        $tabla->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setRGB(self::BORDE);
         $tabla->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
         $hoja->setShowGridlines(false);
 
